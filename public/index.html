@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Fuel</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-mark">
+        <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+        <strong>Daily Fuel</strong>
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Toggle sidebar"
+          aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+      </div>
+
+      <nav class="side-nav" aria-label="App navigation">
+        <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Calorie Counter</b></a>
+        <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+        <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+      </nav>
+
+      <div class="profile-card">
+        <div class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 48 48">
+            <circle cx="24" cy="14" r="10" />
+            <path d="M8 44a16 16 0 0 1 32 0Z" />
+          </svg>
+        </div>
+        <div>
+          <strong id="profileSummary">Your plan</strong>
+          <small id="profileMeta">Goal</small>
+        </div>
+      </div>
+
+      <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log
+          out</b></button>
+    </aside>
+
+      <section class="main-content">
+        <section class="topbar">
+        <div class="topbar-heading">
+          <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+          <div>
+            <p class="eyebrow" id="selectedDateLabel">Today</p>
+            <h1 id="appTitle">Calorie Counter</h1>
+          </div>
+        </div>
+        <button class="text-button" id="resetDayButton" type="button">Clear selected day</button>
+      </section>
+
+      <section class="calendar-panel" aria-label="Calendar">
+        <button class="icon-button" id="previousWeekButton" type="button" title="Previous week"
+          aria-label="Previous week">‹</button>
+        <div class="calendar-strip" id="calendarStrip"></div>
+        <button class="icon-button" id="nextWeekButton" type="button" title="Next week"
+          aria-label="Next week">›</button>
+      </section>
+
+      <section class="dashboard" id="dashboardSection">
+        <div class="goal-panel">
+          <div class="panel-header">
+            <div>
+              <p class="label">Available today</p>
+              <strong id="remainingCalories">0 kcal</strong>
+              <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
+            </div>
+            <span class="status-pill" id="goalStatus">On track</span>
+          </div>
+
+          <div class="calorie-dashboard">
+            <div class="calorie-ring" aria-label="Calorie progress">
+              <svg viewBox="0 0 140 140" role="img">
+                <defs>
+                  <linearGradient id="calorieRingGradient" x1="15" y1="15" x2="125" y2="125" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#f9735b" />
+                    <stop offset="0.58" stop-color="#f49a73" />
+                    <stop offset="1" stop-color="#6fc6a8" />
+                  </linearGradient>
+                  <linearGradient id="calorieRingUnderGradient" x1="15" y1="15" x2="125" y2="125" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#5a8fcb" />
+                    <stop offset="1" stop-color="#6fc6a8" />
+                  </linearGradient>
+                </defs>
+                <circle class="ring-track" cx="70" cy="70" r="58"></circle>
+                <circle class="ring-progress" id="calorieRing" cx="70" cy="70" r="58"></circle>
+              </svg>
+              <div class="ring-copy">
+                <span id="consumedCalories">0</span>
+                <small>of <b id="goalCaloriesText">2300</b> kcal</small>
+              </div>
+            </div>
+
+            <div class="calorie-insights" aria-label="Daily calorie breakdown">
+              <article class="food-insight">
+                <span>Food</span>
+                <strong id="foodCaloriesTotal">0 kcal</strong>
+                <small>logged today</small>
+              </article>
+              <article class="exercise-insight">
+                <span>Exercise</span>
+                <strong id="exerciseCaloriesTotal">0 kcal</strong>
+                <small>burned today</small>
+              </article>
+            </div>
+          </div>
+        </div>
+        <div class="macro-grid" id="macroGrid"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="log-panel food-log" id="foodSection">
+          <div class="panel-title">
+            <div>
+              <p class="label">Nutrition</p>
+              <h2>Food Log</h2>
+            </div>
+            <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from yesterday</button>
+          </div>
+          <div class="food-field-labels" aria-hidden="true">
+            <span>Food</span>
+            <span>Amount</span>
+            <span>Unit</span>
+            <span>Calories</span>
+            <span>Protein</span>
+            <span>Carbs</span>
+            <span>Fat</span>
+            <span></span>
+          </div>
+          <form class="compact-form" id="manualFoodForm">
+            <input id="manualFoodName" type="text" placeholder="Search food, e.g. pizza, pita, rice..."
+              autocomplete="off" required />
+            <input id="foodAmount" type="number" min="0" step="1" value="1" aria-label="Amount" />
+            <select id="foodUnit" aria-label="Unit">
+              <option value="serving">serving</option>
+              <option value="piece">piece</option>
+              <option value="g">g</option>
+            </select>
+            <input id="manualFoodCalories" type="number" min="0" step="1" aria-label="Calories" required />
+            <input id="manualFoodProtein" type="number" min="0" step="1" aria-label="Protein grams" />
+            <input id="manualFoodCarbs" type="number" min="0" step="1" aria-label="Carbs grams" />
+            <input id="manualFoodFat" type="number" min="0" step="1" aria-label="Fat grams" />
+            <button id="manualFoodSubmit" type="submit">+</button>
+          </form>
+          <p class="search-note" id="searchNote">Start typing to search saved foods, USDA, and Open Food Facts.</p>
+          <div class="suggestions" id="foodSuggestions"></div>
+          <div class="entry-list" id="foodList"></div>
+          <section class="saved-foods-panel" aria-label="Saved foods">
+            <div class="panel-title">
+              <div>
+                <p class="label">Library</p>
+                <h2>Saved foods</h2>
+              </div>
+            </div>
+            <div class="saved-foods" id="savedFoods"></div>
+          </section>
+        </div>
+
+        <div class="log-panel exercise-log" id="exerciseSection">
+          <div class="panel-title">
+            <div>
+              <p class="label">Activity</p>
+              <h2>Exercise Log</h2>
+            </div>
+          </div>
+          <div class="exercise-field-labels" aria-hidden="true">
+            <span>Exercise</span>
+            <span>Minutes</span>
+            <span>Calories burned</span>
+            <span></span>
+          </div>
+          <form class="compact-form exercise-form" id="exerciseForm">
+            <select id="exerciseType">
+              <option value="Running">Running</option>
+              <option value="Weight lifting">Weight lifting</option>
+              <option value="Cycling">Cycling</option>
+              <option value="Walking">Walking</option>
+            </select>
+            <input id="exerciseMinutes" type="number" min="1" value="60" aria-label="Minutes" required />
+            <input id="exerciseCalories" type="number" min="0" aria-label="Calories burned" required />
+            <button id="exerciseSubmit" type="submit">+</button>
+          </form>
+          <div class="entry-list" id="exerciseList"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="entryTemplate">
+    <article class="entry-card">
+      <div>
+        <strong></strong>
+        <p></p>
+      </div>
+        <div class="entry-actions">
+          <button class="save-entry-button" type="button" title="Save food" aria-label="Save food">♡</button>
+          <button class="edit-entry-button" type="button" title="Edit" aria-label="Edit">✎</button>
+          <button class="remove-entry-button" type="button" title="Remove" aria-label="Remove">×</button>
+        </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile · Calorie Counter</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-mark">
+          <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+          <strong>Daily Fuel</strong>
+          <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+        </div>
+
+        <nav class="side-nav" aria-label="App navigation">
+          <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Calorie Counter</b></a>
+          <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+          <a class="is-active" href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+        </nav>
+
+        <div class="profile-card">
+          <div class="avatar" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <circle cx="24" cy="14" r="10" />
+              <path d="M8 44a16 16 0 0 1 32 0Z" />
+            </svg>
+          </div>
+          <div>
+            <strong id="profileSummary">Your plan</strong>
+            <small id="profileMeta">Goal</small>
+          </div>
+        </div>
+
+        <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log out</b></button>
+      </aside>
+
+      <section class="main-content">
+        <section class="topbar">
+          <div class="topbar-heading">
+            <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+            <div>
+              <p class="eyebrow">Daily Fuel</p>
+              <h1 id="profilePageTitle">Profile</h1>
+            </div>
+          </div>
+          <a class="text-button" href="index.html">Calorie Counter</a>
+        </section>
+
+        <section class="auth-shell in-app">
+          <form class="auth-panel" id="profileForm">
+            <div class="profile-form-header">
+              <div>
+                <p class="eyebrow">Your plan</p>
+                <h2 id="profileFormTitle">Set Up Your Goals</h2>
+                <p class="auth-copy" id="profileFormCopy">Create a local profile so the app can estimate daily calories and macros from your body stats and goal.</p>
+              </div>
+              <label class="theme-control">
+                Theme
+                <select id="profileTheme" required>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="profile-grid">
+              <section class="profile-section profile-section-main">
+                <div class="section-heading">
+                  <span>Basics</span>
+                  <strong>Identity</strong>
+                </div>
+                <div class="profile-fields compact-profile-fields">
+                  <label class="wide-field">
+                    Name
+                    <input id="profileName" type="text" autocomplete="name" required />
+                  </label>
+                  <label>
+                    Sex
+                    <select id="profileSex" required>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </label>
+                  <label>
+                    Age
+                    <input id="profileAge" type="number" min="13" max="100" required />
+                  </label>
+                  <label>
+                    Height
+                    <input id="profileHeight" type="number" min="120" max="230" placeholder="cm" required />
+                  </label>
+                  <label>
+                    Current
+                    <input id="profileWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
+                  </label>
+                  <label>
+                    Goal
+                    <input id="profileTargetWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
+                  </label>
+                </div>
+              </section>
+
+              <section class="profile-section">
+                <div class="section-heading">
+                  <span>Plan</span>
+                  <strong>Goal setup</strong>
+                </div>
+                <div class="profile-fields">
+                  <label>
+                    Main goal
+                    <select id="profileGoalType" required>
+                      <option value="lose">Lose fat</option>
+                      <option value="maintain">Maintain weight</option>
+                      <option value="gain">Build muscle</option>
+                    </select>
+                  </label>
+                  <label>
+                    Activity level
+                    <select id="profileActivity" required>
+                      <option value="1.2">Mostly sitting</option>
+                      <option value="1.375">Lightly active</option>
+                      <option value="1.55">Moderately active</option>
+                      <option value="1.725">Very active</option>
+                    </select>
+                    <small class="field-hint" id="activityHint">Mostly sitting: desk work and little planned exercise.</small>
+                  </label>
+                  <label>
+                    Goal pace
+                    <select id="profileGoalPace" required>
+                      <option value="0.25">0.25 kg/week</option>
+                      <option value="0.5">0.5 kg/week</option>
+                      <option value="0.75">0.75 kg/week</option>
+                    </select>
+                    <small class="field-hint" id="goalPaceHint">Used to adjust recommended calories for losing or gaining weight.</small>
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            <section class="recommendation goal-editor" id="goalEditor">
+              <div class="goal-editor-header">
+                <div>
+                  <span>Recommended targets</span>
+                  <strong id="recommendationPreview">Fill in your profile to preview your recommended daily calories and macros.</strong>
+                </div>
+                <div class="goal-editor-actions">
+                  <button class="goal-reset-button" id="goalResetButton" type="button">Reset to recommended</button>
+                  <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit targets" aria-label="Edit targets">✎</button>
+                </div>
+              </div>
+
+              <div class="goal-grid">
+                <label>
+                  Calories
+                  <input id="goalCalories" type="number" min="1200" step="50" readonly required />
+                </label>
+                <label>
+                  Protein
+                  <input id="goalProtein" type="number" min="0" step="1" readonly required />
+                </label>
+                <label>
+                  Carbs
+                  <input id="goalCarbs" type="number" min="0" step="1" readonly required />
+                </label>
+                <label>
+                  Fat
+                  <input id="goalFat" type="number" min="0" step="1" readonly required />
+                </label>
+              </div>
+            </section>
+            <button class="primary-action" id="profileSubmitButton" type="submit">Start tracking</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="profile.js"></script>
+  </body>
+</html>

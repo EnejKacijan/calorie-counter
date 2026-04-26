@@ -1,0 +1,9 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/foods/search"
+  to = "/.netlify/functions/foods-search"
+  status = 200
+

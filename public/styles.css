@@ -146,28 +146,28 @@ body.profile-landing-active .auth-shell.in-app {
 
 body.profile-landing-active .intro-shell {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.72fr);
+  grid-template-columns: minmax(0, 0.82fr) minmax(340px, 0.86fr);
   min-height: 100vh;
-  gap: 28px;
+  gap: 34px;
   align-items: center;
-  padding: 32px;
+  padding: 34px;
 }
 
 .intro-copy {
   display: grid;
-  max-width: 640px;
-  gap: 18px;
+  max-width: 560px;
+  gap: 22px;
   justify-self: end;
 }
 
 .intro-copy h1 {
-  max-width: 620px;
+  max-width: 560px;
   font-size: clamp(2.45rem, 5.5vw, 5.6rem);
   line-height: 0.94;
 }
 
 .intro-copy p:not(.eyebrow) {
-  max-width: 560px;
+  max-width: 500px;
   margin: 0;
   color: var(--muted);
   font-size: clamp(1rem, 1.25vw, 1.18rem);
@@ -183,9 +183,28 @@ body.profile-landing-active .intro-shell {
 
 .intro-actions .primary-action {
   width: auto;
-  min-width: 180px;
+  min-width: 172px;
+  min-height: 42px;
   margin-top: 0;
-  padding-inline: 18px;
+  padding: 9px 18px;
+  box-shadow: 0 10px 24px rgba(24, 34, 31, 0.14);
+}
+
+.intro-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: -6px;
+}
+
+.intro-trust span {
+  border: 1px solid rgba(111, 198, 168, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--mint-dark);
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 900;
 }
 
 .intro-preview {
@@ -194,13 +213,15 @@ body.profile-landing-active .intro-shell {
 }
 
 .intro-preview-frame {
-  width: min(690px, 100%);
+  width: min(780px, 100%);
   aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid rgba(219, 229, 223, 0.94);
   border-radius: 18px;
   background: var(--panel);
-  box-shadow: 0 28px 70px rgba(30, 47, 41, 0.16);
+  box-shadow:
+    0 34px 88px rgba(30, 47, 41, 0.2),
+    0 10px 24px rgba(111, 198, 168, 0.08);
 }
 
 .intro-preview-frame img {
@@ -346,6 +367,11 @@ body[data-theme="dark"] .intro-preview-frame {
   border-color: var(--line);
   background: var(--panel);
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.36);
+}
+
+body[data-theme="dark"] .intro-trust span {
+  border-color: rgba(126, 244, 201, 0.18);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 body[data-theme="dark"] .intro-calorie-ring {
@@ -3557,6 +3583,10 @@ body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
     justify-content: center;
   }
 
+  .intro-trust {
+    justify-content: center;
+  }
+
   .intro-actions .primary-action {
     width: min(100%, 320px);
   }
@@ -3566,7 +3596,7 @@ body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
   }
 
   .intro-preview-frame {
-    width: min(620px, 100%);
+    width: min(700px, 100%);
     border-radius: 14px;
   }
 

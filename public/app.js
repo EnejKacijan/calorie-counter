@@ -86,6 +86,9 @@ const elements = {
   goalCaloriesText: document.querySelector("#goalCaloriesText"),
   goalStatus: document.querySelector("#goalStatus"),
   calorieRing: document.querySelector("#calorieRing"),
+  clearDayStreak: document.querySelector("#clearDayStreak"),
+  clearDayStreakLabel: document.querySelector("#clearDayStreakLabel"),
+  mobileClearDayStreak: document.querySelector("#mobileClearDayStreak"),
   macroGrid: document.querySelector("#macroGrid"),
   foodSection: document.querySelector("#foodSection"),
   foodModeEyebrow: document.querySelector("#foodModeEyebrow"),
@@ -117,6 +120,9 @@ const elements = {
   searchNote: document.querySelector("#searchNote"),
   foodList: document.querySelector("#foodList"),
   exerciseSection: document.querySelector("#exerciseSection"),
+  exerciseModeEyebrow: document.querySelector("#exerciseModeEyebrow"),
+  exerciseModeTitle: document.querySelector("#exerciseModeTitle"),
+  cancelExerciseEdit: document.querySelector("#cancelExerciseEdit"),
   exerciseForm: document.querySelector("#exerciseForm"),
   addExerciseToggle: document.querySelector("#addExerciseToggle"),
   closeExerciseModal: document.querySelector("#closeExerciseModal"),
@@ -376,6 +382,30 @@ function totals() {
   return { ...foodTotals, netCalories: foodTotals.calories - exerciseCalories, exerciseCalories };
 }
 
+function isClearDay(day) {
+  const summary = summarizeDay(day);
+  const hasEntries = day.foods.length > 0 || day.exercises.length > 0;
+  return hasEntries && summary.netCalories <= state.goals.calories;
+}
+
+function clearDayStreak() {
+  const today = localDateKey(new Date());
+  let cursor = dateFromKey(today);
+
+  if (!isClearDay(ensureDay(today))) {
+    cursor = addDays(cursor, -1);
+  }
+
+  let streak = 0;
+  while (true) {
+    const dateKey = localDateKey(cursor);
+    const day = state.days[dateKey];
+    if (!day || !isClearDay(day)) return streak;
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+}
+
 function ensureDay(dateKey, targetState = state) {
   if (!targetState.days[dateKey]) {
     targetState.days[dateKey] = { foods: [], exercises: [] };
@@ -435,6 +465,11 @@ function render() {
   setAnimatedMetric(elements.foodCaloriesTotal, Math.round(daily.calories), " kcal", "foodCalories");
   setAnimatedMetric(elements.exerciseCaloriesTotal, Math.round(daily.exerciseCalories), " kcal", "exerciseCalories");
   setAnimatedMetric(elements.consumedCalories, Math.round(daily.netCalories), "", "netCalories");
+  const streak = clearDayStreak();
+  const streakLabel = `${streak} ${streak === 1 ? "day" : "days"}`;
+  elements.clearDayStreak.textContent = streak;
+  elements.clearDayStreakLabel.textContent = streak === 1 ? "clear day" : "clear days";
+  elements.mobileClearDayStreak.textContent = `${streakLabel} streak`;
   elements.goalCaloriesText.textContent = state.goals.calories;
   elements.calorieRing.style.strokeDashoffset = ringLength - ringLength * calorieProgress;
   elements.calorieRing.classList.toggle("is-under", hasExerciseDeficit);
@@ -610,6 +645,7 @@ function renderMacros(daily) {
 function renderEntries() {
   const day = currentDay();
   syncFoodModeHeader();
+  syncExerciseModeHeader();
 
   renderList(elements.foodList, day.foods, "foods", (food) => {
     const portion = food.amount && food.unit ? `${food.amount} ${food.unit}` : "Manual entry";
@@ -1045,6 +1081,12 @@ function syncFoodModeHeader() {
   elements.foodModeTitle.textContent = isEditing ? "Edit food" : "Add food";
 }
 
+function syncExerciseModeHeader() {
+  const isEditing = Boolean(editingExerciseId);
+  elements.exerciseModeEyebrow.textContent = isEditing ? "Editing entry" : "Add exercise";
+  elements.exerciseModeTitle.textContent = isEditing ? "Edit exercise" : "Add exercise";
+}
+
 function setFoodSearchActive(isActive) {
   elements.foodSection.classList.toggle("is-searching", isActive);
 }
@@ -1172,18 +1214,29 @@ async function analyzeFoodPhoto(file) {
 }
 
 function fillManualFoodFromPhoto(food) {
-  selectedFoodBase = null;
+  const unit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
+  const amount = unit === "g"
+    ? Math.max(1, Math.round(Number(food.amount || 100)))
+    : Math.max(1, Number(food.amount || 1));
+  const divisor = unit === "g" ? 1 : amount;
+
+  selectedFoodBase = {
+    ...food,
+    calories: unit === "g" ? Math.round(Number(food.calories || 0)) : Math.round(Number(food.calories || 0) / divisor),
+    protein: unit === "g" ? Math.round(Number(food.protein || 0)) : Math.round(Number(food.protein || 0) / divisor),
+    carbs: unit === "g" ? Math.round(Number(food.carbs || 0)) : Math.round(Number(food.carbs || 0) / divisor),
+    fat: unit === "g" ? Math.round(Number(food.fat || 0)) : Math.round(Number(food.fat || 0) / divisor),
+    servingGrams: unit === "g" ? amount : null,
+  };
+
   editingFoodId = null;
   elements.foodSection.classList.remove("is-editing");
   elements.manualFoodSubmit.textContent = "+ Add";
   elements.manualFoodName.value = food.name || "Unknown food";
-  elements.foodAmount.value = food.amount || 1;
-  elements.foodUnit.value = food.unit || "serving";
+  elements.foodAmount.value = amount;
+  elements.foodUnit.value = unit;
   updateFoodAmountStep();
-  elements.manualFoodCalories.value = Math.round(Number(food.calories || 0));
-  elements.manualFoodProtein.value = Math.round(Number(food.protein || 0));
-  elements.manualFoodCarbs.value = Math.round(Number(food.carbs || 0));
-  elements.manualFoodFat.value = Math.round(Number(food.fat || 0));
+  updateNutritionForPortion();
   elements.foodSuggestions.innerHTML = "";
   elements.searchNote.textContent = food.notes || "Photo estimate filled in. Review it, then add it to your log.";
   elements.foodPhotoStatus.textContent = `AI estimate: ${food.confidence || "low"} confidence.`;
@@ -1373,6 +1426,8 @@ function fillExerciseFormForEdit(exercise) {
   elements.exerciseSubmit.textContent = "✓";
   elements.exerciseSection.classList.add("is-adding", "is-editing");
   document.body.classList.add("modal-open");
+  syncExerciseModeHeader();
+  renderEntries();
   elements.exerciseType.focus();
 }
 
@@ -1382,6 +1437,7 @@ function resetExerciseForm() {
   editingExerciseId = null;
   elements.exerciseSection.classList.remove("is-editing");
   applyExercisePreset();
+  syncExerciseModeHeader();
 }
 
 function normalizeExerciseCalories() {
@@ -1435,6 +1491,11 @@ elements.addExerciseToggle.addEventListener("click", () => {
 elements.closeExerciseModal.addEventListener("click", () => {
   closeMobileLogForm(elements.exerciseSection);
   resetExerciseForm();
+});
+elements.cancelExerciseEdit.addEventListener("click", () => {
+  resetExerciseForm();
+  renderEntries();
+  elements.exerciseType.focus();
 });
 elements.deleteExerciseEdit.addEventListener("click", () => {
   if (!editingExerciseId) return;

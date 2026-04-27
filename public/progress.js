@@ -23,12 +23,20 @@ const elements = {
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
-  const fallback = { user: null, progress: [], theme: localStorage.getItem("calorie-counter-theme") || "light" };
+  const fallback = {
+    user: null,
+    progress: [],
+    days: {},
+    goals: { calories: 2300, protein: 150, carbs: 260, fat: 75 },
+    theme: localStorage.getItem("calorie-counter-theme") || "light",
+  };
   if (!saved) return fallback;
 
   try {
     const parsed = JSON.parse(saved);
     if (!Array.isArray(parsed.progress)) parsed.progress = [];
+    if (!parsed.days) parsed.days = {};
+    if (!parsed.goals) parsed.goals = fallback.goals;
     if (parsed.user && !parsed.user.startWeightKg) parsed.user.startWeightKg = parsed.user.weightKg;
     if (!parsed.theme) parsed.theme = parsed.user?.theme || fallback.theme;
     return { ...fallback, ...parsed };
@@ -61,6 +69,53 @@ function localDateKey(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function dateFromKey(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addDays(date, days) {
+  const nextDate = new Date(date);
+  nextDate.setDate(nextDate.getDate() + days);
+  return nextDate;
+}
+
+function summarizeDay(day = { foods: [], exercises: [] }) {
+  const foodTotals = (day.foods || []).reduce(
+    (sum, food) => ({
+      calories: sum.calories + Math.round(Number(food.calories || 0)),
+      protein: sum.protein + Math.round(Number(food.protein || 0)),
+    }),
+    { calories: 0, protein: 0 },
+  );
+  const exerciseCalories = (day.exercises || []).reduce((sum, exercise) => sum + Math.round(Number(exercise.calories || 0)), 0);
+  return { ...foodTotals, exerciseCalories, netCalories: foodTotals.calories - exerciseCalories };
+}
+
+function isClearDay(day) {
+  const summary = summarizeDay(day);
+  const hasEntries = (day?.foods || []).length > 0 || (day?.exercises || []).length > 0;
+  return hasEntries && summary.netCalories <= Number(state.goals?.calories || 2300);
+}
+
+function clearDayStreak() {
+  const today = localDateKey(new Date());
+  let cursor = dateFromKey(today);
+
+  if (!isClearDay(state.days?.[today])) {
+    cursor = addDays(cursor, -1);
+  }
+
+  let streak = 0;
+  while (true) {
+    const dateKey = localDateKey(cursor);
+    const day = state.days?.[dateKey];
+    if (!day || !isClearDay(day)) return streak;
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
 }
 
 function currentWeight() {
@@ -119,6 +174,7 @@ function render() {
   const target = Number(state.user.targetWeightKg);
   const changed = Math.abs(current - start).toFixed(1);
   const remaining = Math.abs(target - current).toFixed(1);
+  const streak = clearDayStreak();
   elements.profileSummary.textContent = state.user.name;
   elements.profileMeta.textContent = `${state.user.weightKg} kg · ${state.user.heightCm} cm`;
   elements.progressGoalLabel.textContent = `${current} kg now · ${target} kg goal`;
@@ -139,6 +195,11 @@ function render() {
       <span>Remaining</span>
       <strong>${remaining} kg</strong>
       <small>Until target weight</small>
+    </article>
+    <article class="progress-stat-card">
+      <span>Streak</span>
+      <strong>${streak} ${streak === 1 ? "day" : "days"}</strong>
+      <small>Logged days within calorie goal</small>
     </article>
   `;
   const today = localDateKey(new Date());

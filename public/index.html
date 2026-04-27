@@ -107,6 +107,7 @@
               <strong class="calorie-left-value" id="remainingCalories"><span>0</span><small>kcal</small></strong>
               <p class="calorie-left-label">left</p>
               <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
+              <small class="mobile-streak-pill" id="mobileClearDayStreak">0 days streak</small>
             </div>
             <span class="status-pill" id="goalStatus">On track</span>
           </div>
@@ -147,6 +148,11 @@
                 <span>Exercise</span>
                 <strong id="exerciseCaloriesTotal">0 kcal</strong>
                 <small>burned today</small>
+              </article>
+              <article class="streak-insight">
+                <span>Streak</span>
+                <strong id="clearDayStreak">0</strong>
+                <small id="clearDayStreakLabel">clear days</small>
               </article>
             </div>
           </div>
@@ -261,6 +267,13 @@
             <button class="modal-close-button" id="closeExerciseModal" type="button"
               aria-label="Close exercise form">×</button>
             <button class="quick-add-button" id="addExerciseToggle" type="button" aria-label="Add exercise">+</button>
+          </div>
+          <div class="exercise-mode-header" id="exerciseModeHeader">
+            <div>
+              <p class="label" id="exerciseModeEyebrow">Add exercise</p>
+              <strong id="exerciseModeTitle">Add exercise</strong>
+            </div>
+            <button class="text-button exercise-cancel-edit" id="cancelExerciseEdit" type="button">Cancel</button>
           </div>
           <div class="exercise-field-labels" aria-hidden="true">
             <span>Exercise</span>

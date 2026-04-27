@@ -25,6 +25,7 @@ const elements = {
   mobileMenuButton: document.querySelector("#mobileMenuButton"),
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   logoutButton: document.querySelector("#logoutButton"),
+  profilePageLogoutButton: document.querySelector("#profilePageLogoutButton"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
   profilePageTitle: document.querySelector("#profilePageTitle"),
@@ -54,6 +55,8 @@ const elements = {
   maintenancePreview: document.querySelector("#maintenancePreview"),
   goalEditButton: document.querySelector("#goalEditButton"),
   goalResetButton: document.querySelector("#goalResetButton"),
+  goalEditor: document.querySelector("#goalEditor"),
+  customTargets: document.querySelector("#customTargets"),
   goalCalories: document.querySelector("#goalCalories"),
   goalProtein: document.querySelector("#goalProtein"),
   goalCarbs: document.querySelector("#goalCarbs"),
@@ -138,6 +141,7 @@ function renderProfileShell() {
     elements.profileFormTitle.textContent = "Set Up Your Goals";
     elements.profileFormCopy.textContent = "Create a local profile so the app can estimate daily calories and macros from your body stats and goal.";
     elements.profileSubmitButton.textContent = "Start tracking";
+    elements.profilePageLogoutButton.hidden = true;
     return;
   }
 
@@ -147,6 +151,7 @@ function renderProfileShell() {
   elements.profileFormTitle.textContent = "Edit Profile";
   elements.profileFormCopy.textContent = "Adjust your body stats and goal. Daily calories and macros will refresh from the updated plan.";
   elements.profileSubmitButton.textContent = "Update goals";
+  elements.profilePageLogoutButton.hidden = false;
 }
 
 function fillProfileForm() {
@@ -161,9 +166,7 @@ function fillProfileForm() {
   elements.profileActivity.value = String(user.activityMultiplier || 1.375);
   elements.profileGoalPace.value = String(user.weeklyRateKg || 0.5);
   elements.profileTheme.value = user.theme || state.theme || localStorage.getItem("calorie-counter-theme") || "light";
-  goalsAreCustom = Boolean(state.goalsAreCustom);
-  setGoalEditing(goalsAreCustom);
-  if (goalsAreCustom) fillGoalInputs(state.goals);
+  setGoalEditing(false);
   applyTheme(elements.profileTheme.value);
   updateActivityHints();
   updateRecommendationPreview();
@@ -225,13 +228,15 @@ function updateRecommendationPreview() {
 
   const goals = calculateRecommendedGoals(profile);
   elements.recommendationPreview.textContent = goalsAreCustom
-    ? "Recommended baseline based on your profile."
-    : "These targets are applied to your day.";
+    ? "Suggested baseline from your profile."
+    : "These suggestions will be used unless you edit them.";
   updateRecommendedSummary(goals);
 
   if (!goalsAreCustom) {
     fillGoalInputs(goals);
   }
+
+  updateSubmitState();
 }
 
 function updateRecommendedSummary(goals) {
@@ -250,6 +255,7 @@ function fillGoalInputs(goals) {
   elements.goalProtein.value = goals.protein;
   elements.goalCarbs.value = goals.carbs;
   elements.goalFat.value = goals.fat;
+  updateSubmitState();
 }
 
 function goalsFromInputs() {
@@ -266,16 +272,50 @@ function setGoalEditing(isEditing) {
   [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat].forEach((input) => {
     input.readOnly = !isEditing;
   });
+  elements.goalEditor.classList.toggle("is-editing-custom", isEditing);
+  elements.customTargets.hidden = !isEditing;
   elements.goalEditButton.classList.toggle("is-active", isEditing);
   elements.goalEditButton.setAttribute("aria-pressed", String(isEditing));
-  elements.goalEditButton.title = isEditing ? "Use automatic targets" : "Edit targets";
-  elements.goalEditButton.setAttribute("aria-label", isEditing ? "Use automatic targets" : "Edit targets");
-  elements.goalEditButton.textContent = isEditing ? "Auto targets" : "Edit manually";
-  elements.goalResetButton.disabled = false;
+  elements.goalEditButton.title = isEditing ? "Custom targets are open" : "Edit custom targets";
+  elements.goalEditButton.setAttribute("aria-label", isEditing ? "Custom targets are open" : "Edit custom targets");
+  elements.goalEditButton.textContent = "Edit manually";
+  elements.goalResetButton.disabled = !isEditing;
+  updateSubmitState();
+}
+
+function isProfileReady() {
+  const requiredFields = [
+    elements.profileName,
+    elements.profileSex,
+    elements.profileAge,
+    elements.profileHeight,
+    elements.profileWeight,
+    elements.profileTargetWeight,
+    elements.profileGoalType,
+    elements.profileActivity,
+  ];
+  const profileFieldsValid = requiredFields.every((field) => field.value && field.checkValidity());
+  const goalsValid = [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat]
+    .every((input) => input.value !== "" && input.checkValidity());
+
+  return profileFieldsValid && goalsValid;
+}
+
+function updateSubmitState() {
+  const isReady = isProfileReady();
+  elements.profileSubmitButton.disabled = !isReady;
+  elements.profileSubmitButton.setAttribute("aria-disabled", String(!isReady));
+  elements.profileSubmitButton.title = isReady ? "" : "Fill in your profile to start tracking";
 }
 
 elements.profileForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  updateSubmitState();
+  if (elements.profileSubmitButton.disabled) {
+    elements.profileForm.reportValidity();
+    return;
+  }
+
   const profile = profileFromForm();
   state.user = profile;
 
@@ -307,10 +347,12 @@ elements.profileForm.addEventListener("submit", (event) => {
   input.addEventListener("input", () => {
     updateActivityHints();
     updateRecommendationPreview();
+    updateSubmitState();
   });
   input.addEventListener("change", () => {
     updateActivityHints();
     updateRecommendationPreview();
+    updateSubmitState();
   });
 });
 
@@ -331,13 +373,18 @@ elements.goalResetButton.addEventListener("click", () => {
   updateRecommendationPreview();
 });
 
+[elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat].forEach((input) => {
+  input.addEventListener("input", updateSubmitState);
+  input.addEventListener("change", updateSubmitState);
+});
+
 elements.introStartButton.addEventListener("click", () => {
   isIntroActive = false;
   renderProfileShell();
   elements.profileName.focus();
 });
 
-elements.logoutButton.addEventListener("click", () => {
+function handleLogout() {
   if (!window.confirm("Are you sure you want to log out?")) return;
   state.user = null;
   isIntroActive = true;
@@ -345,7 +392,10 @@ elements.logoutButton.addEventListener("click", () => {
   saveState();
   fillProfileForm();
   renderProfileShell();
-});
+}
+
+elements.logoutButton.addEventListener("click", handleLogout);
+elements.profilePageLogoutButton.addEventListener("click", handleLogout);
 
 elements.sidebarToggle.addEventListener("click", () => {
   if (isMobileSidebar()) {

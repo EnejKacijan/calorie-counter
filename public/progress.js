@@ -1,5 +1,6 @@
 const storageKey = "calorie-counter-state";
 const state = loadState();
+document.body.classList.add("progress-page");
 
 const elements = {
   progressForm: document.querySelector("#progressForm"),
@@ -7,7 +8,6 @@ const elements = {
   progressWeight: document.querySelector("#progressWeight"),
   progressGoalLabel: document.querySelector("#progressGoalLabel"),
   progressSummary: document.querySelector("#progressSummary"),
-  progressTrendBadge: document.querySelector("#progressTrendBadge"),
   progressMeterFill: document.querySelector("#progressMeterFill"),
   progressStats: document.querySelector("#progressStats"),
   progressChart: document.querySelector("#progressChart"),
@@ -73,9 +73,11 @@ function goalProgressPercent() {
   const start = Number(state.user.startWeightKg || state.user.weightKg);
   const current = currentWeight();
   const target = Number(state.user.targetWeightKg);
-  const total = Math.abs(target - start);
-  if (!total) return 100;
-  return Math.max(0, Math.min(100, Math.round((Math.abs(current - start) / total) * 100)));
+  const total = target - start;
+  if (Math.abs(total) < 0.05) return Math.abs(current - target) < 0.05 ? 100 : 0;
+
+  const progress = ((current - start) / total) * 100;
+  return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
 function goalLabel(goalType) {
@@ -85,22 +87,10 @@ function goalLabel(goalType) {
 function weightDirectionVerb() {
   if (!state.user) return "changed";
   const start = Number(state.user.startWeightKg || state.user.weightKg);
-  const target = Number(state.user.targetWeightKg);
-  return target < start ? "lost" : target > start ? "gained" : "changed";
-}
-
-function trendSummary(entries) {
-  if (entries.length < 2) return { label: "No trend yet", value: "0.0 kg", tone: "neutral" };
-  const latest = entries.at(-1);
-  const previous = entries.at(-2);
-  const delta = Number(latest.weightKg) - Number(previous.weightKg);
-  const value = `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`;
-  if (Math.abs(delta) < 0.05) return { label: "Steady", value: "0.0 kg", tone: "neutral" };
-  return {
-    label: delta > 0 ? "Up since last" : "Down since last",
-    value,
-    tone: delta > 0 ? "up" : "down",
-  };
+  const current = currentWeight();
+  const delta = current - start;
+  if (Math.abs(delta) < 0.05) return "Changed";
+  return delta < 0 ? "Lost" : "Gained";
 }
 
 function ensureInitialProgress() {
@@ -129,13 +119,10 @@ function render() {
   const target = Number(state.user.targetWeightKg);
   const changed = Math.abs(current - start).toFixed(1);
   const remaining = Math.abs(target - current).toFixed(1);
-  const trend = trendSummary(entries);
   elements.profileSummary.textContent = state.user.name;
   elements.profileMeta.textContent = `${state.user.weightKg} kg · ${state.user.heightCm} cm`;
   elements.progressGoalLabel.textContent = `${current} kg now · ${target} kg goal`;
   elements.progressSummary.textContent = `${percent}% to goal`;
-  elements.progressTrendBadge.textContent = `${trend.label}: ${trend.value}`;
-  elements.progressTrendBadge.className = `progress-badge is-${trend.tone}`;
   elements.progressMeterFill.style.width = `${percent}%`;
   elements.progressStats.innerHTML = `
     <article class="progress-stat-card">
@@ -153,13 +140,11 @@ function render() {
       <strong>${remaining} kg</strong>
       <small>Until target weight</small>
     </article>
-    <article class="progress-stat-card is-${trend.tone}">
-      <span>Trend</span>
-      <strong>${trend.value}</strong>
-      <small>${trend.label}</small>
-    </article>
   `;
-  elements.progressDate.value = elements.progressDate.value || localDateKey(new Date());
+  const today = localDateKey(new Date());
+  elements.progressDate.max = today;
+  elements.progressDate.value = elements.progressDate.value || today;
+  if (elements.progressDate.value > today) elements.progressDate.value = today;
   elements.progressWeight.value = elements.progressWeight.value || currentWeight();
   renderChart(entries);
   renderList(entries);
@@ -171,11 +156,33 @@ function renderChart(entries) {
   const min = Math.min(...weights, Number(state.user.targetWeightKg)) - 1;
   const max = Math.max(...weights, Number(state.user.startWeightKg || state.user.weightKg)) + 1;
   const target = Number(state.user.targetWeightKg);
-  const targetY = 86 - ((target - min) / (max - min || 1)) * 72;
+  const chart = { left: 15, right: 93, top: 14, bottom: 82 };
+  const range = max - min || 1;
+  const yForWeight = (weight) => chart.bottom - ((weight - min) / range) * (chart.bottom - chart.top);
+  const targetY = yForWeight(target);
   const points = chartEntries.map((entry, index) => {
-    const x = chartEntries.length === 1 ? 50 : 8 + (index / (chartEntries.length - 1)) * 84;
-    const y = 86 - ((Number(entry.weightKg) - min) / (max - min || 1)) * 72;
+    const x = chartEntries.length === 1
+      ? (chart.left + chart.right) / 2
+      : chart.left + (index / (chartEntries.length - 1)) * (chart.right - chart.left);
+    const y = yForWeight(Number(entry.weightKg));
     return `${x},${y}`;
+  });
+  const latestEntry = chartEntries.at(-1);
+  const [latestX, latestY] = points.at(-1).split(",").map(Number);
+  const latestLabelX = Math.min(chart.right - 15, Math.max(chart.left + 15, latestX));
+  const latestLabelY = Math.max(chart.top + 8, latestY - 8);
+  const yTicks = [max, (max + min) / 2, min].map((weight) => ({
+    weight,
+    y: yForWeight(weight),
+  }));
+  const dateTickIndexes = chartEntries.length === 1
+    ? [0]
+    : [...new Set([0, Math.floor((chartEntries.length - 1) / 2), chartEntries.length - 1])];
+  const dateTicks = dateTickIndexes.map((index) => {
+    const x = chartEntries.length === 1
+      ? (chart.left + chart.right) / 2
+      : chart.left + (index / (chartEntries.length - 1)) * (chart.right - chart.left);
+    return { x, label: shortDateLabel(chartEntries[index].date) };
   });
 
   elements.progressChart.innerHTML = `
@@ -186,25 +193,51 @@ function renderChart(entries) {
           <stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
         </linearGradient>
       </defs>
-      <path class="chart-grid" d="M8 20 H92 M8 50 H92 M8 80 H92"></path>
-      <path class="chart-target-line" d="M8 ${targetY.toFixed(2)} H92"></path>
-      <text class="chart-target-label" x="91" y="${Math.max(9, targetY - 3).toFixed(2)}" text-anchor="end">Goal ${target} kg</text>
-      <polygon class="chart-area" points="${points.join(" ")} 92,92 8,92"></polygon>
+      ${yTicks.map((tick) => `
+        <path class="chart-grid" d="M${chart.left} ${tick.y.toFixed(2)} H${chart.right}"></path>
+        <text class="chart-axis-label chart-y-label" x="${chart.left - 2}" y="${(tick.y + 1.2).toFixed(2)}" text-anchor="end">${tick.weight.toFixed(1)} kg</text>
+      `).join("")}
+      <path class="chart-target-line" d="M${chart.left} ${targetY.toFixed(2)} H${chart.right}"></path>
+      <text class="chart-target-label" x="${chart.right - 1}" y="${Math.max(9, targetY - 3).toFixed(2)}" text-anchor="end">Goal ${target} kg</text>
+      <polygon class="chart-area" points="${points.join(" ")} ${chart.right},${chart.bottom} ${chart.left},${chart.bottom}"></polygon>
       <polyline class="chart-line" points="${points.join(" ")}"></polyline>
       ${points.map((point) => {
     const [x, y] = point.split(",");
     return `<circle class="chart-dot" cx="${x}" cy="${y}" r="2.5"></circle>`;
   }).join("")}
+      <circle class="chart-latest-pulse" cx="${latestX}" cy="${latestY}" r="5.2"></circle>
+      <circle class="chart-latest-dot" cx="${latestX}" cy="${latestY}" r="3.1"></circle>
+      <g class="chart-latest-label" transform="translate(${latestLabelX.toFixed(2)} ${latestLabelY.toFixed(2)})">
+        <rect x="-13" y="-7" width="26" height="11" rx="5.5"></rect>
+        <text x="0" y="-2.2" text-anchor="middle">Today</text>
+        <text x="0" y="2.4" text-anchor="middle">${Number(latestEntry.weightKg)} kg</text>
+      </g>
+      ${dateTicks.map((tick) => `
+        <text class="chart-axis-label chart-x-label" x="${tick.x.toFixed(2)}" y="94" text-anchor="middle">${tick.label}</text>
+      `).join("")}
     </svg>
   `;
+}
+
+function shortDateLabel(dateKey) {
+  const [, month, day] = dateKey.split("-");
+  return `${Number(day)}.${Number(month)}`;
 }
 
 function renderList(entries) {
   elements.progressList.innerHTML = "";
   [...entries].reverse().forEach((entry) => {
     const card = document.querySelector("#entryTemplate").content.firstElementChild.cloneNode(true);
+    const previousEntry = [...entries].filter((item) => item.date < entry.date).at(-1);
+    const delta = previousEntry ? Number(entry.weightKg) - Number(previousEntry.weightKg) : 0;
+    const deltaText = previousEntry
+      ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`
+      : "Start";
+    const deltaClass = !previousEntry ? "neutral" : delta > 0 ? "up" : delta < 0 ? "down" : "neutral";
+
+    card.classList.add("progress-entry-card", `is-${deltaClass}`);
     card.querySelector("strong").textContent = `${entry.weightKg} kg`;
-    card.querySelector("p").textContent = entry.date;
+    card.querySelector("p").innerHTML = `<span>${entry.date}</span><small>${deltaText}</small>`;
     card.querySelector("button").addEventListener("click", () => {
       state.progress = state.progress.filter((item) => item.id !== entry.id);
       saveState();
@@ -216,6 +249,14 @@ function renderList(entries) {
 
 elements.progressForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  const today = localDateKey(new Date());
+  if (elements.progressDate.value > today) {
+    elements.progressDate.setCustomValidity("You can't log weight for a future date.");
+    elements.progressDate.reportValidity();
+    elements.progressDate.setCustomValidity("");
+    return;
+  }
+
   const entry = {
     id: crypto.randomUUID(),
     date: elements.progressDate.value,

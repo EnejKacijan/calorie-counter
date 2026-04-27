@@ -48,10 +48,9 @@
             <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
             <div>
               <p class="eyebrow">Daily Fuel</p>
-              <h1 id="profilePageTitle">Profile</h1>
+              <h1 class="mobile-page-title" id="profilePageTitle">Profile</h1>
             </div>
           </div>
-          <a class="text-button" href="index.html">Calorie Counter</a>
         </section>
 
         <section class="intro-shell" id="introShell" aria-labelledby="introTitle">
@@ -169,16 +168,12 @@
             <section class="recommendation goal-editor" id="goalEditor">
               <div class="goal-editor-header">
                 <div>
-                  <span>Recommended targets</span>
+                  <span>Suggested targets</span>
                   <strong id="recommendationPreview">Fill in your profile to preview your recommended daily calories and macros.</strong>
-                </div>
-                <div class="goal-editor-actions">
-                  <button class="goal-reset-button" id="goalResetButton" type="button">Use recommended</button>
-                  <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit targets" aria-label="Edit targets">Edit manually</button>
                 </div>
               </div>
 
-              <div class="recommended-summary" aria-label="Recommended targets summary">
+              <div class="recommended-summary" aria-label="Suggested targets summary">
                 <article>
                   <span>Calories</span>
                   <strong id="recommendedCalories">--</strong>
@@ -198,31 +193,38 @@
               </div>
               <p class="maintenance-preview" id="maintenancePreview">Maintenance will appear after your profile is complete.</p>
 
-              <div class="daily-targets-heading">
-                <span>Daily targets</span>
-                <strong>Editable goals</strong>
+              <div class="goal-editor-actions">
+                <button class="goal-reset-button" id="goalResetButton" type="button">Use recommended</button>
+                <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit custom targets" aria-label="Edit custom targets">Edit manually</button>
               </div>
-              <div class="goal-grid">
-                <label>
-                  Calories
-                  <input id="goalCalories" type="number" min="1200" step="50" readonly required />
-                </label>
-                <label>
-                  Protein
-                  <input id="goalProtein" type="number" min="0" step="1" readonly required />
-                </label>
-                <label>
-                  Carbs
-                  <input id="goalCarbs" type="number" min="0" step="1" readonly required />
-                </label>
-                <label>
-                  Fat
-                  <input id="goalFat" type="number" min="0" step="1" readonly required />
-                </label>
+
+              <div class="custom-targets" id="customTargets" hidden>
+                <div class="daily-targets-heading">
+                  <span>Custom targets</span>
+                </div>
+                <div class="goal-grid">
+                  <label>
+                    Calories
+                    <input id="goalCalories" type="number" min="1200" step="50" readonly required />
+                  </label>
+                  <label>
+                    Protein
+                    <input id="goalProtein" type="number" min="0" step="1" readonly required />
+                  </label>
+                  <label>
+                    Carbs
+                    <input id="goalCarbs" type="number" min="0" step="1" readonly required />
+                  </label>
+                  <label>
+                    Fat
+                    <input id="goalFat" type="number" min="0" step="1" readonly required />
+                  </label>
+                </div>
               </div>
             </section>
             <button class="primary-action" id="profileSubmitButton" type="submit">Start tracking</button>
           </form>
+          <button class="profile-page-logout" id="profilePageLogoutButton" type="button">Log out</button>
         </section>
       </section>
     </main>

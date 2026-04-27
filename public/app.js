@@ -53,6 +53,9 @@ let selectedFoodBase = null;
 let editingFoodId = null;
 let editingExerciseId = null;
 let undoToastTimer = null;
+let renderSnapshot = null;
+let recentSuccess = null;
+let successCueTimer = null;
 const elements = {
   appShell: document.querySelector(".app-shell"),
   mainContent: document.querySelector(".main-content"),
@@ -85,6 +88,9 @@ const elements = {
   calorieRing: document.querySelector("#calorieRing"),
   macroGrid: document.querySelector("#macroGrid"),
   foodSection: document.querySelector("#foodSection"),
+  foodModeEyebrow: document.querySelector("#foodModeEyebrow"),
+  foodModeTitle: document.querySelector("#foodModeTitle"),
+  cancelFoodEdit: document.querySelector("#cancelFoodEdit"),
   addFoodToggle: document.querySelector("#addFoodToggle"),
   closeFoodModal: document.querySelector("#closeFoodModal"),
   backFoodModal: document.querySelector("#backFoodModal"),
@@ -312,17 +318,20 @@ function setFabMenuOpen(isOpen) {
 }
 
 function openAddFoodFromFab() {
+  setFabMenuOpen(false);
   if (editingFoodId) resetFoodForm();
   elements.foodSection.classList.remove("is-viewing-saved");
   openMobileLogForm(elements.foodSection, elements.manualFoodName);
 }
 
 function openAddExerciseFromFab() {
+  setFabMenuOpen(false);
   if (editingExerciseId) resetExerciseForm();
   openMobileLogForm(elements.exerciseSection, elements.exerciseType);
 }
 
 function openSavedFoodsFromFab() {
+  setFabMenuOpen(false);
   if (editingFoodId) resetFoodForm();
   elements.foodSection.classList.add("is-viewing-saved");
   openMobileLogForm(elements.foodSection, null);
@@ -422,10 +431,10 @@ function render() {
   const isOverGoal = remaining < 0;
   const ringLength = 364.42;
 
-  elements.remainingCalories.textContent = `${Math.round(remaining)} kcal`;
-  elements.foodCaloriesTotal.textContent = `${Math.round(daily.calories)} kcal`;
-  elements.exerciseCaloriesTotal.textContent = `${Math.round(daily.exerciseCalories)} kcal`;
-  elements.consumedCalories.textContent = Math.round(daily.netCalories);
+  setAnimatedMetric(elements.remainingCalories, Math.round(remaining), " kcal", "remaining");
+  setAnimatedMetric(elements.foodCaloriesTotal, Math.round(daily.calories), " kcal", "foodCalories");
+  setAnimatedMetric(elements.exerciseCaloriesTotal, Math.round(daily.exerciseCalories), " kcal", "exerciseCalories");
+  setAnimatedMetric(elements.consumedCalories, Math.round(daily.netCalories), "", "netCalories");
   elements.goalCaloriesText.textContent = state.goals.calories;
   elements.calorieRing.style.strokeDashoffset = ringLength - ringLength * calorieProgress;
   elements.calorieRing.classList.toggle("is-under", hasExerciseDeficit);
@@ -443,6 +452,18 @@ function render() {
   renderEntries();
   renderSavedFoods();
   updateCopyYesterdayButton();
+  if (recentSuccess) playSuccessCue(recentSuccess);
+  renderSnapshot = {
+    remaining: Math.round(remaining),
+    foodCalories: Math.round(daily.calories),
+    exerciseCalories: Math.round(daily.exerciseCalories),
+    netCalories: Math.round(daily.netCalories),
+    macros: Object.fromEntries(macroConfig.map((macro) => {
+      const goal = state.goals[macro.key];
+      const progress = goal > 0 ? Math.max(0, Math.min((daily[macro.key] / goal) * 100, 100)) : 0;
+      return [macro.key, progress];
+    })),
+  };
 }
 
 function applyTheme(theme) {
@@ -460,6 +481,72 @@ function renderProfileState() {
   elements.profileMeta.textContent = `${state.user.weightKg} kg · ${state.user.heightCm} cm`;
 }
 
+function setAnimatedMetric(element, value, suffix, key) {
+  const previous = renderSnapshot?.[key];
+  if (previous === undefined || previous === value || document.visibilityState === "hidden") {
+    setMetricText(element, value, suffix);
+    return;
+  }
+  animateNumber(element, previous, value, suffix);
+}
+
+function setMetricText(element, value, suffix = "") {
+  if (element === elements.remainingCalories) {
+    element.innerHTML = `<span>${value}</span><small>${suffix.trim()}</small>`;
+    return;
+  }
+  element.textContent = `${value}${suffix}`;
+}
+
+function animateNumber(element, from, to, suffix = "") {
+  const duration = 520;
+  const start = performance.now();
+  const difference = to - from;
+
+  function tick(now) {
+    const progress = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    setMetricText(element, Math.round(from + difference * eased), suffix);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function playSubmitSuccess(button) {
+  if (!button) return;
+  button.classList.add("is-success");
+  button.textContent = "✓";
+  setTimeout(() => {
+    button.classList.remove("is-success");
+    if (!editingFoodId && button === elements.manualFoodSubmit) button.textContent = "+ Add";
+    if (!editingExerciseId && button === elements.exerciseSubmit) button.textContent = "+";
+  }, 800);
+}
+
+function playSuccessCue(success) {
+  const goalPanel = document.querySelector(".goal-panel");
+  if (!goalPanel) return;
+  clearTimeout(successCueTimer);
+  document.querySelector(".success-cue")?.remove();
+
+  const cue = document.createElement("div");
+  cue.className = "success-cue";
+  cue.textContent = success.collection === "foods" ? "Added" : "Logged";
+  goalPanel.appendChild(cue);
+  elements.goalStatus.classList.add("is-success-pulse");
+  elements.calorieRing.classList.add("is-success-pulse");
+  elements.macroGrid.classList.add("is-success-pulse");
+
+  successCueTimer = setTimeout(() => {
+    cue.remove();
+    elements.goalStatus.classList.remove("is-success-pulse");
+    elements.calorieRing.classList.remove("is-success-pulse");
+    elements.macroGrid.classList.remove("is-success-pulse");
+  }, 900);
+  recentSuccess = null;
+}
+
 function renderMacros(daily) {
   elements.macroGrid.innerHTML = "";
 
@@ -471,6 +558,13 @@ function renderMacros(daily) {
     const remaining = Math.abs(goal - consumed);
     const progressLabel = `${Math.round(progress)}%`;
     const macroAmountLabel = `${Math.round(Number(consumed || 0))}${macro.unit}/${Math.round(Number(goal || 0))}${macro.unit}`;
+    const macroConsumedLabel = `${Math.round(Number(consumed || 0))}${macro.unit}`;
+    const macroGoalLabel = `of ${Math.round(Number(goal || 0))}${macro.unit}`;
+    const previousProgress = renderSnapshot?.macros?.[macro.key];
+    const progressOffset = 113.1 - 113.1 * (progress / 100);
+    const initialProgressOffset = previousProgress === undefined
+      ? progressOffset
+      : 113.1 - 113.1 * (previousProgress / 100);
 
     const card = document.createElement("article");
     card.className = "macro-card";
@@ -487,11 +581,13 @@ function renderMacros(daily) {
         ${macro.icon}
         <svg class="macro-ring" viewBox="0 0 48 48" aria-label="${macro.label} progress: ${progressLabel}">
           <circle class="macro-ring-track" cx="24" cy="24" r="18"></circle>
-          <circle class="macro-ring-progress" cx="24" cy="24" r="18" style="stroke:${macro.color}; stroke-dashoffset:${113.1 - 113.1 * (progress / 100)}"></circle>
+          <circle class="macro-ring-progress" cx="24" cy="24" r="18" style="stroke:${macro.color}; stroke-dashoffset:${initialProgressOffset}"></circle>
         </svg>
-        <strong>${progressLabel}</strong>
+        <strong class="macro-ring-value">${macroConsumedLabel}</strong>
+        <em>${progressLabel}</em>
       </div>
       <div>
+        <p class="macro-mobile-goal">${macroGoalLabel}</p>
         <div class="macro-bar" aria-label="${macro.label} progress: ${progressLabel}">
           <span style="width:${progress}%; background:${macro.color}"></span>
         </div>
@@ -502,15 +598,22 @@ function renderMacros(daily) {
       </div>
     `;
     elements.macroGrid.appendChild(card);
+    if (previousProgress !== undefined && previousProgress !== progress) {
+      const progressCircle = card.querySelector(".macro-ring-progress");
+      requestAnimationFrame(() => {
+        progressCircle.style.strokeDashoffset = progressOffset;
+      });
+    }
   });
 }
 
 function renderEntries() {
   const day = currentDay();
+  syncFoodModeHeader();
 
   renderList(elements.foodList, day.foods, "foods", (food) => {
     const portion = food.amount && food.unit ? `${food.amount} ${food.unit}` : "Manual entry";
-    return `${portion} · ${Math.round(food.calories)} kcal · ${Math.round(food.protein || 0)}P · ${Math.round(food.carbs || 0)}C · ${Math.round(food.fat || 0)}F`;
+    return `${portion} · ${Math.round(food.protein || 0)}P · ${Math.round(food.carbs || 0)}C · ${Math.round(food.fat || 0)}F`;
   });
 
   renderList(elements.exerciseList, day.exercises, "exercises", (exercise) => {
@@ -537,31 +640,47 @@ function renderList(container, entries, collection, subtitleFactory, titleFactor
 
   entries.forEach((entry) => {
     const card = document.querySelector("#entryTemplate").content.firstElementChild.cloneNode(true);
-    const saveButton = card.querySelector(".save-entry-button");
-    const removeButton = card.querySelector(".remove-entry-button");
+    const swipeSaveButton = card.querySelector(".swipe-save-action");
+    const swipeDeleteButton = card.querySelector(".swipe-delete-action");
     const canEdit = collection === "foods" || collection === "exercises";
+    if (recentSuccess?.collection === collection && recentSuccess?.id === entry.id) {
+      card.classList.add("is-new-entry");
+    }
+    if (collection === "foods" && editingFoodId === entry.id) {
+      card.classList.add("is-selected");
+    }
+    if (collection === "exercises" && editingExerciseId === entry.id) {
+      card.classList.add("is-selected");
+    }
     card.querySelector("strong").textContent = titleFactory(entry);
     card.querySelector("p").textContent = subtitleFactory(entry);
     if (collection === "foods") {
+      const entryMain = card.querySelector(".entry-main");
+      const calories = document.createElement("span");
+      entryMain.classList.add("has-kcal");
+      calories.className = "entry-kcal";
+      calories.textContent = `${Math.round(entry.calories || 0)} kcal`;
+      entryMain.appendChild(calories);
       const saved = isFoodSaved(entry);
-      saveButton.classList.toggle("is-saved", saved);
-      saveButton.textContent = saved ? "♥" : "♡";
-      saveButton.title = saved ? "Remove saved food" : "Save food";
-      saveButton.setAttribute("aria-label", saved ? "Remove saved food" : "Save food");
-      saveButton.addEventListener("click", (event) => {
+      swipeSaveButton.classList.toggle("is-saved", saved);
+      swipeSaveButton.textContent = saved ? "♥" : "♡";
+      swipeSaveButton.title = saved ? "Remove saved food" : "Save food";
+      swipeSaveButton.setAttribute("aria-label", saved ? "Remove saved food" : "Save food");
+      swipeSaveButton.addEventListener("click", (event) => {
         event.stopPropagation();
+        closeSwipedEntries();
         toggleSavedFood(entry);
       });
     } else if (collection === "exercises") {
-      saveButton.remove();
+      swipeSaveButton.remove();
+      card.classList.add("has-no-save-action");
     } else {
-      saveButton.remove();
+      swipeSaveButton.remove();
+      card.classList.add("has-no-save-action");
     }
-    removeButton.textContent = "🗑";
-    removeButton.title = "Delete";
-    removeButton.setAttribute("aria-label", "Delete");
-    removeButton.addEventListener("click", (event) => {
+    swipeDeleteButton.addEventListener("click", (event) => {
       event.stopPropagation();
+      closeSwipedEntries();
       deleteEntryWithUndo(collection, entry);
     });
     if (canEdit) {
@@ -571,6 +690,10 @@ function renderList(container, entries, collection, subtitleFactory, titleFactor
       card.addEventListener("click", () => {
         if (card.dataset.suppressClick === "true") {
           delete card.dataset.suppressClick;
+          return;
+        }
+        if (card.classList.contains("is-swiped-left") || card.classList.contains("is-swiped-right")) {
+          closeSwipedEntries();
           return;
         }
         editEntry(collection, entry);
@@ -642,42 +765,90 @@ function showUndoToast(message, onUndo) {
   undoToastTimer = setTimeout(() => toast.classList.remove("is-visible"), 4200);
 }
 
+function closeSwipedEntries(exceptCard = null) {
+  document.querySelectorAll(".entry-card.is-swiped-left, .entry-card.is-swiped-right").forEach((entryCard) => {
+    if (entryCard === exceptCard) return;
+    entryCard.classList.remove("is-swiped-left", "is-swiped-right", "is-dragging");
+    entryCard.style.removeProperty("--swipe-x");
+  });
+}
+
 function attachEntrySwipe(card, collection, entry) {
   let startX = 0;
   let startY = 0;
+  let latestX = 0;
   let isTracking = false;
+  let isDragging = false;
+  const revealDistance = 82;
+  const dragLimit = 96;
+
+  function setSwipeOffset(value) {
+    const offset = Math.max(-dragLimit, Math.min(dragLimit, value));
+    card.style.setProperty("--swipe-x", `${offset}px`);
+  }
 
   card.addEventListener("pointerdown", (event) => {
     if (event.target.closest("button")) return;
+    closeSwipedEntries(card);
     startX = event.clientX;
     startY = event.clientY;
+    latestX = startX;
     isTracking = true;
+    isDragging = false;
+    card.classList.remove("is-swiped-left", "is-swiped-right");
+  });
+
+  card.addEventListener("pointermove", (event) => {
+    if (!isTracking) return;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    if (!isDragging && Math.abs(deltaX) < 10) return;
+    if (!isDragging && Math.abs(deltaY) > Math.abs(deltaX)) {
+      isTracking = false;
+      return;
+    }
+    isDragging = true;
+    latestX = event.clientX;
+    card.classList.add("is-dragging");
+    setSwipeOffset(deltaX);
   });
 
   card.addEventListener("pointerup", (event) => {
     if (!isTracking) return;
     isTracking = false;
-    const deltaX = event.clientX - startX;
+    const deltaX = (isDragging ? latestX : event.clientX) - startX;
     const deltaY = event.clientY - startY;
-    if (Math.abs(deltaX) < 54 || Math.abs(deltaY) > 44) return;
+    card.classList.remove("is-dragging");
+    card.style.removeProperty("--swipe-x");
+    if (Math.abs(deltaX) < 54 || Math.abs(deltaY) > 44) {
+      if (card.classList.contains("is-swiped-left") || card.classList.contains("is-swiped-right")) {
+        card.dataset.suppressClick = "true";
+        setTimeout(() => {
+          delete card.dataset.suppressClick;
+        }, 220);
+      }
+      return;
+    }
 
     card.dataset.suppressClick = "true";
     setTimeout(() => {
       delete card.dataset.suppressClick;
     }, 260);
     if (deltaX < 0) {
-      document.querySelectorAll(".entry-card.is-swiped").forEach((entryCard) => {
-        if (entryCard !== card) entryCard.classList.remove("is-swiped");
-      });
-      card.classList.toggle("is-swiped");
+      card.classList.add("is-swiped-left");
       return;
     }
 
-    if (collection === "foods") toggleSavedFood(entry);
+    if (collection === "foods") {
+      card.classList.add("is-swiped-right");
+    }
   });
 
   card.addEventListener("pointercancel", () => {
     isTracking = false;
+    isDragging = false;
+    card.classList.remove("is-dragging");
+    card.style.removeProperty("--swipe-x");
   });
 }
 
@@ -837,7 +1008,7 @@ function fillFoodFormForEdit(food) {
   elements.manualFoodProtein.value = Math.round(Number(food.protein || 0));
   elements.manualFoodCarbs.value = Math.round(Number(food.carbs || 0));
   elements.manualFoodFat.value = Math.round(Number(food.fat || 0));
-  elements.manualFoodSubmit.textContent = "✓";
+  elements.manualFoodSubmit.textContent = "Save";
   elements.favoriteFoodEdit.classList.toggle("is-saved", isFoodSaved(food));
   elements.favoriteFoodEdit.textContent = isFoodSaved(food) ? "♥" : "♡";
   elements.favoriteFoodEdit.title = isFoodSaved(food) ? "Remove saved food" : "Save food";
@@ -847,6 +1018,8 @@ function fillFoodFormForEdit(food) {
   setFoodSearchActive(false);
   elements.foodSection.classList.add("is-adding", "is-editing");
   document.body.classList.add("modal-open");
+  syncFoodModeHeader();
+  renderEntries();
   elements.manualFoodName.focus();
 }
 
@@ -855,7 +1028,7 @@ function resetFoodForm() {
   elements.foodAmount.value = 1;
   elements.foodUnit.value = "serving";
   updateFoodAmountStep();
-  elements.manualFoodSubmit.textContent = "+";
+  elements.manualFoodSubmit.textContent = "+ Add";
   editingFoodId = null;
   selectedFoodBase = null;
   elements.foodSection.classList.remove("is-editing");
@@ -863,6 +1036,13 @@ function resetFoodForm() {
   elements.foodPhotoStatus.textContent = "";
   elements.searchNote.textContent = "Start typing to search saved foods, USDA, and Open Food Facts.";
   setFoodSearchActive(false);
+  syncFoodModeHeader();
+}
+
+function syncFoodModeHeader() {
+  const isEditing = Boolean(editingFoodId);
+  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : "Add food";
+  elements.foodModeTitle.textContent = isEditing ? "Edit food" : "Add food";
 }
 
 function setFoodSearchActive(isActive) {
@@ -995,7 +1175,7 @@ function fillManualFoodFromPhoto(food) {
   selectedFoodBase = null;
   editingFoodId = null;
   elements.foodSection.classList.remove("is-editing");
-  elements.manualFoodSubmit.textContent = "+";
+  elements.manualFoodSubmit.textContent = "+ Add";
   elements.manualFoodName.value = food.name || "Unknown food";
   elements.foodAmount.value = food.amount || 1;
   elements.foodUnit.value = food.unit || "serving";
@@ -1041,15 +1221,19 @@ function addFood(food) {
     carbs: Math.round(Number(food.carbs || 0)),
     fat: Math.round(Number(food.fat || 0)),
   };
+  let addedId = null;
   if (editingFoodId) {
     currentDay().foods = currentDay().foods.map((entry) =>
       entry.id === editingFoodId ? { ...entry, ...nextFood, updatedAt: new Date().toISOString() } : entry,
     );
   } else {
-    currentDay().foods.unshift({ ...nextFood, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+    addedId = crypto.randomUUID();
+    currentDay().foods.unshift({ ...nextFood, id: addedId, createdAt: new Date().toISOString() });
+    recentSuccess = { collection: "foods", id: addedId };
   }
   saveState();
   render();
+  return addedId;
 }
 
 function updateCopyYesterdayButton() {
@@ -1089,6 +1273,7 @@ function copyFoodsFromYesterday() {
 
 elements.manualFoodForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  const isEditing = Boolean(editingFoodId);
   addFood({
     name: elements.manualFoodName.value.trim(),
     amount: Number(elements.foodAmount.value || 1),
@@ -1099,6 +1284,7 @@ elements.manualFoodForm.addEventListener("submit", (event) => {
     fat: Math.round(Number(elements.manualFoodFat.value || 0)),
   });
   resetFoodForm();
+  if (!isEditing) playSubmitSuccess(elements.manualFoodSubmit);
   closeMobileLogForm(elements.foodSection);
 });
 
@@ -1136,6 +1322,11 @@ elements.closeFoodModal.addEventListener("click", () => {
   elements.foodSection.classList.remove("is-viewing-saved");
 });
 elements.backFoodModal.addEventListener("click", showFoodFormFromSavedFoods);
+elements.cancelFoodEdit.addEventListener("click", () => {
+  resetFoodForm();
+  renderEntries();
+  elements.manualFoodName.focus();
+});
 elements.favoriteFoodEdit.addEventListener("click", () => {
   if (!editingFoodId) return;
   const entry = currentDay().foods.find((food) => food.id === editingFoodId);
@@ -1200,6 +1391,7 @@ function normalizeExerciseCalories() {
 
 elements.exerciseForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  const isEditing = Boolean(editingExerciseId);
   const exercise = {
     name: elements.exerciseType.value,
     minutes: Number(elements.exerciseMinutes.value),
@@ -1212,16 +1404,19 @@ elements.exerciseForm.addEventListener("submit", (event) => {
       entry.id === editingExerciseId ? { ...entry, ...exercise, updatedAt: new Date().toISOString() } : entry,
     );
   } else {
+    const addedId = crypto.randomUUID();
     currentDay().exercises.unshift({
       ...exercise,
-      id: crypto.randomUUID(),
+      id: addedId,
       createdAt: new Date().toISOString(),
     });
+    recentSuccess = { collection: "exercises", id: addedId };
   }
 
   saveState();
   render();
   resetExerciseForm();
+  if (!isEditing) playSubmitSuccess(elements.exerciseSubmit);
   closeMobileLogForm(elements.exerciseSection);
 });
 
@@ -1272,7 +1467,14 @@ elements.fabAddFood?.addEventListener("click", openAddFoodFromFab);
 elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
 elements.fabSavedFoods?.addEventListener("click", openSavedFoodsFromFab);
 elements.fabSheetClose?.addEventListener("click", () => setFabMenuOpen(false));
-elements.fabOverlay?.addEventListener("click", () => setFabMenuOpen(false));
+elements.fabOverlay?.addEventListener("click", () => {
+  setFabMenuOpen(false);
+  if (!document.body.classList.contains("modal-open")) return;
+  closeMobileLogForm(elements.foodSection);
+  closeMobileLogForm(elements.exerciseSection);
+  resetFoodForm();
+  resetExerciseForm();
+});
 document.addEventListener("click", (event) => {
   if (!elements.fabActions?.classList.contains("is-open")) return;
   if (event.target.closest("#fabActions") || event.target.closest("#floatingAddButton") || event.target.closest("#fabOverlay")) return;

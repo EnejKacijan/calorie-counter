@@ -104,7 +104,7 @@
         <div class="goal-panel">
           <div class="panel-header">
             <div>
-              <strong id="remainingCalories">0 kcal</strong>
+              <strong class="calorie-left-value" id="remainingCalories"><span>0</span><small>kcal</small></strong>
               <p class="calorie-left-label">left</p>
               <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
             </div>
@@ -167,6 +167,13 @@
             <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from
               yesterday</button>
           </div>
+          <div class="food-mode-header" id="foodModeHeader">
+            <div>
+              <p class="label" id="foodModeEyebrow">Add food</p>
+              <strong id="foodModeTitle">Add food</strong>
+            </div>
+            <button class="text-button food-cancel-edit" id="cancelFoodEdit" type="button">Cancel</button>
+          </div>
           <div class="food-field-labels" aria-hidden="true">
             <span>Food</span>
             <span>Amount</span>
@@ -197,13 +204,13 @@
                 type="number" min="0" step="1" aria-label="Carbs grams" /></label>
             <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number"
                 min="0" step="1" aria-label="Fat grams" /></label>
-            <button id="manualFoodSubmit" type="submit">+</button>
+            <button id="manualFoodSubmit" type="submit">+ Add</button>
           </form>
           <div class="edit-modal-actions" id="foodEditActions">
             <button class="edit-favorite-button" id="favoriteFoodEdit" type="button" title="Save food"
               aria-label="Save food">♡</button>
             <button class="edit-delete-button" id="deleteFoodEdit" type="button" title="Delete"
-              aria-label="Delete">🗑</button>
+              aria-label="Delete">×</button>
           </div>
           <div class="photo-food-tools">
             <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
@@ -229,6 +236,10 @@
             <span class="photo-food-status" id="foodPhotoStatus" aria-live="polite"></span>
           </div>
           <p class="search-note" id="searchNote">Start typing to search saved foods, USDA, and Open Food Facts.</p>
+          <div class="logged-list-heading">
+            <p class="label">Today's logged foods</p>
+            <span>Click an item to edit</span>
+          </div>
           <div class="entry-list" id="foodList"></div>
           <section class="saved-foods-panel" aria-label="Saved foods">
             <div class="panel-title">
@@ -270,7 +281,7 @@
           </form>
           <div class="edit-modal-actions" id="exerciseEditActions">
             <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete"
-              aria-label="Delete">🗑</button>
+              aria-label="Delete">×</button>
           </div>
           <div class="entry-list" id="exerciseList"></div>
         </div>
@@ -290,6 +301,8 @@
           <path d="M17.5 8.5h-4" />
           <path d="M17.5 8.5v4" />
         </svg></span><b>Progress</b></a>
+    <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
+      aria-expanded="false">+</button>
     <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
           <circle cx="12" cy="7.5" r="4.2" />
           <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
@@ -300,22 +313,21 @@
     <span aria-hidden="true"></span>
     <button class="fab-sheet-close" id="fabSheetClose" type="button" aria-label="Close add menu">×</button>
     <strong>Add entry</strong>
-    <button id="fabAddFood" type="button"><i aria-hidden="true">+</i><b>Add Food</b></button>
-    <button id="fabAddExercise" type="button"><i aria-hidden="true">+</i><b>Add Exercise</b></button>
-    <button id="fabSavedFoods" type="button"><i aria-hidden="true">♥</i><b>Saved foods</b></button>
+    <button class="fab-primary-action" id="fabAddFood" type="button"><i aria-hidden="true">+</i><b>Add Food</b></button>
+    <button class="fab-secondary-action" id="fabAddExercise" type="button"><i aria-hidden="true">+</i><b>Add Exercise</b></button>
+    <button class="fab-saved-link" id="fabSavedFoods" type="button"><i aria-hidden="true">♥</i><b>Browse saved foods</b></button>
   </div>
-  <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
-    aria-expanded="false">+</button>
-
   <template id="entryTemplate">
     <article class="entry-card">
-      <div class="entry-main">
-        <strong></strong>
-        <p></p>
+      <div class="entry-swipe-actions">
+        <button class="swipe-save-action" type="button" title="Save food" aria-label="Save food">♡</button>
+        <button class="swipe-delete-action" type="button" title="Delete" aria-label="Delete">×</button>
       </div>
-      <div class="entry-actions">
-        <button class="save-entry-button" type="button" title="Save food" aria-label="Save food">♡</button>
-        <button class="remove-entry-button" type="button" title="Delete" aria-label="Delete">🗑</button>
+      <div class="entry-surface">
+        <div class="entry-main">
+          <strong></strong>
+          <p></p>
+        </div>
       </div>
     </article>
   </template>

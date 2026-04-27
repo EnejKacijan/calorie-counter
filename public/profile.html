@@ -54,6 +54,22 @@
           <a class="text-button" href="index.html">Calorie Counter</a>
         </section>
 
+        <section class="intro-shell" id="introShell" aria-labelledby="introTitle">
+          <div class="intro-copy">
+            <p class="eyebrow">Daily Fuel</p>
+            <h1 id="introTitle">Track food without the noise.</h1>
+            <p>Set a simple daily target, log meals fast, and see calories and macros in a clean dashboard built for everyday use.</p>
+            <div class="intro-actions">
+              <button class="primary-action" id="introStartButton" type="button">Let's get started</button>
+            </div>
+          </div>
+          <div class="intro-preview" aria-hidden="true">
+            <div class="intro-preview-frame">
+              <img src="landing-preview.png" alt="" loading="eager" />
+            </div>
+          </div>
+        </section>
+
         <section class="auth-shell in-app">
           <form class="auth-panel" id="profileForm">
             <div class="profile-form-header">
@@ -99,11 +115,11 @@
                   </label>
                   <label>
                     Current
-                    <input id="profileWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
+                    <input id="profileWeight" type="number" min="35" max="250" step="1" placeholder="kg" required />
                   </label>
                   <label>
                     Goal
-                    <input id="profileTargetWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
+                    <input id="profileTargetWeight" type="number" min="35" max="250" step="1" placeholder="kg" required />
                   </label>
                 </div>
               </section>
@@ -152,11 +168,35 @@
                   <strong id="recommendationPreview">Fill in your profile to preview your recommended daily calories and macros.</strong>
                 </div>
                 <div class="goal-editor-actions">
-                  <button class="goal-reset-button" id="goalResetButton" type="button">Reset to recommended</button>
-                  <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit targets" aria-label="Edit targets">✎</button>
+                  <button class="goal-reset-button" id="goalResetButton" type="button">Use recommended</button>
+                  <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit targets" aria-label="Edit targets">Edit manually</button>
                 </div>
               </div>
 
+              <div class="recommended-summary" aria-label="Recommended targets summary">
+                <article>
+                  <span>Calories</span>
+                  <strong id="recommendedCalories">--</strong>
+                </article>
+                <article>
+                  <span>Protein</span>
+                  <strong id="recommendedProtein">--</strong>
+                </article>
+                <article>
+                  <span>Carbs</span>
+                  <strong id="recommendedCarbs">--</strong>
+                </article>
+                <article>
+                  <span>Fat</span>
+                  <strong id="recommendedFat">--</strong>
+                </article>
+              </div>
+              <p class="maintenance-preview" id="maintenancePreview">Maintenance will appear after your profile is complete.</p>
+
+              <div class="daily-targets-heading">
+                <span>Daily targets</span>
+                <strong>Editable goals</strong>
+              </div>
               <div class="goal-grid">
                 <label>
                   Calories

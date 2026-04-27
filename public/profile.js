@@ -10,6 +10,7 @@ const defaults = {
 
 let state = loadState();
 let goalsAreCustom = false;
+let isIntroActive = !state.user;
 
 const activityDescriptions = {
   "1.2": "Mostly sitting: desk work and little planned exercise.",
@@ -27,6 +28,8 @@ const elements = {
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
   profilePageTitle: document.querySelector("#profilePageTitle"),
+  introShell: document.querySelector("#introShell"),
+  introStartButton: document.querySelector("#introStartButton"),
   profileForm: document.querySelector("#profileForm"),
   profileFormTitle: document.querySelector("#profileFormTitle"),
   profileFormCopy: document.querySelector("#profileFormCopy"),
@@ -44,6 +47,11 @@ const elements = {
   goalPaceHint: document.querySelector("#goalPaceHint"),
   profileTheme: document.querySelector("#profileTheme"),
   recommendationPreview: document.querySelector("#recommendationPreview"),
+  recommendedCalories: document.querySelector("#recommendedCalories"),
+  recommendedProtein: document.querySelector("#recommendedProtein"),
+  recommendedCarbs: document.querySelector("#recommendedCarbs"),
+  recommendedFat: document.querySelector("#recommendedFat"),
+  maintenancePreview: document.querySelector("#maintenancePreview"),
   goalEditButton: document.querySelector("#goalEditButton"),
   goalResetButton: document.querySelector("#goalResetButton"),
   goalCalories: document.querySelector("#goalCalories"),
@@ -120,6 +128,7 @@ function setMobileSidebarOpen(isOpen) {
 function renderProfileShell() {
   applyTheme(state.user?.theme || state.theme || "light");
   document.body.classList.toggle("is-logged-out-profile", !state.user);
+  document.body.classList.toggle("profile-landing-active", !state.user && isIntroActive);
   elements.appShell.classList.toggle("is-auth-only", !state.user);
 
   if (!state.user) {
@@ -209,18 +218,31 @@ function updateRecommendationPreview() {
 
   if (!complete) {
     elements.recommendationPreview.textContent = "Fill in your profile to preview your recommended daily calories and macros.";
+    updateRecommendedSummary(null);
     fillGoalInputs(goalsAreCustom ? state.goals : { calories: "", protein: "", carbs: "", fat: "" });
     return;
   }
 
   const goals = calculateRecommendedGoals(profile);
   elements.recommendationPreview.textContent = goalsAreCustom
-    ? `Recommended baseline: ${goals.calories} kcal, ${goals.protein}g protein, ${goals.carbs}g carbs, ${goals.fat}g fat. Maintenance: ${goals.tdee} kcal/day.`
-    : `Recommended: ${goals.calories} kcal, ${goals.protein}g protein, ${goals.carbs}g carbs, ${goals.fat}g fat. Maintenance: ${goals.tdee} kcal/day.`;
+    ? "Recommended baseline based on your profile."
+    : "These targets are applied to your day.";
+  updateRecommendedSummary(goals);
 
   if (!goalsAreCustom) {
     fillGoalInputs(goals);
   }
+}
+
+function updateRecommendedSummary(goals) {
+  const empty = "--";
+  elements.recommendedCalories.textContent = goals ? `${goals.calories}` : empty;
+  elements.recommendedProtein.textContent = goals ? `${goals.protein}g` : empty;
+  elements.recommendedCarbs.textContent = goals ? `${goals.carbs}g` : empty;
+  elements.recommendedFat.textContent = goals ? `${goals.fat}g` : empty;
+  elements.maintenancePreview.textContent = goals
+    ? `Maintenance: ${goals.tdee} kcal/day`
+    : "Maintenance will appear after your profile is complete.";
 }
 
 function fillGoalInputs(goals) {
@@ -248,7 +270,8 @@ function setGoalEditing(isEditing) {
   elements.goalEditButton.setAttribute("aria-pressed", String(isEditing));
   elements.goalEditButton.title = isEditing ? "Use automatic targets" : "Edit targets";
   elements.goalEditButton.setAttribute("aria-label", isEditing ? "Use automatic targets" : "Edit targets");
-  elements.goalResetButton.disabled = !isEditing;
+  elements.goalEditButton.textContent = isEditing ? "Auto targets" : "Edit manually";
+  elements.goalResetButton.disabled = false;
 }
 
 elements.profileForm.addEventListener("submit", (event) => {
@@ -308,9 +331,16 @@ elements.goalResetButton.addEventListener("click", () => {
   updateRecommendationPreview();
 });
 
+elements.introStartButton.addEventListener("click", () => {
+  isIntroActive = false;
+  renderProfileShell();
+  elements.profileName.focus();
+});
+
 elements.logoutButton.addEventListener("click", () => {
   if (!window.confirm("Are you sure you want to log out?")) return;
   state.user = null;
+  isIntroActive = true;
   state.goalsAreCustom = false;
   saveState();
   fillProfileForm();

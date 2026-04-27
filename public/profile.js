@@ -21,6 +21,8 @@ const activityDescriptions = {
 const elements = {
   appShell: document.querySelector(".app-shell"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
+  mobileMenuButton: document.querySelector("#mobileMenuButton"),
+  sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   logoutButton: document.querySelector("#logoutButton"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
@@ -104,6 +106,15 @@ function localDateKey(date) {
 
 function applyTheme(theme) {
   document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+}
+
+function isMobileSidebar() {
+  return window.matchMedia("(max-width: 920px)").matches;
+}
+
+function setMobileSidebarOpen(isOpen) {
+  elements.appShell.classList.toggle("mobile-sidebar-open", isOpen);
+  elements.mobileMenuButton?.setAttribute("aria-expanded", String(isOpen));
 }
 
 function renderProfileShell() {
@@ -305,9 +316,23 @@ elements.logoutButton.addEventListener("click", () => {
 });
 
 elements.sidebarToggle.addEventListener("click", () => {
+  if (isMobileSidebar()) {
+    setMobileSidebarOpen(false);
+    return;
+  }
+
   elements.appShell.classList.toggle("sidebar-collapsed");
   const isCollapsed = elements.appShell.classList.contains("sidebar-collapsed");
   localStorage.setItem("calorie-counter-sidebar-collapsed", String(isCollapsed));
+});
+
+elements.mobileMenuButton?.addEventListener("click", () => setMobileSidebarOpen(true));
+elements.sidebarBackdrop?.addEventListener("click", () => setMobileSidebarOpen(false));
+elements.appShell.querySelectorAll(".side-nav a").forEach((link) => {
+  link.addEventListener("click", () => setMobileSidebarOpen(false));
+});
+window.addEventListener("resize", () => {
+  if (!isMobileSidebar()) setMobileSidebarOpen(false);
 });
 
 if (localStorage.getItem("calorie-counter-sidebar-collapsed") === "true") {

@@ -27,6 +27,7 @@ const defaults = {
   theme: localStorage.getItem("calorie-counter-theme") || "light",
   goals: { calories: 2300, protein: 150, carbs: 260, fat: 75 },
   selectedDate: localDateKey(new Date()),
+  lastOpenedDate: localDateKey(new Date()),
   progress: [],
   days: {},
 };
@@ -55,6 +56,8 @@ const elements = {
   appShell: document.querySelector(".app-shell"),
   mainContent: document.querySelector(".main-content"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
+  mobileMenuButton: document.querySelector("#mobileMenuButton"),
+  sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   appTitle: document.querySelector("#appTitle"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
@@ -73,6 +76,8 @@ const elements = {
   calorieRing: document.querySelector("#calorieRing"),
   macroGrid: document.querySelector("#macroGrid"),
   foodSection: document.querySelector("#foodSection"),
+  addFoodToggle: document.querySelector("#addFoodToggle"),
+  closeFoodModal: document.querySelector("#closeFoodModal"),
   manualFoodForm: document.querySelector("#manualFoodForm"),
   manualFoodName: document.querySelector("#manualFoodName"),
   foodAmount: document.querySelector("#foodAmount"),
@@ -90,13 +95,15 @@ const elements = {
   savedFoods: document.querySelector("#savedFoods"),
   searchNote: document.querySelector("#searchNote"),
   foodList: document.querySelector("#foodList"),
+  exerciseSection: document.querySelector("#exerciseSection"),
   exerciseForm: document.querySelector("#exerciseForm"),
+  addExerciseToggle: document.querySelector("#addExerciseToggle"),
+  closeExerciseModal: document.querySelector("#closeExerciseModal"),
   exerciseType: document.querySelector("#exerciseType"),
   exerciseMinutes: document.querySelector("#exerciseMinutes"),
   exerciseCalories: document.querySelector("#exerciseCalories"),
   exerciseSubmit: document.querySelector("#exerciseSubmit"),
   exerciseList: document.querySelector("#exerciseList"),
-  resetDayButton: document.querySelector("#resetDayButton"),
 };
 
 function loadState() {
@@ -104,12 +111,17 @@ function loadState() {
   if (!saved) return structuredClone(defaults);
 
   try {
+    const todayKey = localDateKey(new Date());
     const parsed = JSON.parse(saved);
     const nextState = { ...structuredClone(defaults), ...parsed };
 
     if (!nextState.days) nextState.days = {};
     if (!Array.isArray(nextState.progress)) nextState.progress = [];
-    if (!nextState.selectedDate) nextState.selectedDate = localDateKey(new Date());
+    if (!nextState.selectedDate) nextState.selectedDate = todayKey;
+    if (nextState.lastOpenedDate !== todayKey) {
+      nextState.selectedDate = todayKey;
+      nextState.lastOpenedDate = todayKey;
+    }
     if (!nextState.theme) nextState.theme = nextState.user?.theme || localStorage.getItem("calorie-counter-theme") || "light";
     if (nextState.user && !nextState.user.startWeightKg) {
       nextState.user.startWeightKg = nextState.user.weightKg;
@@ -251,6 +263,46 @@ function saveState() {
   localStorage.setItem("calorie-counter-state", JSON.stringify(state));
 }
 
+function isMobileSidebar() {
+  return window.matchMedia("(max-width: 920px)").matches;
+}
+
+function setMobileSidebarOpen(isOpen) {
+  elements.appShell.classList.toggle("mobile-sidebar-open", isOpen);
+  elements.mobileMenuButton?.setAttribute("aria-expanded", String(isOpen));
+}
+
+function openMobileLogForm(section, input) {
+  section.classList.add("is-adding");
+  document.body.classList.add("modal-open");
+  input?.focus();
+}
+
+function closeMobileLogForm(section) {
+  section.classList.remove("is-adding");
+  if (!document.querySelector(".log-panel.is-adding")) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function syncSelectedDateWithToday() {
+  const todayKey = localDateKey(new Date());
+  if (state.lastOpenedDate === todayKey) return;
+
+  const previousOpenedDate = state.lastOpenedDate;
+  state.lastOpenedDate = todayKey;
+
+  if (state.selectedDate === previousOpenedDate) {
+    state.selectedDate = todayKey;
+    ensureDay(todayKey);
+    saveState();
+    render();
+    return;
+  }
+
+  saveState();
+}
+
 function totals() {
   const day = currentDay();
   const foodTotals = day.foods.reduce(
@@ -382,7 +434,14 @@ function renderMacros(daily) {
         </div>
         <span>${formatMacro(goal, macro.unit)} goal</span>
       </div>
-      <div class="macro-card-visual" style="color:${macro.color}">${macro.icon}</div>
+      <div class="macro-card-visual" style="color:${macro.color}; --macro-progress:${progress};">
+        ${macro.icon}
+        <svg class="macro-ring" viewBox="0 0 48 48" aria-label="${macro.label} progress: ${progressLabel}">
+          <circle class="macro-ring-track" cx="24" cy="24" r="18"></circle>
+          <circle class="macro-ring-progress" cx="24" cy="24" r="18" style="stroke:${macro.color}; stroke-dashoffset:${113.1 - 113.1 * (progress / 100)}"></circle>
+        </svg>
+        <strong>${progressLabel}</strong>
+      </div>
       <div>
         <div class="macro-bar" aria-label="${macro.label} progress: ${progressLabel}">
           <span style="width:${progress}%; background:${macro.color}"></span>
@@ -402,7 +461,7 @@ function renderEntries() {
 
   renderList(elements.foodList, day.foods, "foods", (food) => {
     const portion = food.amount && food.unit ? `${food.amount} ${food.unit}` : "Manual entry";
-    return `${portion} · ${Math.round(food.calories)} calories · ${Math.round(food.protein || 0)}g protein · ${Math.round(food.carbs || 0)}g carbs · ${Math.round(food.fat || 0)}g fat`;
+    return `${portion} · ${Math.round(food.calories)} kcal · ${Math.round(food.protein || 0)}P · ${Math.round(food.carbs || 0)}C · ${Math.round(food.fat || 0)}F`;
   });
 
   renderList(elements.exerciseList, day.exercises, "exercises", (exercise) => {
@@ -573,7 +632,7 @@ function renderSuggestions(foods) {
     button.innerHTML = `
       <div>
         <strong>${food.name}</strong>
-        <p>${food.serving || "1 serving"} · ${Math.round(food.calories)} calories · ${Math.round(food.protein)}g protein · ${Math.round(food.carbs)}g carbs · ${Math.round(food.fat)}g fat</p>
+        <p>${food.serving || "1 serving"} · ${Math.round(food.calories)} kcal · ${Math.round(food.protein)}P · ${Math.round(food.carbs)}C · ${Math.round(food.fat)}F</p>
       </div>
       <span>${food.source}</span>
     `;
@@ -619,6 +678,7 @@ function fillFoodFormForEdit(food) {
   elements.foodSuggestions.innerHTML = "";
   elements.searchNote.textContent = "Editing food entry. Change serving size or nutrition, then save.";
   setFoodSearchActive(false);
+  elements.foodSection.classList.add("is-adding");
   elements.manualFoodName.focus();
 }
 
@@ -866,6 +926,7 @@ elements.manualFoodForm.addEventListener("submit", (event) => {
     fat: Math.round(Number(elements.manualFoodFat.value || 0)),
   });
   resetFoodForm();
+  closeMobileLogForm(elements.foodSection);
 });
 
 elements.manualFoodName.addEventListener("input", () => {
@@ -893,6 +954,8 @@ elements.manualFoodProtein.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodCarbs.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodFat.addEventListener("input", normalizeFoodMacroInputs);
 elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
+elements.addFoodToggle.addEventListener("click", () => openMobileLogForm(elements.foodSection, elements.manualFoodName));
+elements.closeFoodModal.addEventListener("click", () => closeMobileLogForm(elements.foodSection));
 elements.foodPhotoButton.addEventListener("click", () => elements.foodPhotoInput.click());
 elements.foodPhotoInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodPhotoInput.files?.[0]));
 
@@ -916,6 +979,7 @@ function fillExerciseFormForEdit(exercise) {
   elements.exerciseMinutes.value = exercise.minutes;
   elements.exerciseCalories.value = Math.round(Number(exercise.calories || 0));
   elements.exerciseSubmit.textContent = "✓";
+  elements.exerciseSection.classList.add("is-adding");
   elements.exerciseType.focus();
 }
 
@@ -955,6 +1019,7 @@ elements.exerciseForm.addEventListener("submit", (event) => {
   saveState();
   render();
   resetExerciseForm();
+  closeMobileLogForm(elements.exerciseSection);
 });
 
 elements.exerciseType.addEventListener("change", () => {
@@ -966,6 +1031,8 @@ elements.exerciseType.addEventListener("change", () => {
 });
 elements.exerciseMinutes.addEventListener("input", estimateExerciseCalories);
 elements.exerciseCalories.addEventListener("input", normalizeExerciseCalories);
+elements.addExerciseToggle.addEventListener("click", () => openMobileLogForm(elements.exerciseSection, elements.exerciseType));
+elements.closeExerciseModal.addEventListener("click", () => closeMobileLogForm(elements.exerciseSection));
 
 elements.previousWeekButton.addEventListener("click", () => {
   state.selectedDate = localDateKey(addDays(dateFromKey(state.selectedDate), -7));
@@ -989,16 +1056,30 @@ elements.logoutButton.addEventListener("click", () => {
 });
 
 elements.sidebarToggle.addEventListener("click", () => {
+  if (isMobileSidebar()) {
+    setMobileSidebarOpen(false);
+    return;
+  }
+
   elements.appShell.classList.toggle("sidebar-collapsed");
   const isCollapsed = elements.appShell.classList.contains("sidebar-collapsed");
   localStorage.setItem("calorie-counter-sidebar-collapsed", String(isCollapsed));
 });
 
-elements.resetDayButton.addEventListener("click", () => {
-  state.days[state.selectedDate] = { foods: [], exercises: [] };
-  saveState();
-  render();
+elements.mobileMenuButton?.addEventListener("click", () => setMobileSidebarOpen(true));
+elements.sidebarBackdrop?.addEventListener("click", () => setMobileSidebarOpen(false));
+elements.appShell.querySelectorAll(".side-nav a").forEach((link) => {
+  link.addEventListener("click", () => setMobileSidebarOpen(false));
 });
+window.addEventListener("resize", () => {
+  if (!isMobileSidebar()) setMobileSidebarOpen(false);
+});
+
+window.addEventListener("focus", syncSelectedDateWithToday);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) syncSelectedDateWithToday();
+});
+setInterval(syncSelectedDateWithToday, 60 * 1000);
 
 if (localStorage.getItem("calorie-counter-sidebar-collapsed") === "true") {
   elements.appShell.classList.add("sidebar-collapsed");

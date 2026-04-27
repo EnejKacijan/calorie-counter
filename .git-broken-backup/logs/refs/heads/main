@@ -1,0 +1,5 @@
+0000000000000000000000000000000000000000 4853a8351928b88fb828b6419d5b6af7feb6edb4 Enej <enej.kaciijan@gmail.com> 1777227730 +0200	commit (initial): Initial calorie counter app
+4853a8351928b88fb828b6419d5b6af7feb6edb4 4853a8351928b88fb828b6419d5b6af7feb6edb4 Enej <enej.kaciijan@gmail.com> 1777228068 +0200	Branch: renamed refs/heads/master to refs/heads/main
+4853a8351928b88fb828b6419d5b6af7feb6edb4 c490a045adc26afe7914da6102cc9d30c3aa841a Enej <enej.kaciijan@gmail.com> 1777235217 +0200	commit: Add Netlify deployment support
+c490a045adc26afe7914da6102cc9d30c3aa841a 7e721e3bdef872f0aff22d67e5d0c14662fa9edd Enej <enej.kaciijan@gmail.com> 1777272772 +0200	commit: Add AI food photo logging
+7e721e3bdef872f0aff22d67e5d0c14662fa9edd 9b5defa23053edc88c42e47f2651ca845a68556c Enej <enej.kaciijan@gmail.com> 1777281834 +0200	commit: Improve responsive mobile layout

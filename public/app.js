@@ -52,16 +52,23 @@ let autocompleteTimer = null;
 let selectedFoodBase = null;
 let editingFoodId = null;
 let editingExerciseId = null;
+let undoToastTimer = null;
 const elements = {
   appShell: document.querySelector(".app-shell"),
   mainContent: document.querySelector(".main-content"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
   mobileMenuButton: document.querySelector("#mobileMenuButton"),
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
+  floatingAddButton: document.querySelector("#floatingAddButton"),
+  fabOverlay: document.querySelector("#fabOverlay"),
+  fabActions: document.querySelector("#fabActions"),
+  fabAddFood: document.querySelector("#fabAddFood"),
+  fabAddExercise: document.querySelector("#fabAddExercise"),
   appTitle: document.querySelector("#appTitle"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
   selectedDateLabel: document.querySelector("#selectedDateLabel"),
+  todayButton: document.querySelector("#todayButton"),
   calendarStrip: document.querySelector("#calendarStrip"),
   previousWeekButton: document.querySelector("#previousWeekButton"),
   nextWeekButton: document.querySelector("#nextWeekButton"),
@@ -87,8 +94,13 @@ const elements = {
   manualFoodCarbs: document.querySelector("#manualFoodCarbs"),
   manualFoodFat: document.querySelector("#manualFoodFat"),
   manualFoodSubmit: document.querySelector("#manualFoodSubmit"),
+  foodEditActions: document.querySelector("#foodEditActions"),
+  favoriteFoodEdit: document.querySelector("#favoriteFoodEdit"),
+  deleteFoodEdit: document.querySelector("#deleteFoodEdit"),
   foodPhotoInput: document.querySelector("#foodPhotoInput"),
+  foodGalleryInput: document.querySelector("#foodGalleryInput"),
   foodPhotoButton: document.querySelector("#foodPhotoButton"),
+  foodGalleryButton: document.querySelector("#foodGalleryButton"),
   foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
   copyYesterdayButton: document.querySelector("#copyYesterdayButton"),
   foodSuggestions: document.querySelector("#foodSuggestions"),
@@ -103,6 +115,8 @@ const elements = {
   exerciseMinutes: document.querySelector("#exerciseMinutes"),
   exerciseCalories: document.querySelector("#exerciseCalories"),
   exerciseSubmit: document.querySelector("#exerciseSubmit"),
+  exerciseEditActions: document.querySelector("#exerciseEditActions"),
+  deleteExerciseEdit: document.querySelector("#deleteExerciseEdit"),
   exerciseList: document.querySelector("#exerciseList"),
 };
 
@@ -273,6 +287,7 @@ function setMobileSidebarOpen(isOpen) {
 }
 
 function openMobileLogForm(section, input) {
+  setFabMenuOpen(false);
   section.classList.add("is-adding");
   document.body.classList.add("modal-open");
   input?.focus();
@@ -283,6 +298,24 @@ function closeMobileLogForm(section) {
   if (!document.querySelector(".log-panel.is-adding")) {
     document.body.classList.remove("modal-open");
   }
+}
+
+function setFabMenuOpen(isOpen) {
+  elements.floatingAddButton?.classList.toggle("is-open", isOpen);
+  elements.floatingAddButton?.setAttribute("aria-expanded", String(isOpen));
+  elements.fabOverlay?.classList.toggle("is-open", isOpen);
+  elements.fabActions?.classList.toggle("is-open", isOpen);
+  elements.fabActions?.setAttribute("aria-hidden", String(!isOpen));
+}
+
+function openAddFoodFromFab() {
+  if (editingFoodId) resetFoodForm();
+  openMobileLogForm(elements.foodSection, elements.manualFoodName);
+}
+
+function openAddExerciseFromFab() {
+  if (editingExerciseId) resetExerciseForm();
+  openMobileLogForm(elements.exerciseSection, elements.exerciseType);
 }
 
 function syncSelectedDateWithToday() {
@@ -422,6 +455,7 @@ function renderMacros(daily) {
     const isOver = consumed > goal;
     const remaining = Math.abs(goal - consumed);
     const progressLabel = `${Math.round(progress)}%`;
+    const macroAmountLabel = `${Math.round(Number(consumed || 0))}${macro.unit}/${Math.round(Number(goal || 0))}${macro.unit}`;
 
     const card = document.createElement("article");
     card.className = "macro-card";
@@ -430,9 +464,9 @@ function renderMacros(daily) {
       <div class="macro-card-header">
         <div>
           <p class="label">${macro.label}</p>
-          <strong>${formatMacro(consumed, macro.unit)}</strong>
+          <strong>${macroAmountLabel}</strong>
         </div>
-        <span>${formatMacro(goal, macro.unit)} goal</span>
+        <span>${progressLabel}</span>
       </div>
       <div class="macro-card-visual" style="color:${macro.color}; --macro-progress:${progress};">
         ${macro.icon}
@@ -489,8 +523,8 @@ function renderList(container, entries, collection, subtitleFactory, titleFactor
   entries.forEach((entry) => {
     const card = document.querySelector("#entryTemplate").content.firstElementChild.cloneNode(true);
     const saveButton = card.querySelector(".save-entry-button");
-    const editButton = card.querySelector(".edit-entry-button");
     const removeButton = card.querySelector(".remove-entry-button");
+    const canEdit = collection === "foods" || collection === "exercises";
     card.querySelector("strong").textContent = titleFactory(entry);
     card.querySelector("p").textContent = subtitleFactory(entry);
     if (collection === "foods") {
@@ -499,27 +533,136 @@ function renderList(container, entries, collection, subtitleFactory, titleFactor
       saveButton.textContent = saved ? "♥" : "♡";
       saveButton.title = saved ? "Remove saved food" : "Save food";
       saveButton.setAttribute("aria-label", saved ? "Remove saved food" : "Save food");
-      saveButton.addEventListener("click", () => toggleSavedFood(entry));
-      editButton.addEventListener("click", () => fillFoodFormForEdit(entry));
+      saveButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleSavedFood(entry);
+      });
     } else if (collection === "exercises") {
       saveButton.remove();
-      editButton.addEventListener("click", () => fillExerciseFormForEdit(entry));
     } else {
       saveButton.remove();
-      editButton.remove();
     }
-    removeButton.addEventListener("click", () => {
-      if (collection === "progress") {
-        state.progress = state.progress.filter((item) => item.id !== entry.id);
-      } else {
-        currentDay()[collection] = currentDay()[collection].filter((item) => item.id !== entry.id);
-      }
-      if (collection === "foods" && editingFoodId === entry.id) resetFoodForm();
-      if (collection === "exercises" && editingExerciseId === entry.id) resetExerciseForm();
+    removeButton.textContent = "🗑";
+    removeButton.title = "Delete";
+    removeButton.setAttribute("aria-label", "Delete");
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      deleteEntryWithUndo(collection, entry);
+    });
+    if (canEdit) {
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `Edit ${titleFactory(entry)}`);
+      card.addEventListener("click", () => {
+        if (card.dataset.suppressClick === "true") {
+          delete card.dataset.suppressClick;
+          return;
+        }
+        editEntry(collection, entry);
+      });
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        editEntry(collection, entry);
+      });
+      attachEntrySwipe(card, collection, entry);
+    }
+    container.appendChild(card);
+  });
+}
+
+function editEntry(collection, entry) {
+  if (collection === "foods") fillFoodFormForEdit(entry);
+  if (collection === "exercises") fillExerciseFormForEdit(entry);
+}
+
+function deleteEntryWithUndo(collection, entry) {
+  const dateKey = state.selectedDate;
+  if (collection === "progress") {
+    const previousProgress = [...state.progress];
+    state.progress = state.progress.filter((item) => item.id !== entry.id);
+    saveState();
+    render();
+    showUndoToast("Item deleted.", () => {
+      state.progress = previousProgress;
       saveState();
       render();
     });
-    container.appendChild(card);
+    return;
+  }
+
+  const day = ensureDay(dateKey);
+  const previousEntries = [...day[collection]];
+
+  day[collection] = day[collection].filter((item) => item.id !== entry.id);
+  if (collection === "foods" && editingFoodId === entry.id) resetFoodForm();
+  if (collection === "exercises" && editingExerciseId === entry.id) resetExerciseForm();
+  saveState();
+  render();
+  showUndoToast("Item deleted.", () => {
+    ensureDay(dateKey);
+    state.days[dateKey][collection] = previousEntries;
+    saveState();
+    render();
+  });
+}
+
+function showUndoToast(message, onUndo) {
+  clearTimeout(undoToastTimer);
+  let toast = document.querySelector("#undoToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "undoToast";
+    toast.className = "undo-toast";
+    toast.innerHTML = "<span></span><button type=\"button\">Undo</button>";
+    document.body.appendChild(toast);
+  }
+  toast.querySelector("span").textContent = message;
+  const undoButton = toast.querySelector("button");
+  undoButton.onclick = () => {
+    toast.classList.remove("is-visible");
+    onUndo();
+  };
+  toast.classList.add("is-visible");
+  undoToastTimer = setTimeout(() => toast.classList.remove("is-visible"), 4200);
+}
+
+function attachEntrySwipe(card, collection, entry) {
+  let startX = 0;
+  let startY = 0;
+  let isTracking = false;
+
+  card.addEventListener("pointerdown", (event) => {
+    if (event.target.closest("button")) return;
+    startX = event.clientX;
+    startY = event.clientY;
+    isTracking = true;
+  });
+
+  card.addEventListener("pointerup", (event) => {
+    if (!isTracking) return;
+    isTracking = false;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    if (Math.abs(deltaX) < 54 || Math.abs(deltaY) > 44) return;
+
+    card.dataset.suppressClick = "true";
+    setTimeout(() => {
+      delete card.dataset.suppressClick;
+    }, 260);
+    if (deltaX < 0) {
+      document.querySelectorAll(".entry-card.is-swiped").forEach((entryCard) => {
+        if (entryCard !== card) entryCard.classList.remove("is-swiped");
+      });
+      card.classList.toggle("is-swiped");
+      return;
+    }
+
+    if (collection === "foods") toggleSavedFood(entry);
+  });
+
+  card.addEventListener("pointercancel", () => {
+    isTracking = false;
   });
 }
 
@@ -542,6 +685,7 @@ function renderCalendar() {
     month: "short",
     day: "numeric",
   });
+  elements.todayButton.disabled = state.selectedDate === todayKey;
   elements.calendarStrip.innerHTML = "";
 
   Array.from({ length: 7 }).forEach((_, index) => {
@@ -618,7 +762,7 @@ function renderSuggestions(foods) {
 
   if (!foods.length) {
     elements.searchNote.textContent = elements.manualFoodName.value.trim().length < 2 ? "Start typing to search saved foods, USDA, and Open Food Facts." : "No matches found. You can still enter the nutrition manually.";
-    setFoodSearchActive(elements.manualFoodName.value.trim().length >= 2);
+    setFoodSearchActive(false);
     return;
   }
 
@@ -675,10 +819,15 @@ function fillFoodFormForEdit(food) {
   elements.manualFoodCarbs.value = Math.round(Number(food.carbs || 0));
   elements.manualFoodFat.value = Math.round(Number(food.fat || 0));
   elements.manualFoodSubmit.textContent = "✓";
+  elements.favoriteFoodEdit.classList.toggle("is-saved", isFoodSaved(food));
+  elements.favoriteFoodEdit.textContent = isFoodSaved(food) ? "♥" : "♡";
+  elements.favoriteFoodEdit.title = isFoodSaved(food) ? "Remove saved food" : "Save food";
+  elements.favoriteFoodEdit.setAttribute("aria-label", isFoodSaved(food) ? "Remove saved food" : "Save food");
   elements.foodSuggestions.innerHTML = "";
   elements.searchNote.textContent = "Editing food entry. Change serving size or nutrition, then save.";
   setFoodSearchActive(false);
-  elements.foodSection.classList.add("is-adding");
+  elements.foodSection.classList.add("is-adding", "is-editing");
+  document.body.classList.add("modal-open");
   elements.manualFoodName.focus();
 }
 
@@ -690,6 +839,7 @@ function resetFoodForm() {
   elements.manualFoodSubmit.textContent = "+";
   editingFoodId = null;
   selectedFoodBase = null;
+  elements.foodSection.classList.remove("is-editing");
   elements.foodSuggestions.innerHTML = "";
   elements.foodPhotoStatus.textContent = "";
   elements.searchNote.textContent = "Start typing to search saved foods, USDA, and Open Food Facts.";
@@ -796,6 +946,7 @@ async function analyzeFoodPhoto(file) {
   const photoButtonLabel = elements.foodPhotoButton.querySelector("b");
   const previousButtonText = photoButtonLabel.textContent;
   elements.foodPhotoButton.disabled = true;
+  elements.foodGalleryButton.disabled = true;
   photoButtonLabel.textContent = "Analyzing";
   elements.foodPhotoStatus.textContent = "Estimating nutrition...";
 
@@ -814,14 +965,17 @@ async function analyzeFoodPhoto(file) {
     elements.foodPhotoStatus.textContent = error.message || "Photo analysis failed.";
   } finally {
     elements.foodPhotoButton.disabled = false;
+    elements.foodGalleryButton.disabled = false;
     photoButtonLabel.textContent = previousButtonText;
     elements.foodPhotoInput.value = "";
+    elements.foodGalleryInput.value = "";
   }
 }
 
 function fillManualFoodFromPhoto(food) {
   selectedFoodBase = null;
   editingFoodId = null;
+  elements.foodSection.classList.remove("is-editing");
   elements.manualFoodSubmit.textContent = "+";
   elements.manualFoodName.value = food.name || "Unknown food";
   elements.foodAmount.value = food.amount || 1;
@@ -954,10 +1108,36 @@ elements.manualFoodProtein.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodCarbs.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodFat.addEventListener("input", normalizeFoodMacroInputs);
 elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
-elements.addFoodToggle.addEventListener("click", () => openMobileLogForm(elements.foodSection, elements.manualFoodName));
-elements.closeFoodModal.addEventListener("click", () => closeMobileLogForm(elements.foodSection));
+elements.addFoodToggle.addEventListener("click", () => {
+  openAddFoodFromFab();
+});
+elements.closeFoodModal.addEventListener("click", () => {
+  closeMobileLogForm(elements.foodSection);
+  resetFoodForm();
+});
+elements.favoriteFoodEdit.addEventListener("click", () => {
+  if (!editingFoodId) return;
+  const entry = currentDay().foods.find((food) => food.id === editingFoodId);
+  if (!entry) return;
+  toggleSavedFood(entry);
+  const isSaved = isFoodSaved(entry);
+  elements.favoriteFoodEdit.classList.toggle("is-saved", isSaved);
+  elements.favoriteFoodEdit.textContent = isSaved ? "♥" : "♡";
+  elements.favoriteFoodEdit.title = isSaved ? "Remove saved food" : "Save food";
+  elements.favoriteFoodEdit.setAttribute("aria-label", isSaved ? "Remove saved food" : "Save food");
+});
+elements.deleteFoodEdit.addEventListener("click", () => {
+  if (!editingFoodId) return;
+  const entry = currentDay().foods.find((food) => food.id === editingFoodId);
+  if (!entry) return;
+  closeMobileLogForm(elements.foodSection);
+  resetFoodForm();
+  deleteEntryWithUndo("foods", entry);
+});
 elements.foodPhotoButton.addEventListener("click", () => elements.foodPhotoInput.click());
+elements.foodGalleryButton.addEventListener("click", () => elements.foodGalleryInput.click());
 elements.foodPhotoInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodPhotoInput.files?.[0]));
+elements.foodGalleryInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodGalleryInput.files?.[0]));
 
 function estimateExerciseCalories() {
   const preset = exercisePresets[elements.exerciseType.value] || exercisePresets.Running;
@@ -979,7 +1159,8 @@ function fillExerciseFormForEdit(exercise) {
   elements.exerciseMinutes.value = exercise.minutes;
   elements.exerciseCalories.value = Math.round(Number(exercise.calories || 0));
   elements.exerciseSubmit.textContent = "✓";
-  elements.exerciseSection.classList.add("is-adding");
+  elements.exerciseSection.classList.add("is-adding", "is-editing");
+  document.body.classList.add("modal-open");
   elements.exerciseType.focus();
 }
 
@@ -987,6 +1168,7 @@ function resetExerciseForm() {
   elements.exerciseForm.reset();
   elements.exerciseSubmit.textContent = "+";
   editingExerciseId = null;
+  elements.exerciseSection.classList.remove("is-editing");
   applyExercisePreset();
 }
 
@@ -1031,8 +1213,21 @@ elements.exerciseType.addEventListener("change", () => {
 });
 elements.exerciseMinutes.addEventListener("input", estimateExerciseCalories);
 elements.exerciseCalories.addEventListener("input", normalizeExerciseCalories);
-elements.addExerciseToggle.addEventListener("click", () => openMobileLogForm(elements.exerciseSection, elements.exerciseType));
-elements.closeExerciseModal.addEventListener("click", () => closeMobileLogForm(elements.exerciseSection));
+elements.addExerciseToggle.addEventListener("click", () => {
+  openAddExerciseFromFab();
+});
+elements.closeExerciseModal.addEventListener("click", () => {
+  closeMobileLogForm(elements.exerciseSection);
+  resetExerciseForm();
+});
+elements.deleteExerciseEdit.addEventListener("click", () => {
+  if (!editingExerciseId) return;
+  const entry = currentDay().exercises.find((exercise) => exercise.id === editingExerciseId);
+  if (!entry) return;
+  closeMobileLogForm(elements.exerciseSection);
+  resetExerciseForm();
+  deleteEntryWithUndo("exercises", entry);
+});
 
 elements.previousWeekButton.addEventListener("click", () => {
   state.selectedDate = localDateKey(addDays(dateFromKey(state.selectedDate), -7));
@@ -1044,6 +1239,27 @@ elements.previousWeekButton.addEventListener("click", () => {
 elements.nextWeekButton.addEventListener("click", () => {
   state.selectedDate = localDateKey(addDays(dateFromKey(state.selectedDate), 7));
   ensureDay(state.selectedDate);
+  saveState();
+  render();
+});
+
+elements.floatingAddButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setFabMenuOpen(!elements.fabActions.classList.contains("is-open"));
+});
+elements.fabAddFood?.addEventListener("click", openAddFoodFromFab);
+elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
+elements.fabOverlay?.addEventListener("click", () => setFabMenuOpen(false));
+document.addEventListener("click", (event) => {
+  if (!elements.fabActions?.classList.contains("is-open")) return;
+  if (event.target.closest("#fabActions") || event.target.closest("#floatingAddButton") || event.target.closest("#fabOverlay")) return;
+  setFabMenuOpen(false);
+});
+
+elements.todayButton.addEventListener("click", () => {
+  const todayKey = localDateKey(new Date());
+  state.selectedDate = todayKey;
+  ensureDay(todayKey);
   saveState();
   render();
 });

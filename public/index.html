@@ -13,16 +13,34 @@
   <main class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mark">
-        <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+        <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+            <path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" />
+            <path d="M12 8.4v6.4" />
+            <path d="M8.8 11.6h6.4" />
+          </svg></span>
         <strong>Daily Fuel</strong>
         <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Toggle sidebar"
-          aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+          aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg></button>
       </div>
 
       <nav class="side-nav" aria-label="App navigation">
-        <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Calorie Counter</b></a>
-        <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
-        <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+        <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+              <path d="M4 10.5 12 4l8 6.5" />
+              <path d="M6.5 9.5V20h11V9.5" />
+              <path d="M10 20v-6h4v6" />
+            </svg></span><b>Calorie Counter</b></a>
+        <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+              <path d="M4 19h16" />
+              <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
+              <path d="M17.5 8.5h-4" />
+              <path d="M17.5 8.5v4" />
+            </svg></span><b>Progress</b></a>
+        <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+              <circle cx="12" cy="7.5" r="4.2" />
+              <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
+            </svg></span><b>Profile</b></a>
       </nav>
 
       <div class="profile-card">
@@ -38,20 +56,37 @@
         </div>
       </div>
 
-      <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log
+      <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg
+            viewBox="0 0 24 24">
+            <path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" />
+            <path d="M14 8l4 4-4 4" />
+            <path d="M18 12H9" />
+          </svg></span> <b>Log
           out</b></button>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
 
-      <section class="main-content">
-        <section class="topbar">
-        <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation" aria-controls="sidebar">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
+    <section class="main-content">
+      <section class="topbar">
+        <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation"
+          aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </svg>
         </button>
         <div class="topbar-heading">
-          <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+          <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+              <path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" />
+              <path d="M12 8.4v6.4" />
+              <path d="M8.8 11.6h6.4" />
+            </svg></span>
           <div>
-            <p class="eyebrow" id="selectedDateLabel">Today</p>
+            <div class="date-row">
+              <p class="eyebrow" id="selectedDateLabel">Today</p>
+              <button class="today-button" id="todayButton" type="button">Today</button>
+            </div>
             <h1 id="appTitle">Calorie Counter</h1>
           </div>
         </div>
@@ -69,8 +104,8 @@
         <div class="goal-panel">
           <div class="panel-header">
             <div>
-              <p class="label">Available today</p>
               <strong id="remainingCalories">0 kcal</strong>
+              <p class="calorie-left-label">left</p>
               <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
             </div>
             <span class="status-pill" id="goalStatus">On track</span>
@@ -80,12 +115,14 @@
             <div class="calorie-ring" aria-label="Calorie progress">
               <svg viewBox="0 0 140 140" role="img">
                 <defs>
-                  <linearGradient id="calorieRingGradient" x1="15" y1="15" x2="125" y2="125" gradientUnits="userSpaceOnUse">
+                  <linearGradient id="calorieRingGradient" x1="15" y1="15" x2="125" y2="125"
+                    gradientUnits="userSpaceOnUse">
                     <stop offset="0" stop-color="#f9735b" />
                     <stop offset="0.58" stop-color="#f49a73" />
                     <stop offset="1" stop-color="#6fc6a8" />
                   </linearGradient>
-                  <linearGradient id="calorieRingUnderGradient" x1="15" y1="15" x2="125" y2="125" gradientUnits="userSpaceOnUse">
+                  <linearGradient id="calorieRingUnderGradient" x1="15" y1="15" x2="125" y2="125"
+                    gradientUnits="userSpaceOnUse">
                     <stop offset="0" stop-color="#5a8fcb" />
                     <stop offset="1" stop-color="#6fc6a8" />
                   </linearGradient>
@@ -95,7 +132,8 @@
               </svg>
               <div class="ring-copy">
                 <span id="consumedCalories">0</span>
-                <small><span class="ring-of">of </span><span class="ring-separator">/</span><b id="goalCaloriesText">2300</b><span class="ring-unit"> kcal</span></small>
+                <small><span class="ring-of">of </span><span class="ring-separator">/</span><b
+                    id="goalCaloriesText">2300</b><span class="ring-unit"> kcal</span></small>
               </div>
             </div>
 
@@ -125,7 +163,8 @@
             </div>
             <button class="modal-close-button" id="closeFoodModal" type="button" aria-label="Close food form">×</button>
             <button class="quick-add-button" id="addFoodToggle" type="button" aria-label="Add food">+</button>
-            <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from yesterday</button>
+            <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from
+              yesterday</button>
           </div>
           <div class="food-field-labels" aria-hidden="true">
             <span>Food</span>
@@ -138,26 +177,53 @@
             <span></span>
           </div>
           <form class="compact-form" id="manualFoodForm">
-            <label class="food-form-field food-name-field" for="manualFoodName"><span>Food</span><input id="manualFoodName" type="text" placeholder="Search food, e.g. pizza, pita, rice..."
-              autocomplete="off" required /></label>
+            <label class="food-form-field food-name-field" for="manualFoodName"><span>Food</span><input
+                id="manualFoodName" type="text" placeholder="Search food, e.g. pizza, pita, rice..." autocomplete="off"
+                required /></label>
             <div class="suggestions" id="foodSuggestions"></div>
-            <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number" min="0" step="1" value="1" aria-label="Amount" /></label>
+            <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number"
+                min="0" step="1" value="1" aria-label="Amount" /></label>
             <label class="food-form-field" for="foodUnit"><span>Unit</span><select id="foodUnit" aria-label="Unit">
-              <option value="serving">serving</option>
-              <option value="piece">piece</option>
-              <option value="g">g</option>
-            </select></label>
-            <label class="food-form-field" for="manualFoodCalories"><span>Calories</span><input id="manualFoodCalories" type="number" min="0" step="1" aria-label="Calories" required /></label>
-            <label class="food-form-field" for="manualFoodProtein"><span>Protein</span><input id="manualFoodProtein" type="number" min="0" step="1" aria-label="Protein grams" /></label>
-            <label class="food-form-field" for="manualFoodCarbs"><span>Carbs</span><input id="manualFoodCarbs" type="number" min="0" step="1" aria-label="Carbs grams" /></label>
-            <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number" min="0" step="1" aria-label="Fat grams" /></label>
+                <option value="serving">serving</option>
+                <option value="piece">piece</option>
+                <option value="g">g</option>
+              </select></label>
+            <label class="food-form-field" for="manualFoodCalories"><span>Calories</span><input id="manualFoodCalories"
+                type="number" min="0" step="1" aria-label="Calories" required /></label>
+            <label class="food-form-field" for="manualFoodProtein"><span>Protein</span><input id="manualFoodProtein"
+                type="number" min="0" step="1" aria-label="Protein grams" /></label>
+            <label class="food-form-field" for="manualFoodCarbs"><span>Carbs</span><input id="manualFoodCarbs"
+                type="number" min="0" step="1" aria-label="Carbs grams" /></label>
+            <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number"
+                min="0" step="1" aria-label="Fat grams" /></label>
             <button id="manualFoodSubmit" type="submit">+</button>
           </form>
+          <div class="edit-modal-actions" id="foodEditActions">
+            <button class="edit-favorite-button" id="favoriteFoodEdit" type="button" title="Save food"
+              aria-label="Save food">♡</button>
+            <button class="edit-delete-button" id="deleteFoodEdit" type="button" title="Delete"
+              aria-label="Delete">🗑</button>
+          </div>
           <div class="photo-food-tools">
-            <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" capture="environment" hidden />
-            <button class="photo-food-button" id="foodPhotoButton" type="button" title="Analyze food photo">
-              <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 8.5A2.5 2.5 0 0 1 7 6h2l1.4-1.7h3.2L15 6h2a2.5 2.5 0 0 1 2.5 2.5v8A2.5 2.5 0 0 1 17 19H7a2.5 2.5 0 0 1-2.5-2.5Z" /><circle cx="12" cy="12.5" r="3.4" /></svg></span>
-              <b>Photo</b>
+            <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
+              capture="environment" hidden />
+            <input id="foodGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+            <button class="photo-food-button" id="foodPhotoButton" type="button" title="Take food photo">
+              <span aria-hidden="true"><svg viewBox="0 0 24 24">
+                  <path
+                    d="M4.5 8.5A2.5 2.5 0 0 1 7 6h2l1.4-1.7h3.2L15 6h2a2.5 2.5 0 0 1 2.5 2.5v8A2.5 2.5 0 0 1 17 19H7a2.5 2.5 0 0 1-2.5-2.5Z" />
+                  <circle cx="12" cy="12.5" r="3.4" />
+                </svg></span>
+              <b>Take photo</b>
+            </button>
+            <button class="photo-food-button" id="foodGalleryButton" type="button" title="Choose from gallery">
+              <span aria-hidden="true"><svg viewBox="0 0 24 24">
+                  <rect x="4" y="5" width="16" height="14" rx="2.5" />
+                  <path d="m7.5 16 3.3-3.3a1.4 1.4 0 0 1 2 0L16 16" />
+                  <path d="m14.5 14 1.2-1.2a1.4 1.4 0 0 1 2 0L20 15.1" />
+                  <circle cx="9" cy="9" r="1.2" />
+                </svg></span>
+              <b>Gallery</b>
             </button>
             <span class="photo-food-status" id="foodPhotoStatus" aria-live="polite"></span>
           </div>
@@ -180,7 +246,8 @@
               <p class="label">Activity</p>
               <h2>Exercise Log</h2>
             </div>
-            <button class="modal-close-button" id="closeExerciseModal" type="button" aria-label="Close exercise form">×</button>
+            <button class="modal-close-button" id="closeExerciseModal" type="button"
+              aria-label="Close exercise form">×</button>
             <button class="quick-add-button" id="addExerciseToggle" type="button" aria-label="Add exercise">+</button>
           </div>
           <div class="exercise-field-labels" aria-hidden="true">
@@ -200,6 +267,10 @@
             <input id="exerciseCalories" type="number" min="0" aria-label="Calories burned" required />
             <button id="exerciseSubmit" type="submit">+</button>
           </form>
+          <div class="edit-modal-actions" id="exerciseEditActions">
+            <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete"
+              aria-label="Delete">🗑</button>
+          </div>
           <div class="entry-list" id="exerciseList"></div>
         </div>
       </section>
@@ -207,22 +278,42 @@
   </main>
 
   <nav class="mobile-tabbar" aria-label="Mobile navigation">
-    <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Counter</b></a>
-    <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
-    <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+    <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+          <path d="M4 10.5 12 4l8 6.5" />
+          <path d="M6.5 9.5V20h11V9.5" />
+          <path d="M10 20v-6h4v6" />
+        </svg></span><b>Counter</b></a>
+    <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+          <path d="M4 19h16" />
+          <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
+          <path d="M17.5 8.5h-4" />
+          <path d="M17.5 8.5v4" />
+        </svg></span><b>Progress</b></a>
+    <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
+          <circle cx="12" cy="7.5" r="4.2" />
+          <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
+        </svg></span><b>Profile</b></a>
   </nav>
+  <button class="fab-overlay" id="fabOverlay" type="button" aria-label="Close add menu"></button>
+  <div class="fab-actions" id="fabActions" aria-hidden="true">
+    <span aria-hidden="true"></span>
+    <strong>Add entry</strong>
+    <button id="fabAddFood" type="button"><i aria-hidden="true">+</i><b>Add Food</b></button>
+    <button id="fabAddExercise" type="button"><i aria-hidden="true">+</i><b>Add Exercise</b></button>
+  </div>
+  <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
+    aria-expanded="false">+</button>
 
   <template id="entryTemplate">
     <article class="entry-card">
-      <div>
+      <div class="entry-main">
         <strong></strong>
         <p></p>
       </div>
-        <div class="entry-actions">
-          <button class="save-entry-button" type="button" title="Save food" aria-label="Save food">♡</button>
-          <button class="edit-entry-button" type="button" title="Edit" aria-label="Edit">✎</button>
-          <button class="remove-entry-button" type="button" title="Remove" aria-label="Remove">×</button>
-        </div>
+      <div class="entry-actions">
+        <button class="save-entry-button" type="button" title="Save food" aria-label="Save food">♡</button>
+        <button class="remove-entry-button" type="button" title="Delete" aria-label="Delete">🗑</button>
+      </div>
     </article>
   </template>
 

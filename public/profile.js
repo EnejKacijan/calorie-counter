@@ -119,6 +119,8 @@ function setMobileSidebarOpen(isOpen) {
 
 function renderProfileShell() {
   applyTheme(state.user?.theme || state.theme || "light");
+  document.body.classList.toggle("is-logged-out-profile", !state.user);
+  elements.appShell.classList.toggle("is-auth-only", !state.user);
 
   if (!state.user) {
     elements.profileSummary.textContent = "Your plan";

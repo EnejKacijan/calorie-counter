@@ -86,6 +86,56 @@ body[data-theme="dark"] {
   background: rgba(255, 255, 255, 0.95);
 }
 
+body.is-logged-out-profile {
+  min-height: 100vh;
+  padding-bottom: 0;
+}
+
+body.is-logged-out-profile .app-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: none;
+  min-height: 100vh;
+  padding: 0;
+}
+
+body.is-logged-out-profile .sidebar,
+body.is-logged-out-profile .sidebar-backdrop,
+body.is-logged-out-profile .topbar,
+body.is-logged-out-profile .mobile-tabbar {
+  display: none;
+}
+
+body.is-logged-out-profile .main-content {
+  min-width: 0;
+  padding: 0;
+}
+
+body.is-logged-out-profile .auth-shell.in-app {
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+body.is-logged-out-profile .auth-shell.in-app::before {
+  content: "Daily Fuel";
+  display: block;
+  margin-bottom: 14px;
+  color: var(--mint-dark);
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+body.is-logged-out-profile .auth-shell.in-app .auth-panel {
+  width: min(920px, 100%);
+  min-height: 0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
 body[data-theme="dark"] .auth-panel,
 body[data-theme="dark"] .auth-shell.in-app .auth-panel,
 body[data-theme="dark"] .profile-card,
@@ -343,7 +393,7 @@ button {
 }
 
 .app-shell.sidebar-collapsed {
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
 }
 
 .app-shell.is-editing-profile .main-content > :not(.auth-shell) {
@@ -362,7 +412,7 @@ button {
 }
 
 .topbar {
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 
 .topbar-heading {
@@ -404,16 +454,16 @@ button {
 }
 
 .topbar-brand-icon {
-  width: 46px;
-  height: 46px;
+  width: 38px;
+  height: 38px;
   box-shadow:
     0 10px 22px rgba(39, 134, 106, 0.12),
     0 0 0 1px rgba(39, 134, 106, 0.08) inset;
 }
 
 .topbar-brand-icon.sidebar-icon svg {
-  width: 27px;
-  height: 27px;
+  width: 23px;
+  height: 23px;
   stroke-width: 1.8;
 }
 
@@ -425,7 +475,7 @@ button {
 }
 
 .main-content {
-  padding-top: 28px;
+  padding-top: 18px;
   padding-bottom: 40px;
 }
 
@@ -599,6 +649,7 @@ body[data-theme="dark"] .sidebar {
   color: var(--ink);
   font-size: 0.9rem;
   line-height: 1.2;
+  padding-inline: 42px;
   text-align: center;
 }
 
@@ -637,6 +688,27 @@ body[data-theme="dark"] .sidebar {
   font-size: 0.92rem;
 }
 
+.fab-actions .fab-sheet-close {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  place-items: center;
+  gap: 0;
+  border: 1px solid rgba(107, 125, 116, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  padding: 0 0 2px;
+  text-align: center;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
 body[data-theme="dark"] .fab-actions {
   background: rgba(15, 22, 21, 0.96);
   border-color: var(--line);
@@ -649,6 +721,12 @@ body[data-theme="dark"] .fab-actions button {
 
 body[data-theme="dark"] .fab-actions button i {
   background: rgba(126, 244, 201, 0.16);
+}
+
+body[data-theme="dark"] .fab-actions .fab-sheet-close {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
 }
 
 body.modal-open .floating-add-button,
@@ -940,8 +1018,7 @@ body[data-theme="dark"] .logout-button:hover {
 }
 
 .copy-day-button {
-  min-height: 38px;
-  white-space: nowrap;
+  display: none;
 }
 
 .quick-add-button {
@@ -956,7 +1033,8 @@ body[data-theme="dark"] .logout-button:hover {
   padding: 0 0 3px;
 }
 
-.modal-close-button {
+.modal-close-button,
+.modal-back-button {
   display: none;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -964,6 +1042,13 @@ body[data-theme="dark"] .logout-button:hover {
   color: var(--ink);
   font-size: 1.35rem;
   font-weight: 900;
+}
+
+@media (min-width: 921px) {
+  .modal-close-button,
+  .modal-back-button {
+    display: none !important;
+  }
 }
 
 .text-button:disabled {
@@ -988,8 +1073,8 @@ h2 {
 }
 
 h1 {
-  font-size: 3.6rem;
-  line-height: 0.95;
+  font-size: 1.9rem;
+  line-height: 1;
 }
 
 h2 {
@@ -998,7 +1083,7 @@ h2 {
 
 .icon-button,
 .entry-card button,
-.compact-form button,
+.compact-form > button,
 .photo-food-button {
   display: inline-grid;
   place-items: center;
@@ -1059,7 +1144,7 @@ h2 {
 }
 
 .goal-helper {
-  display: block;
+  display: none;
   max-width: 260px;
   margin-top: 5px;
   color: var(--muted);
@@ -1299,6 +1384,11 @@ select {
   outline: 0;
 }
 
+select option {
+  background: var(--panel);
+  color: var(--ink);
+}
+
 body[data-theme="dark"] input,
 body[data-theme="dark"] select,
 body[data-theme="dark"] .text-button,
@@ -1367,10 +1457,10 @@ body[data-theme="dark"] .progress-form button {
 
 .macro-card {
   display: grid;
-  min-height: 110px;
-  padding: 12px;
-  grid-template-rows: auto minmax(68px, 1fr) auto;
-  gap: 10px;
+  min-height: 132px;
+  padding: 12px 10px;
+  grid-template-rows: auto auto;
+  gap: 8px;
 }
 
 .macro-card.is-over {
@@ -1387,43 +1477,83 @@ body[data-theme="dark"] .macro-card.is-over {
 .macro-card-footer {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
+  text-align: center;
 }
 
 .macro-card-header span {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
-  line-height: 1.25;
-  text-align: right;
+  display: none;
 }
 
 .macro-card-visual {
+  position: relative;
   display: grid;
   place-items: center;
-  opacity: 0.84;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto;
+  opacity: 1;
 }
 
-.macro-ring,
+.macro-card-visual > svg:not(.macro-ring) {
+  position: relative;
+  z-index: 2;
+  display: block;
+  grid-area: 1 / 1;
+  width: 22px;
+  height: 22px;
+  filter: none;
+  transform: none;
+}
+
+.macro-card-visual > svg:not(.macro-ring) * {
+  vector-effect: non-scaling-stroke;
+}
+
+.macro-ring {
+  display: block;
+  position: relative;
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.macro-ring-track,
+.macro-ring-progress {
+  fill: none;
+  stroke-width: 6;
+}
+
+.macro-ring-track {
+  stroke: #e8eee8;
+}
+
+body[data-theme="dark"] .macro-ring-track {
+  stroke: rgba(210, 234, 224, 0.12);
+}
+
+.macro-ring-progress {
+  stroke-linecap: round;
+  stroke-dasharray: 113.1;
+  transition: stroke-dashoffset 240ms ease;
+}
+
 .macro-card-visual strong {
   display: none;
 }
 
-.macro-card-visual svg {
-  width: clamp(54px, 7vw, 82px);
-  height: clamp(54px, 7vw, 82px);
-  filter: drop-shadow(0 12px 18px color-mix(in srgb, currentColor 16%, transparent));
-}
-
-body[data-theme="dark"] .macro-card-visual {
-  opacity: 0.72;
-}
-
 .macro-card strong {
-  font-size: clamp(1.12rem, 1.48vw, 1.46rem);
+  font-size: clamp(0.96rem, 1.2vw, 1.18rem);
   line-height: 1.05;
   white-space: nowrap;
+}
+
+.macro-bar,
+.macro-card-footer {
+  display: none;
 }
 
 .macro-bar {
@@ -1452,15 +1582,15 @@ body[data-theme="dark"] .progress-meter {
 
 .calendar-panel {
   display: grid;
-  grid-template-columns: 34px 1fr 34px;
-  gap: 6px;
+  grid-template-columns: 30px 1fr 30px;
+  gap: 5px;
   align-items: stretch;
-  padding: 6px;
-  margin-bottom: 14px;
+  padding: 5px;
+  margin-bottom: 12px;
 }
 
 .calendar-panel .icon-button {
-  width: 34px;
+  width: 30px;
   height: auto;
   min-height: 100%;
   background: rgba(255, 255, 255, 0.86);
@@ -1470,21 +1600,21 @@ body[data-theme="dark"] .progress-meter {
 
 .calendar-strip {
   display: grid;
-  grid-template-columns: repeat(7, minmax(72px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(58px, 1fr));
+  gap: 5px;
   min-width: 0;
 }
 
 .day-tile {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  min-height: 62px;
+  min-height: 52px;
   gap: 2px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfdfb;
   color: var(--ink);
-  padding: 6px;
+  padding: 5px;
   text-align: center;
   place-items: center;
 }
@@ -1492,12 +1622,12 @@ body[data-theme="dark"] .progress-meter {
 .day-tile span,
 .day-tile small {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 800;
 }
 
 .day-tile strong {
-  font-size: 1.08rem;
+  font-size: 1rem;
 }
 
 .day-tile i {
@@ -1748,6 +1878,77 @@ body[data-theme="dark"] .suggestion-card {
   margin-top: 16px;
   border-top: 1px solid var(--line);
   padding-top: 14px;
+}
+
+.food-log.is-adding.is-viewing-saved .panel-title {
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+}
+
+.food-log.is-adding.is-viewing-saved .panel-title h3 {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.food-log.is-adding.is-viewing-saved .modal-close-button {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.food-log.is-adding.is-viewing-saved .modal-back-button {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+}
+
+.food-log.is-adding.is-viewing-saved .compact-form,
+.food-log.is-adding.is-viewing-saved .photo-food-tools,
+.food-log.is-adding.is-viewing-saved .search-note,
+.food-log.is-adding.is-viewing-saved .suggestions {
+  display: none;
+}
+
+.food-log.is-adding.is-viewing-saved .saved-foods-panel {
+  display: grid;
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (min-width: 921px) {
+  .food-log.is-adding.is-viewing-saved .panel-title {
+    display: flex;
+    grid-template-columns: none;
+  }
+
+  .food-log.is-adding.is-viewing-saved .compact-form {
+    display: grid;
+  }
+
+  .food-log.is-adding.is-viewing-saved .photo-food-tools {
+    display: flex;
+  }
+
+  .food-log.is-adding.is-viewing-saved .search-note {
+    display: block;
+  }
+
+  .food-log.is-adding.is-viewing-saved .suggestions {
+    display: none;
+  }
+
+  .food-log.is-adding.is-viewing-saved.is-searching .suggestions {
+    display: grid;
+  }
+
+  .food-log.is-adding.is-viewing-saved .saved-foods-panel {
+    display: grid;
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
 }
 
 .saved-foods-title,
@@ -2102,21 +2303,36 @@ body[data-theme="dark"] .chart-dot {
 
 .compact-form {
   display: grid;
-  grid-template-columns: minmax(108px, 0.95fr) minmax(72px, 0.38fr) minmax(76px, 0.42fr) repeat(4, minmax(58px, 0.38fr)) 42px;
-  gap: 8px;
+  grid-template-columns: minmax(190px, 1.45fr) minmax(76px, 0.5fr) minmax(92px, 0.58fr) repeat(4, minmax(74px, 0.52fr)) 46px;
+  gap: 10px;
+  align-items: end;
   min-width: 0;
 }
 
 .food-form-field {
-  display: contents;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
 .food-form-field span {
-  display: none;
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .compact-form .suggestions {
+  order: 20;
   grid-column: 1 / -1;
+  margin-top: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.food-log:not(.is-searching) .suggestions {
+  display: none;
 }
 
 .food-log.is-searching #foodList {
@@ -2125,7 +2341,7 @@ body[data-theme="dark"] .chart-dot {
 
 .food-field-labels,
 .exercise-field-labels {
-  display: grid;
+  display: none;
   gap: 8px;
   margin: 0 0 6px;
   color: var(--muted);
@@ -2145,8 +2361,8 @@ body[data-theme="dark"] .chart-dot {
   grid-template-columns: minmax(120px, 1fr) minmax(64px, 0.35fr) minmax(86px, 0.5fr) 38px;
 }
 
-.compact-form button {
-  width: 42px;
+.compact-form > button {
+  width: 46px;
   min-height: 42px;
   background: var(--coral);
   color: white;
@@ -2250,7 +2466,7 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
   }
 }
 
-@media (max-width: 1060px) {
+@media (max-width: 920px) {
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -2806,6 +3022,22 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
 }
 
 @media (max-width: 640px) {
+  body.is-logged-out-profile {
+    padding-bottom: 0;
+  }
+
+  body.is-logged-out-profile .app-shell {
+    padding: 0;
+  }
+
+  body.is-logged-out-profile .auth-shell.in-app {
+    padding: 14px;
+  }
+
+  body.is-logged-out-profile .auth-shell.in-app .auth-panel {
+    padding: 16px;
+  }
+
   body {
     padding-bottom: calc(78px + env(safe-area-inset-bottom));
   }
@@ -3539,7 +3771,7 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
     display: none;
   }
 
-  .compact-form button {
+  .compact-form > button {
     width: 100%;
   }
 
@@ -3763,7 +3995,7 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
 
   .compact-form input,
   .compact-form select,
-  .compact-form button,
+  .compact-form > button,
   .photo-food-button,
   .text-button {
     min-height: 44px;

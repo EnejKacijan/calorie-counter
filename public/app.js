@@ -62,8 +62,10 @@ const elements = {
   floatingAddButton: document.querySelector("#floatingAddButton"),
   fabOverlay: document.querySelector("#fabOverlay"),
   fabActions: document.querySelector("#fabActions"),
+  fabSheetClose: document.querySelector("#fabSheetClose"),
   fabAddFood: document.querySelector("#fabAddFood"),
   fabAddExercise: document.querySelector("#fabAddExercise"),
+  fabSavedFoods: document.querySelector("#fabSavedFoods"),
   appTitle: document.querySelector("#appTitle"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
@@ -85,6 +87,7 @@ const elements = {
   foodSection: document.querySelector("#foodSection"),
   addFoodToggle: document.querySelector("#addFoodToggle"),
   closeFoodModal: document.querySelector("#closeFoodModal"),
+  backFoodModal: document.querySelector("#backFoodModal"),
   manualFoodForm: document.querySelector("#manualFoodForm"),
   manualFoodName: document.querySelector("#manualFoodName"),
   foodAmount: document.querySelector("#foodAmount"),
@@ -310,12 +313,24 @@ function setFabMenuOpen(isOpen) {
 
 function openAddFoodFromFab() {
   if (editingFoodId) resetFoodForm();
+  elements.foodSection.classList.remove("is-viewing-saved");
   openMobileLogForm(elements.foodSection, elements.manualFoodName);
 }
 
 function openAddExerciseFromFab() {
   if (editingExerciseId) resetExerciseForm();
   openMobileLogForm(elements.exerciseSection, elements.exerciseType);
+}
+
+function openSavedFoodsFromFab() {
+  if (editingFoodId) resetFoodForm();
+  elements.foodSection.classList.add("is-viewing-saved");
+  openMobileLogForm(elements.foodSection, null);
+}
+
+function showFoodFormFromSavedFoods() {
+  elements.foodSection.classList.remove("is-viewing-saved");
+  elements.manualFoodName.focus();
 }
 
 function syncSelectedDateWithToday() {
@@ -440,7 +455,7 @@ function renderProfileState() {
     return;
   }
 
-  elements.appTitle.textContent = `${state.user.name}'s Counter`;
+  elements.appTitle.textContent = "Calorie Counter";
   elements.profileSummary.textContent = state.user.name;
   elements.profileMeta.textContent = `${state.user.weightKg} kg · ${state.user.heightCm} cm`;
 }
@@ -751,7 +766,11 @@ function renderSavedFoods() {
       </button>
       <button class="saved-food-heart is-saved" type="button" title="Remove saved food" aria-label="Remove saved food">♥</button>
     `;
-    card.querySelector(".saved-food-load").addEventListener("click", () => fillManualFood(food));
+    card.querySelector(".saved-food-load").addEventListener("click", () => {
+      elements.foodSection.classList.remove("is-viewing-saved");
+      fillManualFood(food);
+      elements.manualFoodName.focus();
+    });
     card.querySelector(".saved-food-heart").addEventListener("click", () => toggleSavedFood(food));
     elements.savedFoods.appendChild(card);
   });
@@ -1114,7 +1133,9 @@ elements.addFoodToggle.addEventListener("click", () => {
 elements.closeFoodModal.addEventListener("click", () => {
   closeMobileLogForm(elements.foodSection);
   resetFoodForm();
+  elements.foodSection.classList.remove("is-viewing-saved");
 });
+elements.backFoodModal.addEventListener("click", showFoodFormFromSavedFoods);
 elements.favoriteFoodEdit.addEventListener("click", () => {
   if (!editingFoodId) return;
   const entry = currentDay().foods.find((food) => food.id === editingFoodId);
@@ -1249,6 +1270,8 @@ elements.floatingAddButton?.addEventListener("click", (event) => {
 });
 elements.fabAddFood?.addEventListener("click", openAddFoodFromFab);
 elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
+elements.fabSavedFoods?.addEventListener("click", openSavedFoodsFromFab);
+elements.fabSheetClose?.addEventListener("click", () => setFabMenuOpen(false));
 elements.fabOverlay?.addEventListener("click", () => setFabMenuOpen(false));
 document.addEventListener("click", (event) => {
   if (!elements.fabActions?.classList.contains("is-open")) return;

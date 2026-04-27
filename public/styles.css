@@ -804,7 +804,8 @@ h2 {
 
 .icon-button,
 .entry-card button,
-.compact-form button {
+.compact-form button,
+.photo-food-button {
   display: inline-grid;
   place-items: center;
   border: 0;
@@ -1383,6 +1384,52 @@ body[data-theme="dark"] .suggestion-card {
   font-size: 0.9rem;
 }
 
+.photo-food-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.photo-food-button {
+  grid-auto-flow: column;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid rgba(90, 143, 203, 0.24);
+  background: rgba(90, 143, 203, 0.12);
+  color: var(--blue);
+  padding: 8px 12px;
+  font-weight: 900;
+}
+
+.photo-food-button span {
+  width: 20px;
+  height: 20px;
+}
+
+.photo-food-button svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.photo-food-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.photo-food-status {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .saved-foods {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
@@ -1749,7 +1796,7 @@ body[data-theme="dark"] .chart-dot {
 
 .compact-form {
   display: grid;
-  grid-template-columns: minmax(108px, 0.95fr) minmax(56px, 0.32fr) minmax(76px, 0.42fr) repeat(4, minmax(58px, 0.38fr)) 42px;
+  grid-template-columns: minmax(108px, 0.95fr) minmax(72px, 0.38fr) minmax(76px, 0.42fr) repeat(4, minmax(58px, 0.38fr)) 42px;
   gap: 8px;
   min-width: 0;
 }
@@ -1769,7 +1816,7 @@ body[data-theme="dark"] .chart-dot {
 }
 
 .food-field-labels {
-  grid-template-columns: minmax(108px, 0.95fr) minmax(56px, 0.32fr) minmax(76px, 0.42fr) repeat(4, minmax(58px, 0.38fr)) 42px;
+  grid-template-columns: minmax(108px, 0.95fr) minmax(72px, 0.38fr) minmax(76px, 0.42fr) repeat(4, minmax(58px, 0.38fr)) 42px;
 }
 
 .exercise-field-labels {
@@ -1944,11 +1991,60 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
 
 @media (max-width: 640px) {
   .app-shell {
-    padding: 18px 10px 40px;
+    gap: 12px;
+    padding: 10px 10px 30px;
+  }
+
+  .sidebar {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .brand-mark {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding-right: 0;
+  }
+
+  .brand-mark .brand-icon,
+  .sidebar-toggle,
+  .profile-card,
+  .logout-button {
+    display: none;
+  }
+
+  .side-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .side-nav a,
+  .side-nav button {
+    justify-content: center;
+    min-height: 42px;
+    gap: 6px;
+    padding: 8px 6px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .side-nav a span,
+  .side-nav button span {
+    width: 18px;
+  }
+
+  .side-nav b {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .main-content {
+    gap: 12px;
   }
 
   .topbar {
     align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
   .topbar-heading {
@@ -1970,12 +2066,51 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
     flex-wrap: wrap;
   }
 
+  .goal-panel,
+  .log-panel,
+  .progress-panel,
+  .macro-card {
+    padding: 12px;
+  }
+
   .calendar-panel {
-    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    gap: 5px;
+    margin-bottom: 12px;
+    padding: 6px;
+  }
+
+  .calendar-panel .icon-button {
+    width: 34px;
+    min-height: 58px;
+  }
+
+  .calendar-strip {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+    overflow-x: visible;
+  }
+
+  .day-tile {
+    min-height: 58px;
+    padding: 6px 2px;
+  }
+
+  .day-tile span {
+    font-size: 0.64rem;
+  }
+
+  .day-tile strong {
+    font-size: 1rem;
+  }
+
+  .day-tile i {
+    width: 18px;
+    height: 4px;
   }
 
   h1 {
-    font-size: 2.15rem;
+    font-size: 1.85rem;
   }
 
   .profile-grid,
@@ -2007,12 +2142,40 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
     grid-template-columns: 1fr;
   }
 
+  .calorie-ring {
+    width: min(210px, 72vw);
+    margin-block: 10px 12px;
+  }
+
+  .calorie-insights {
+    gap: 8px;
+  }
+
+  .macro-card-header {
+    gap: 8px;
+  }
+
+  .macro-card-visual svg {
+    width: 54px;
+    height: 54px;
+  }
+
   .food-field-labels,
   .exercise-field-labels {
     display: none;
   }
 
   .compact-form button {
+    width: 100%;
+  }
+
+  .photo-food-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .photo-food-button {
+    justify-content: center;
     width: 100%;
   }
 
@@ -2028,6 +2191,20 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
 
   .copy-day-button {
     width: 100%;
+  }
+
+  .entry-card,
+  .suggestion-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .entry-actions {
+    justify-content: flex-end;
+  }
+
+  .saved-foods {
+    grid-template-columns: 1fr;
   }
 
   .progress-badge {
@@ -2050,4 +2227,77 @@ body[data-theme="dark"] .entry-card .save-entry-button.is-saved {
     width: 100%;
   }
 
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    padding-inline: 8px;
+  }
+
+  .brand-mark strong {
+    font-size: 1rem;
+  }
+
+  .side-nav a,
+  .side-nav button {
+    min-height: 38px;
+    font-size: 0.72rem;
+  }
+
+  .topbar-brand-icon {
+    display: none;
+  }
+
+  h1 {
+    font-size: 1.62rem;
+    line-height: 1.05;
+  }
+
+  h2 {
+    font-size: 1.22rem;
+  }
+
+  .status-pill {
+    width: 100%;
+    text-align: center;
+  }
+
+  .calendar-panel {
+    grid-template-columns: 30px minmax(0, 1fr) 30px;
+  }
+
+  .calendar-panel .icon-button {
+    width: 30px;
+    min-height: 54px;
+  }
+
+  .calendar-strip {
+    gap: 3px;
+  }
+
+  .day-tile {
+    min-height: 54px;
+  }
+
+  .day-tile span {
+    font-size: 0.58rem;
+  }
+
+  .day-tile strong {
+    font-size: 0.92rem;
+  }
+
+  .compact-form input,
+  .compact-form select,
+  .compact-form button,
+  .photo-food-button,
+  .text-button {
+    min-height: 44px;
+  }
+
+  .entry-card,
+  .suggestion-card,
+  .saved-food-chip {
+    padding: 10px;
+  }
 }

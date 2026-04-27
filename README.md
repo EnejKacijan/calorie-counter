@@ -10,15 +10,18 @@ npm start
 
 Then open `http://localhost:3000`.
 
-## API key
+## API keys
 
-Copy `.env.example` to `.env` and fill your USDA key when you want real food search:
+Copy `.env.example` to `.env` and fill your keys:
 
 ```bash
 USDA_API_KEY=your_usda_key
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 Without a real USDA key, the app still uses local foods and Open Food Facts where available.
+Without an OpenAI key, food photo analysis is disabled.
 
 ## Deploy to Netlify
 
@@ -36,6 +39,8 @@ Optional environment variable:
 
 ```bash
 USDA_API_KEY=your_usda_key
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 The app stores user data in each browser's `localStorage`, so every device has its own profile and log.

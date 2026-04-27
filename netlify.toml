@@ -7,3 +7,7 @@
   to = "/.netlify/functions/foods-search"
   status = 200
 
+[[redirects]]
+  from = "/api/foods/analyze-image"
+  to = "/.netlify/functions/foods-analyze-image"
+  status = 200

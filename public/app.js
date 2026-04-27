@@ -82,6 +82,9 @@ const elements = {
   manualFoodCarbs: document.querySelector("#manualFoodCarbs"),
   manualFoodFat: document.querySelector("#manualFoodFat"),
   manualFoodSubmit: document.querySelector("#manualFoodSubmit"),
+  foodPhotoInput: document.querySelector("#foodPhotoInput"),
+  foodPhotoButton: document.querySelector("#foodPhotoButton"),
+  foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
   copyYesterdayButton: document.querySelector("#copyYesterdayButton"),
   foodSuggestions: document.querySelector("#foodSuggestions"),
   savedFoods: document.querySelector("#savedFoods"),
@@ -628,6 +631,7 @@ function resetFoodForm() {
   editingFoodId = null;
   selectedFoodBase = null;
   elements.foodSuggestions.innerHTML = "";
+  elements.foodPhotoStatus.textContent = "";
   elements.searchNote.textContent = "Start typing to search saved foods, USDA, and Open Food Facts.";
   setFoodSearchActive(false);
 }
@@ -719,6 +723,81 @@ async function searchFoodSuggestions(query) {
   const onlineFoods = data.foods || [];
   rememberFoods(onlineFoods);
   renderSuggestions(dedupeFoodSuggestions([...localMatches, ...onlineFoods]).slice(0, 24));
+}
+
+async function analyzeFoodPhoto(file) {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    elements.foodPhotoStatus.textContent = "Choose an image file.";
+    return;
+  }
+
+  const photoButtonLabel = elements.foodPhotoButton.querySelector("b");
+  const previousButtonText = photoButtonLabel.textContent;
+  elements.foodPhotoButton.disabled = true;
+  photoButtonLabel.textContent = "Analyzing";
+  elements.foodPhotoStatus.textContent = "Estimating nutrition...";
+
+  try {
+    const imageDataUrl = await resizeImageForAnalysis(file);
+    const response = await fetch("/api/foods/analyze-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageDataUrl }),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) throw new Error(data.error || "Food photo analysis failed.");
+    fillManualFoodFromPhoto(data.food || {});
+  } catch (error) {
+    elements.foodPhotoStatus.textContent = error.message || "Photo analysis failed.";
+  } finally {
+    elements.foodPhotoButton.disabled = false;
+    photoButtonLabel.textContent = previousButtonText;
+    elements.foodPhotoInput.value = "";
+  }
+}
+
+function fillManualFoodFromPhoto(food) {
+  selectedFoodBase = null;
+  editingFoodId = null;
+  elements.manualFoodSubmit.textContent = "+";
+  elements.manualFoodName.value = food.name || "Unknown food";
+  elements.foodAmount.value = food.amount || 1;
+  elements.foodUnit.value = food.unit || "serving";
+  updateFoodAmountStep();
+  elements.manualFoodCalories.value = Math.round(Number(food.calories || 0));
+  elements.manualFoodProtein.value = Math.round(Number(food.protein || 0));
+  elements.manualFoodCarbs.value = Math.round(Number(food.carbs || 0));
+  elements.manualFoodFat.value = Math.round(Number(food.fat || 0));
+  elements.foodSuggestions.innerHTML = "";
+  elements.searchNote.textContent = food.notes || "Photo estimate filled in. Review it, then add it to your log.";
+  elements.foodPhotoStatus.textContent = `AI estimate: ${food.confidence || "low"} confidence.`;
+  setFoodSearchActive(false);
+}
+
+function resizeImageForAnalysis(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSide = 1280;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.onerror = () => reject(new Error("Could not read this image."));
+      image.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error("Could not read this image."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function addFood(food) {
@@ -814,6 +893,8 @@ elements.manualFoodProtein.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodCarbs.addEventListener("input", normalizeFoodMacroInputs);
 elements.manualFoodFat.addEventListener("input", normalizeFoodMacroInputs);
 elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
+elements.foodPhotoButton.addEventListener("click", () => elements.foodPhotoInput.click());
+elements.foodPhotoInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodPhotoInput.files?.[0]));
 
 function estimateExerciseCalories() {
   const preset = exercisePresets[elements.exerciseType.value] || exercisePresets.Running;

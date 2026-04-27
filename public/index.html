@@ -147,6 +147,14 @@
             <input id="manualFoodFat" type="number" min="0" step="1" aria-label="Fat grams" />
             <button id="manualFoodSubmit" type="submit">+</button>
           </form>
+          <div class="photo-food-tools">
+            <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" capture="environment" hidden />
+            <button class="photo-food-button" id="foodPhotoButton" type="button" title="Analyze food photo">
+              <span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 8.5A2.5 2.5 0 0 1 7 6h2l1.4-1.7h3.2L15 6h2a2.5 2.5 0 0 1 2.5 2.5v8A2.5 2.5 0 0 1 17 19H7a2.5 2.5 0 0 1-2.5-2.5Z" /><circle cx="12" cy="12.5" r="3.4" /></svg></span>
+              <b>Photo</b>
+            </button>
+            <span class="photo-food-status" id="foodPhotoStatus" aria-live="polite"></span>
+          </div>
           <p class="search-note" id="searchNote">Start typing to search saved foods, USDA, and Open Food Facts.</p>
           <div class="suggestions" id="foodSuggestions"></div>
           <div class="entry-list" id="foodList"></div>

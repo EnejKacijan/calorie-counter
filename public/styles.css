@@ -9650,23 +9650,6 @@ body.profile-landing-active .intro-shell {
   padding: 0;
 }
 
-.suggestion-card .suggestion-add {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  place-items: center;
-  border: 1px solid var(--ink);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 400;
-  line-height: 1;
-  padding: 0 0 1px;
-}
-
 @media (max-width: 920px) {
   .food-log.is-adding {
     top: 0;
@@ -9894,19 +9877,9 @@ body.profile-landing-active .intro-shell {
     z-index: 2;
     display: block;
     top: 18px;
-    right: 34px;
+    right: 0;
     background: var(--panel);
     font-size: 0.78rem;
-  }
-
-  .food-log.is-adding .suggestion-card .suggestion-add {
-    position: absolute;
-    z-index: 2;
-    display: grid;
-    top: 14px;
-    right: 0;
-    width: 24px;
-    height: 24px;
   }
 
   .food-log.is-adding label[for="foodAmount"],
@@ -13591,5 +13564,160 @@ body[data-theme="dark"]:not(.profile-landing-active) .saved-food-surface {
 
   .food-log.is-adding.is-viewing-saved .recent-food-delete-action {
     width: 78px;
+  }
+}
+
+/* Final mobile tab order: Today, Foods, Weight, Profile. */
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .mobile-tabbar,
+  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
+    order: 1 !important;
+    grid-column: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > #mobileFoodsTab {
+    order: 2 !important;
+    grid-column: 2 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="progress.html"] {
+    order: 3 !important;
+    grid-column: 3 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="profile.html"] {
+    order: 4 !important;
+    grid-column: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions,
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing .edit-modal-actions {
+    display: none !important;
+  }
+}
+
+/* Calm the dark-mode goal status marker. */
+body[data-theme="dark"]:not(.profile-landing-active) .status-pill,
+body[data-theme="dark"]:not(.profile-landing-active) .goal-panel .status-pill {
+  background: transparent !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body[data-theme="dark"]:not(.profile-landing-active) .status-pill::before {
+  background: currentColor !important;
+  opacity: 0.72;
+}
+
+body[data-theme="dark"]:not(.profile-landing-active) .status-pill.is-success-pulse {
+  animation: none !important;
+}
+
+/* Mobile: make today visible even when another date is selected. */
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .day-tile.is-today:not(.is-selected) strong {
+    position: relative;
+    color: var(--ink) !important;
+    font-weight: 650;
+  }
+
+  body:not(.profile-landing-active) .day-tile.is-today:not(.is-selected) strong::after {
+    content: "";
+    position: absolute;
+    right: 50%;
+    bottom: -7px;
+    width: 16px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.78;
+    transform: translateX(50%);
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active) .day-tile.is-today:not(.is-selected) strong::after {
+    opacity: 0.86;
+  }
+}
+
+/* Mobile food log: pin calories to the true row edge. */
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .food-log .entry-surface {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log .entry-main.has-kcal {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    padding-right: 72px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log .entry-main.has-kcal p {
+    margin-right: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log .entry-kcal {
+    position: absolute !important;
+    top: 50%;
+    right: 2px;
+    min-width: 52px;
+    transform: translateY(-50%);
+    text-align: right;
+  }
+}
+
+/* Final unified mobile footer across Today, Foods, Weight, and Profile. */
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .mobile-tabbar,
+  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
+    position: fixed !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(58px + env(safe-area-inset-bottom)) !important;
+    padding: 0 0 env(safe-area-inset-bottom) !important;
+    transform: none !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
+    order: 1 !important;
+    grid-column: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > #mobileFoodsTab,
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html#foods"] {
+    order: 2 !important;
+    grid-column: 2 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="progress.html"] {
+    order: 3 !important;
+    grid-column: 3 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="profile.html"] {
+    order: 4 !important;
+    grid-column: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a,
+  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+    position: relative !important;
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    place-items: center !important;
+    text-align: center !important;
   }
 }

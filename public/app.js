@@ -653,12 +653,15 @@ function animateNumber(element, from, to, suffix = "") {
 
 function playSubmitSuccess(button) {
   if (!button) return;
+  const previousText = button.textContent;
   button.classList.add("is-success");
   button.textContent = "✓";
   setTimeout(() => {
     button.classList.remove("is-success");
-    if (!editingFoodId && button === elements.manualFoodSubmit) button.textContent = "+ Add";
-    if (!editingExerciseId && button === elements.exerciseSubmit) button.textContent = "+";
+    if (button === elements.floatingAddButton) button.textContent = "+";
+    else if (!editingFoodId && button === elements.manualFoodSubmit) button.textContent = "+ Add";
+    else if (!editingExerciseId && button === elements.exerciseSubmit) button.textContent = "+";
+    else button.textContent = previousText;
   }, 800);
 }
 
@@ -1294,13 +1297,8 @@ function renderSuggestions(foods) {
         <p>${sourceLabel(food)} · ${food.serving || "per 100g"}</p>
       </div>
       <span class="suggestion-kcal">${Math.round(food.calories)}</span>
-      <span class="suggestion-add" aria-hidden="true">+</span>
     `;
-    button.addEventListener("click", (event) => {
-      if (event.target.closest(".suggestion-add")) {
-        addSuggestedFood(food);
-        return;
-      }
+    button.addEventListener("click", () => {
       fillManualFood(food);
     });
     elements.foodSuggestions.appendChild(button);

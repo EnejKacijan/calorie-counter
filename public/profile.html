@@ -17,8 +17,8 @@
         </div>
 
         <nav class="side-nav" aria-label="App navigation">
-          <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Calorie Counter</b></a>
-          <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+          <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
+          <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Weight</b></a>
           <a class="is-active" href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
         </nav>
 
@@ -41,6 +41,7 @@
 
       <section class="main-content">
         <section class="topbar">
+          <a class="topbar-home-link" href="index.html" aria-label="Back to Today">←</a>
           <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation" aria-controls="sidebar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
           </button>
@@ -55,38 +56,70 @@
 
         <section class="intro-shell" id="introShell" aria-labelledby="introTitle">
           <div class="intro-copy">
-            <p class="eyebrow">Daily Fuel</p>
-            <h1 id="introTitle">Track food without the noise.</h1>
-            <p>Log meals in seconds, stay on top of calories and macros, and keep your daily nutrition clear.</p>
+            <p class="eyebrow">01 · The Notebook</p>
+            <h1 id="introTitle">The Notebook</h1>
+            <p>A quiet daily diary for food, macros, and body weight. Hierarchy comes from scale and emptiness, not decoration.</p>
             <div class="intro-actions">
-              <button class="primary-action" id="introStartButton" type="button">Log your first meal</button>
+              <button class="primary-action" id="introStartButton" type="button">Start the notebook</button>
             </div>
             <div class="intro-stats" aria-label="Daily Fuel preview metrics">
               <article>
-                <span>Today</span>
-                <strong>595</strong>
-                <small>kcal logged</small>
+                <span>Remaining</span>
+                <strong>925</strong>
+                <small>kcal today</small>
               </article>
               <article>
                 <span>Protein</span>
-                <strong>36g</strong>
-                <small>of 160g</small>
+                <strong>188g</strong>
+                <small>of 240g</small>
               </article>
               <article>
-                <span>Streak</span>
-                <strong>7</strong>
-                <small>clear days</small>
+                <span>Weight</span>
+                <strong>72.4</strong>
+                <small>kg today</small>
               </article>
             </div>
             <div class="intro-trust" aria-label="Product highlights">
-              <span>Fast logging</span>
-              <span>Macro overview</span>
-              <span>Clean dashboard</span>
+              <span>Hairline rules</span>
+              <span>Monospace numerics</span>
+              <span>No rounded cards</span>
             </div>
           </div>
-          <div class="intro-preview" aria-hidden="true">
-            <div class="intro-preview-frame">
-              <img src="landing-preview.png" alt="" loading="eager" />
+          <div class="intro-preview notebook-preview" aria-hidden="true">
+            <div class="preview-brief">
+              <span>Concept brief · 01 / 03</span>
+              <h2>The Notebook</h2>
+              <p>Minimal, editorial whitespace for people who want to log fast and see only what matters.</p>
+              <dl>
+                <div><dt>Best for</dt><dd>Daily food logs, macro targets, and quiet weight tracking.</dd></div>
+                <div><dt>Palette</dt><dd><i></i><i></i><i></i><i></i></dd></div>
+                <div><dt>Typography</dt><dd>Large display figures paired with monospace labels.</dd></div>
+              </dl>
+            </div>
+            <div class="preview-phone preview-today">
+              <div class="preview-status"><span>9:41</span><i></i><span>▮▮ ▬</span></div>
+              <h3>April 28</h3>
+              <div class="preview-week"><b>Mon<br>27</b><b class="is-active">Tue<br>28</b><b>Wed<br>29</b><b>Thu<br>30</b><b>Fri<br>31</b></div>
+              <div class="preview-ring"><strong>925</strong><span>kcal left</span></div>
+              <div class="preview-metrics"><b>1487<small>eaten</small></b><b>312<small>burned</small></b><b>1175<small>net</small></b></div>
+              <div class="preview-bars"><span style="--w:78%"></span><span style="--w:56%"></span><span style="--w:41%"></span></div>
+              <div class="preview-list"><b>Greek yogurt with berries</b><b>Chicken quinoa bowl</b></div>
+            </div>
+            <div class="preview-phone preview-add">
+              <div class="preview-status"><span>9:41</span><i></i><span>▮▮ ▬</span></div>
+              <h3>Add food</h3>
+              <div class="preview-search">chick</div>
+              <div class="preview-tabs"><span class="is-active">All</span><span>My foods</span><span>USDA</span></div>
+              <div class="preview-results"><b>Chicken breast, grilled <em>165 +</em></b><b>Chicken thigh, roasted <em>209 +</em></b><b>Chicken caesar wrap <em>482 +</em></b></div>
+            </div>
+            <div class="preview-phone preview-weight">
+              <div class="preview-status"><span>9:41</span><i></i><span>▮▮ ▬</span></div>
+              <h3>Body weight</h3>
+              <strong class="preview-weight-number">72.4 <small>kg</small></strong>
+              <svg viewBox="0 0 180 82" role="img">
+                <polyline points="0,22 17,38 33,46 50,39 67,55 82,61 100,57 116,70 132,66 148,77 164,73 180,82" />
+              </svg>
+              <div class="preview-weight-list"><b>APR 28 <em>72.4</em></b><b>APR 27 <em>72.5</em></b><b>APR 26 <em>72.8</em></b></div>
             </div>
           </div>
         </section>
@@ -247,8 +280,9 @@
     </main>
 
     <nav class="mobile-tabbar" aria-label="Mobile navigation">
-      <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Counter</b></a>
-      <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+      <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
+      <a href="index.html#foods"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 8.5h15" /><path d="M7 8.5V20" /><path d="M17 8.5V20" /><path d="M8 4h8l1.5 4.5h-11Z" /></svg></span><b>Foods</b></a>
+      <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Weight</b></a>
       <a class="is-active" href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
     </nav>
 

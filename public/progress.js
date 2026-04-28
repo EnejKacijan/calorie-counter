@@ -187,8 +187,8 @@ function renderChart(entries) {
     : { date: todayKey, weightKg: latestEntry.weightKg, isProjection: true };
   const lineEntries = todayProjection ? [...chartEntries, todayProjection] : chartEntries;
   const weights = lineEntries.map((entry) => Number(entry.weightKg));
-  const min = Math.min(...weights) - 0.7;
-  const max = Math.max(...weights) + 0.7;
+  const min = Math.floor((Math.min(...weights) - 0.7) / 5) * 5;
+  const max = Math.ceil((Math.max(...weights) + 0.7) / 5) * 5;
   const rect = elements.progressChart.getBoundingClientRect();
   const width = Math.max(320, Math.round(rect.width || elements.progressChart.clientWidth || 320));
   const height = Math.max(210, Math.round(rect.height || elements.progressChart.clientHeight || 240));
@@ -196,8 +196,8 @@ function renderChart(entries) {
   const chart = {
     left: xInset,
     right: width - xInset,
-    top: Math.round(height * 0.25),
-    bottom: Math.round(height * 0.72),
+    top: Math.round(height * 0.18),
+    bottom: height - (width >= 700 ? 26 : 18),
   };
   const range = max - min || 1;
   const firstDate = dateFromKey(chartEntries[0].date);
@@ -222,24 +222,25 @@ function renderChart(entries) {
     x: chart.right,
     y: yForWeight(Number(latestEntry.weightKg)),
   };
-  const gridLines = [
-    chart.top,
-    Math.round((chart.top + chart.bottom) / 2),
-    chart.bottom,
-  ];
+  const gridLines = [];
+  for (let weight = max; weight >= min; weight -= 5) {
+    gridLines.push({ y: yForWeight(weight), label: `${weight} kg` });
+  }
   const axisLabels = chartEntries.length < 2
     ? ["Start", "", "Now"]
     : [shortAxisDate(chartEntries[0].date), `${dateSpan} ${dateSpan === 1 ? "day" : "days"}`, "Now"];
+  const currentAxisLabel = `${formatWeight(latestEntry.weightKg)} kg`;
 
   if (elements.weightChartAxis) {
     elements.weightChartAxis.querySelectorAll("span").forEach((span, index) => {
-      span.textContent = axisLabels[index] || "";
+      span.textContent = index === 2 ? `${axisLabels[index]} · ${currentAxisLabel}` : axisLabels[index] || "";
     });
   }
 
   elements.progressChart.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
-      ${gridLines.map((y) => `<path class="chart-grid" d="M${chart.left} ${y} H${chart.right}"></path>`).join("")}
+      ${gridLines.map((line) => `<path class="chart-grid" d="M${chart.left} ${line.y} H${chart.right}"></path>`).join("")}
+      ${gridLines.map((line) => `<text class="weight-y-label" x="${Math.max(2, chart.left - 48)}" y="${line.y + 3}">${line.label}</text>`).join("")}
       <polyline class="chart-line" points="${points.join(" ")}"></polyline>
       ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isToday ? 4.2 : 3}"></circle>`).join("")}
       ${todayProjection ? `<circle class="chart-today-dot" cx="${todayDot.x}" cy="${todayDot.y}" r="4.2"></circle>` : ""}

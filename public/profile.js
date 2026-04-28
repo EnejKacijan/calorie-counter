@@ -133,6 +133,7 @@ function renderProfileShell() {
   document.body.classList.toggle("is-logged-out-profile", !state.user);
   document.body.classList.toggle("profile-landing-active", !state.user && isIntroActive);
   elements.appShell.classList.toggle("is-auth-only", !state.user);
+  if (!state.user) elements.appShell.classList.remove("sidebar-collapsed");
 
   if (!state.user) {
     elements.profileSummary.textContent = "Your plan";

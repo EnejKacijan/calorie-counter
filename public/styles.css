@@ -134,20 +134,22 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 }
 
-body.modal-open .food-log.is-adding {
-  position: fixed !important;
-  top: 0 !important;
-  right: auto !important;
-  bottom: 0 !important;
-  left: 50% !important;
-  width: min(390px, 100vw) !important;
-  height: 100dvh !important;
-  max-height: none !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: var(--panel) !important;
-  box-shadow: 0 0 0 1px var(--line) !important;
-  transform: translateX(-50%) !important;
+@media (max-width: 920px) {
+  body.modal-open .food-log.is-adding {
+    position: fixed !important;
+    top: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    width: min(390px, 100vw) !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--panel) !important;
+    box-shadow: 0 0 0 1px var(--line) !important;
+    transform: translateX(-50%) !important;
+  }
 }
 
 /* Body weight screen */
@@ -13719,5 +13721,493 @@ body[data-theme="dark"]:not(.profile-landing-active) .status-pill.is-success-pul
     min-height: 58px !important;
     place-items: center !important;
     text-align: center !important;
+  }
+}
+
+/* Final landing composition: desktop first, then scale down without exposing style notes as content. */
+body.profile-landing-active .app-shell {
+  display: block !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+}
+
+body.is-logged-out-profile:not(.profile-landing-active) .app-shell,
+body.is-logged-out-profile:not(.profile-landing-active) .app-shell.sidebar-collapsed {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+}
+
+body.is-logged-out-profile:not(.profile-landing-active) .main-content {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+body.is-logged-out-profile:not(.profile-landing-active) .auth-shell.in-app {
+  width: min(1180px, calc(100vw - 36px)) !important;
+  justify-self: center !important;
+}
+
+body.profile-landing-active .intro-shell {
+  display: grid !important;
+  grid-template-columns: minmax(340px, 0.36fr) minmax(0, 1fr) !important;
+  width: min(100%, 1480px) !important;
+  min-height: 100vh !important;
+  margin: 0 auto !important;
+  align-items: stretch !important;
+  gap: clamp(20px, 2.8vw, 44px) !important;
+  padding: clamp(24px, 3.4vw, 56px) !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+body.profile-landing-active .intro-copy {
+  display: grid !important;
+  align-content: center !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  gap: 18px !important;
+  border: 1px solid var(--line) !important;
+  background: color-mix(in srgb, var(--panel) 94%, transparent) !important;
+  padding: clamp(20px, 2.4vw, 34px) !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+}
+
+body.profile-landing-active .intro-copy h1 {
+  max-width: 8ch !important;
+  font-size: 4.55rem !important;
+  line-height: 0.98 !important;
+  letter-spacing: 0 !important;
+}
+
+body.profile-landing-active .intro-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: var(--ink) !important;
+  font-size: 0.96rem !important;
+  font-weight: 650 !important;
+}
+
+body.profile-landing-active .intro-brand .brand-icon {
+  width: 32px !important;
+  height: 32px !important;
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+body.profile-landing-active .intro-brand .brand-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+  stroke: currentColor !important;
+}
+
+body.profile-landing-active .intro-copy p:not(.eyebrow) {
+  max-width: 43ch !important;
+  margin: 0 !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.58 !important;
+}
+
+body.profile-landing-active .intro-actions {
+  justify-content: flex-start !important;
+}
+
+body.profile-landing-active .intro-actions .primary-action {
+  width: min(100%, 240px) !important;
+  min-height: 44px !important;
+  box-shadow: none !important;
+}
+
+body.profile-landing-active .intro-stats {
+  grid-template-columns: 1fr !important;
+  justify-self: start !important;
+  width: min(100%, 340px) !important;
+  max-width: 100% !important;
+  gap: 0 !important;
+  border: 1px solid var(--line) !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+}
+
+body.profile-landing-active .intro-stats article {
+  min-width: 0 !important;
+  min-height: 74px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.profile-landing-active .intro-stats article:last-child {
+  border-bottom: 0 !important;
+}
+
+body.profile-landing-active .intro-stats strong {
+  font-size: 1.42rem !important;
+  font-weight: 520 !important;
+}
+
+body.profile-landing-active .intro-trust {
+  display: none !important;
+}
+
+body.profile-landing-active .app-screenshot-preview {
+  display: grid !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  border: 1px solid var(--line) !important;
+  background: var(--panel) !important;
+  overflow: hidden !important;
+}
+
+body.profile-landing-active .app-screenshot-preview img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: left top !important;
+}
+
+@media (min-width: 1500px) {
+  body.profile-landing-active .intro-shell {
+    align-items: center !important;
+  }
+
+  body.profile-landing-active .intro-copy,
+  body.profile-landing-active .app-screenshot-preview {
+    min-height: 720px !important;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1220px) {
+  body.profile-landing-active .intro-shell {
+    grid-template-columns: minmax(300px, 0.4fr) minmax(0, 0.9fr) !important;
+    padding: 28px !important;
+  }
+
+  body.profile-landing-active .intro-copy h1 {
+    font-size: 3.6rem !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 920px) {
+  body.profile-landing-active .intro-shell {
+    grid-template-columns: 1fr !important;
+    min-height: 100dvh !important;
+    align-content: center !important;
+    justify-items: center !important;
+    gap: 14px !important;
+    padding: 22px !important;
+  }
+
+  body.profile-landing-active .intro-copy {
+    align-content: start !important;
+    justify-self: center !important;
+    max-width: 520px !important;
+    text-align: center !important;
+  }
+
+  body.profile-landing-active .intro-copy h1 {
+    max-width: none !important;
+    font-size: 4.35rem !important;
+  }
+
+  body.profile-landing-active .intro-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    justify-self: stretch !important;
+    width: auto !important;
+  }
+
+  body.profile-landing-active .intro-stats article {
+    border-bottom: 0 !important;
+    border-right: 1px solid var(--line) !important;
+  }
+
+  body.profile-landing-active .intro-stats article:last-child {
+    border-right: 0 !important;
+  }
+
+  body.profile-landing-active .app-screenshot-preview {
+    display: grid !important;
+    width: min(100%, 520px) !important;
+    height: 230px !important;
+    max-height: 28dvh !important;
+  }
+
+  body.profile-landing-active .app-screenshot-preview img {
+    object-position: 57% 23% !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body.profile-landing-active .intro-shell {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-height: 100dvh !important;
+    align-content: center !important;
+    justify-items: center !important;
+    gap: 14px !important;
+    padding: 14px !important;
+  }
+
+  body.profile-landing-active .intro-copy {
+    justify-self: center !important;
+    width: 100% !important;
+    max-width: 284px !important;
+    gap: 14px !important;
+    padding: 16px !important;
+    overflow: hidden !important;
+    text-align: center !important;
+  }
+
+  body.profile-landing-active .intro-copy h1 {
+    max-width: none !important;
+    font-size: 3.18rem !important;
+    line-height: 1 !important;
+  }
+
+  body.profile-landing-active .intro-brand,
+  body.profile-landing-active .intro-actions,
+  body.profile-landing-active .intro-stats {
+    justify-self: center !important;
+  }
+
+  body.profile-landing-active .intro-copy p:not(.eyebrow) {
+    max-width: 100% !important;
+  }
+
+  body.profile-landing-active .intro-actions .primary-action {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  body.profile-landing-active .intro-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  body.profile-landing-active .intro-stats article {
+    min-height: 70px !important;
+    justify-items: center !important;
+    border-right: 1px solid var(--line) !important;
+    border-bottom: 0 !important;
+    padding: 9px 5px !important;
+    text-align: center !important;
+  }
+
+  body.profile-landing-active .intro-stats article:last-child {
+    border-right: 0 !important;
+  }
+
+  body.profile-landing-active .intro-stats span,
+  body.profile-landing-active .intro-stats small {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: normal !important;
+  }
+
+  body.profile-landing-active .app-screenshot-preview {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 284px !important;
+    height: 178px !important;
+    max-height: 24dvh !important;
+  }
+
+  body.profile-landing-active .app-screenshot-preview img {
+    object-position: 57% 22% !important;
+  }
+}
+
+@media (max-width: 380px) {
+  body.profile-landing-active .intro-copy h1 {
+    font-size: 2.78rem !important;
+  }
+
+  body.profile-landing-active .intro-stats strong {
+    font-size: 1.16rem !important;
+  }
+}
+
+/* Weight chart axis: keep labels attached to the plotted line area. */
+body.progress-page:not(.profile-landing-active) .weight-chart-axis {
+  margin-top: -12px !important;
+}
+
+body.progress-page:not(.profile-landing-active) .weight-y-label {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 701px) {
+  body.progress-page:not(.profile-landing-active) .weight-chart-axis {
+    padding: 0 56px !important;
+  }
+}
+
+/* Desktop logged-food edit: same rhythm as Add food, with a fixed food identity row. */
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .food-log.is-editing .food-search-row,
+  body:not(.profile-landing-active) .food-log.is-editing .food-filter-tabs,
+  body:not(.profile-landing-active) .food-log.is-editing .suggestions,
+  body:not(.profile-landing-active) .food-log.is-editing .search-note,
+  body:not(.profile-landing-active) .food-log.is-editing .scan-food-button,
+  body:not(.profile-landing-active) .food-log.is-editing .scan-choice-menu {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 13px 10px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 20px 26px 18px !important;
+    overflow: visible !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .food-edit-summary {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    order: 0 !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    border: 1px solid var(--line) !important;
+    background: transparent !important;
+    padding: 13px 16px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .food-edit-summary span,
+  body:not(.profile-landing-active) .food-log.is-editing .food-edit-summary small {
+    color: var(--muted) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .food-edit-summary strong {
+    color: var(--ink) !important;
+    font-size: 1.05rem !important;
+    font-weight: 560 !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm .food-form-field {
+    display: grid !important;
+    grid-row: auto !important;
+    align-content: start !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label > span {
+    display: block !important;
+    margin: 0 0 6px !important;
+    color: var(--muted) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm input,
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm select {
+    width: 100% !important;
+    min-height: 44px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.86rem !important;
+    font-weight: 520 !important;
+    padding: 0 6px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm input:focus,
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm select:focus {
+    border-bottom-color: var(--ink) !important;
+    box-shadow: inset 0 -1px 0 var(--ink) !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="foodAmount"] {
+    grid-column: 1 / 3 !important;
+    order: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="foodUnit"] {
+    grid-column: 3 / 5 !important;
+    order: 2 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="foodMeal"] {
+    grid-column: 5 / 8 !important;
+    order: 3 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="manualFoodCalories"] {
+    grid-column: 1 / 4 !important;
+    order: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="manualFoodProtein"] {
+    grid-column: 4 / 7 !important;
+    order: 5 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="manualFoodCarbs"] {
+    grid-column: 7 / 10 !important;
+    order: 6 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm label[for="manualFoodFat"] {
+    grid-column: 10 / 13 !important;
+    order: 7 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodSubmit {
+    grid-column: 10 / 13 !important;
+    grid-row: auto !important;
+    order: 8 !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    margin: 0 26px 22px !important;
   }
 }

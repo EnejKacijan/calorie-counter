@@ -4174,18 +4174,19 @@ body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
   z-index: 80;
   display: flex;
   align-items: center;
-  gap: 14px;
-  max-width: min(360px, calc(100vw - 28px));
-  border: 1px solid rgba(22, 33, 31, 0.12);
-  border-radius: 8px;
-  background: rgba(22, 33, 31, 0.96);
-  color: white;
-  padding: 12px 14px;
-  box-shadow: 0 18px 40px rgba(30, 47, 41, 0.24);
+  justify-content: space-between;
+  gap: 18px;
+  max-width: min(340px, calc(100vw - 28px));
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--panel) 96%, var(--paper));
+  color: var(--ink);
+  padding: 10px 12px;
+  box-shadow: 0 8px 20px rgba(21, 21, 18, 0.08);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(12px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transform: translateY(8px);
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
 .undo-toast.is-visible {
@@ -4196,28 +4197,38 @@ body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
 
 .undo-toast span {
   min-width: 0;
-  font-size: 0.88rem;
-  font-weight: 800;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .undo-toast button {
+  min-height: 30px;
   border: 0;
-  border-radius: 8px;
-  background: white;
-  color: #16211f;
-  padding: 7px 10px;
-  font-weight: 900;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0 0 0 12px;
 }
 
 body[data-theme="dark"] .undo-toast {
-  border-color: rgba(210, 234, 224, 0.16);
-  background: rgba(8, 13, 13, 0.98);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.44);
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--panel) 96%, var(--paper));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26);
 }
 
 body[data-theme="dark"] .undo-toast button {
-  background: #f3f7f5;
-  color: #07100e;
+  color: var(--ink);
 }
 
 .empty-state {
@@ -5751,10 +5762,11 @@ body[data-theme="dark"] .undo-toast button {
   }
 
   .undo-toast {
-    right: 10px;
+    right: 18px;
     bottom: calc(88px + env(safe-area-inset-bottom));
-    left: 10px;
-    max-width: none;
+    left: auto;
+    max-width: min(310px, calc(100vw - 36px));
+    padding: 9px 11px;
   }
 
   .food-log .entry-card strong,
@@ -14209,5 +14221,1319 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
     justify-content: flex-end !important;
     gap: 10px !important;
     margin: 0 26px 22px !important;
+  }
+}
+
+/* Desktop selected-food detail: keep the chosen item from collapsing into the form grid. */
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .food-log.is-detailing .food-search-row,
+  body:not(.profile-landing-active) .food-log.is-detailing .food-filter-tabs,
+  body:not(.profile-landing-active) .food-log.is-detailing .suggestions,
+  body:not(.profile-landing-active) .food-log.is-detailing .search-note,
+  body:not(.profile-landing-active) .food-log.is-detailing .scan-food-button,
+  body:not(.profile-landing-active) .food-log.is-detailing .scan-choice-menu {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 13px 10px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 20px 26px 18px !important;
+    overflow: visible !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    order: 0 !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    border: 1px solid var(--line) !important;
+    background: transparent !important;
+    padding: 13px 16px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary span,
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary small {
+    color: var(--muted) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary small {
+    font-size: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary small::before {
+    content: "Adjust serving, meal, or nutrition values, then add.";
+    font-size: 0.58rem !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing .food-edit-summary strong {
+    color: var(--ink) !important;
+    font-size: 1.05rem !important;
+    font-weight: 560 !important;
+    line-height: 1.2 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm .food-form-field {
+    display: grid !important;
+    grid-row: auto !important;
+    align-content: start !important;
+    min-width: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label > span {
+    display: block !important;
+    margin: 0 0 6px !important;
+    color: var(--muted) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.58rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm input,
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm select {
+    width: 100% !important;
+    min-height: 44px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.86rem !important;
+    font-weight: 520 !important;
+    padding: 0 6px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm input:focus,
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm select:focus {
+    border-bottom-color: var(--ink) !important;
+    box-shadow: inset 0 -1px 0 var(--ink) !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="foodAmount"] {
+    grid-column: 1 / 3 !important;
+    order: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="foodUnit"] {
+    grid-column: 3 / 5 !important;
+    order: 2 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="foodMeal"] {
+    grid-column: 5 / 8 !important;
+    order: 3 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="manualFoodCalories"] {
+    grid-column: 1 / 4 !important;
+    order: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="manualFoodProtein"] {
+    grid-column: 4 / 7 !important;
+    order: 5 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="manualFoodCarbs"] {
+    grid-column: 7 / 10 !important;
+    order: 6 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm label[for="manualFoodFat"] {
+    grid-column: 10 / 13 !important;
+    order: 7 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodSubmit {
+    grid-column: 10 / 13 !important;
+    grid-row: auto !important;
+    order: 8 !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+  }
+}
+
+/* Mobile add-food search: calmer controls and clean-edged result rows. */
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) {
+    padding: 18px 22px calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .panel-title {
+    margin-bottom: 18px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) #manualFoodForm {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-search-row {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 72px !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-search-row::before {
+    top: 50% !important;
+    left: 13px !important;
+    transform: translateY(-50%);
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-name-field input,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-name-field input {
+    min-height: 48px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--panel) !important;
+    box-shadow: none !important;
+    font-size: 0.9rem !important;
+    padding: 0 12px 0 34px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .scan-food-button,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .scan-food-button {
+    width: 72px !important;
+    min-height: 48px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--paper) !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-size: 0.58rem !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(max-content, 1fr));
+    gap: 6px !important;
+    margin: 0 !important;
+    overflow-x: auto;
+    padding-bottom: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs button,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs button {
+    min-height: 38px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--panel) !important;
+    color: var(--muted) !important;
+    box-shadow: none !important;
+    font-size: 0.72rem !important;
+    font-weight: 650 !important;
+    padding: 0 10px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs button.is-active,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs button.is-active {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .search-note {
+    margin: -2px 0 0 !important;
+    font-size: 0.54rem !important;
+    letter-spacing: 0.14em !important;
+    line-height: 1.4 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestions,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestions {
+    display: grid !important;
+    gap: 0 !important;
+    max-height: min(55dvh, 430px) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: var(--panel) !important;
+    box-shadow: none !important;
+    overflow-y: auto !important;
+  }
+
+  body:not(.profile-landing-active) .food-log:not(.is-searching) .suggestions {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    min-height: 74px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 13px 12px !important;
+    text-align: left !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card:last-child {
+    border-bottom: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card > div {
+    max-width: none !important;
+    min-width: 0;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card strong {
+    display: block;
+    color: var(--ink) !important;
+    font-size: 0.94rem !important;
+    line-height: 1.18 !important;
+    overflow-wrap: anywhere;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card p {
+    margin-top: 6px !important;
+    color: var(--muted) !important;
+    font-size: 0.54rem !important;
+    letter-spacing: 0.1em !important;
+    line-height: 1.35 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card .suggestion-kcal,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestion-card .suggestion-kcal {
+    position: static !important;
+    min-width: 46px;
+    background: transparent !important;
+    color: var(--ink) !important;
+    font-size: 0.9rem !important;
+    font-weight: 560 !important;
+    text-align: right;
+  }
+}
+
+/* Exercise editing: make deletion read as a destructive action, not a close control. */
+.exercise-log.is-editing .edit-modal-actions {
+  align-items: center;
+}
+
+.exercise-log.is-editing .edit-delete-button {
+  width: auto !important;
+  min-width: 96px;
+  height: 38px;
+  min-height: 38px;
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #a64232 !important;
+  font-family: var(--font-mono);
+  font-size: 0.62rem !important;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  padding: 0 14px !important;
+}
+
+.exercise-log.is-editing .edit-delete-button:hover,
+.exercise-log.is-editing .edit-delete-button:focus-visible {
+  border-color: #a64232 !important;
+  background: #a64232 !important;
+  color: var(--panel) !important;
+  outline: none;
+}
+
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .exercise-log.is-editing .edit-modal-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin: -10px 26px 22px !important;
+  }
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing {
+    grid-template-rows: auto auto auto auto;
+    overflow-y: auto;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .edit-modal-actions {
+    position: static !important;
+    order: 4 !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin: 12px 0 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .edit-delete-button {
+    min-width: 112px;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+/* Mobile diary: show food and exercise logs, with a clear switch inside the add sheet. */
+.add-mode-switch {
+  display: none;
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active).modal-open .log-panel.is-adding {
+    position: fixed !important;
+    top: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    z-index: 60 !important;
+    display: grid !important;
+    width: min(491px, 100vw) !important;
+    height: 100dvh !important;
+    max-height: none !important;
+    transform: translateX(-50%) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--panel) !important;
+    box-shadow: 0 0 0 1px var(--line) !important;
+    overflow-y: auto !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding {
+    grid-template-rows: auto auto auto auto !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding .add-mode-switch {
+    order: 2;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100% !important;
+    margin: 0 0 14px !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding.is-editing .add-mode-switch,
+  body:not(.profile-landing-active) .food-log.is-adding.is-detailing .add-mode-switch,
+  body:not(.profile-landing-active) .food-log.is-adding.is-viewing-saved .add-mode-switch {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .add-mode-switch button,
+  body[data-theme="dark"]:not(.profile-landing-active) .add-mode-switch button {
+    display: grid !important;
+    align-items: center;
+    justify-items: center;
+    width: 100% !important;
+    height: 38px !important;
+    min-height: 38px;
+    max-height: 38px;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--muted) !important;
+    box-shadow: none !important;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0 10px !important;
+  }
+
+  body:not(.profile-landing-active) .add-mode-switch button.is-active,
+  body[data-theme="dark"]:not(.profile-landing-active) .add-mode-switch button.is-active {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding #exerciseForm {
+    order: 3;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding #exerciseType,
+  body:not(.profile-landing-active) .exercise-log.is-adding #exerciseMinutes,
+  body:not(.profile-landing-active) .exercise-log.is-adding #exerciseCalories {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .workspace {
+    display: grid;
+    gap: 26px;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel {
+    position: relative;
+    display: block !important;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0;
+    padding-top: 42px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) .panel-title,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) .exercise-mode-header,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) .add-mode-switch,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) .exercise-field-labels,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) #exerciseForm,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) .edit-modal-actions {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::before,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::after {
+    position: absolute;
+    top: 0;
+    padding-bottom: 13px;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-family: "Courier New", ui-monospace, monospace;
+    font-size: 0.52rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 1;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::before {
+    left: 0;
+    content: "Exercise log";
+    text-transform: uppercase;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::after {
+    right: 0;
+    content: var(--exercise-entry-count, "");
+    letter-spacing: 0.02em;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-list {
+    gap: 0;
+    margin-top: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card,
+  body:not(.profile-landing-active) .exercise-log .entry-card:last-child,
+  body:not(.profile-landing-active) .exercise-log .empty-state {
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-surface {
+    min-height: 46px;
+    background: transparent;
+    padding: 9px 0;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card strong {
+    color: var(--ink);
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card p {
+    color: var(--muted);
+    font-size: 0.48rem;
+    line-height: 1.25;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .empty-state {
+    padding: 18px 10px;
+    color: var(--muted);
+    font-family: "Courier New", ui-monospace, monospace;
+    font-size: 0.62rem;
+    text-align: center;
+  }
+}
+
+/* Mobile diary log parity: exercise should read as a peer to food, not a secondary note. */
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::before,
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::after {
+    color: var(--muted) !important;
+    font-family: "Courier New", ui-monospace, monospace !important;
+    font-size: 0.52rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.1em !important;
+    line-height: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::after {
+    letter-spacing: 0.02em !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card strong {
+    color: var(--ink) !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card p {
+    color: var(--muted) !important;
+    font-size: 0.48rem !important;
+    line-height: 1.25 !important;
+  }
+}
+
+body:not(.profile-landing-active) .food-log.log-panel.is-adding::before,
+body:not(.profile-landing-active) .food-log.log-panel.is-adding::after,
+body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::before,
+body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Mobile add-exercise sheet: match the add-food sheet rhythm and controls. */
+@media (max-width: 1120px) {
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) {
+    align-content: start !important;
+    gap: 0 !important;
+    padding: 18px 22px calc(76px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing)::before {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .panel-title {
+    order: 0;
+    position: relative !important;
+    display: block !important;
+    min-height: 24px !important;
+    height: auto !important;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .modal-close-button,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .modal-close-button {
+    position: absolute !important;
+    top: -5px !important;
+    right: auto !important;
+    left: -6px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-size: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .modal-close-button::before {
+    content: "←";
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .exercise-mode-header {
+    order: 1;
+    display: block !important;
+    min-height: 0 !important;
+    margin: -38px 0 16px 30px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .exercise-mode-header .label {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .exercise-mode-header strong {
+    color: var(--ink) !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    line-height: normal !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) .add-mode-switch {
+    margin-bottom: 14px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseForm {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseType,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseMinutes,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseCalories,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseType,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseMinutes,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseCalories {
+    width: 100% !important;
+    min-height: 60px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-family: var(--font-ui) !important;
+    font-size: 0.95rem !important;
+    font-weight: 520 !important;
+    padding: 0 16px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseType:focus,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseMinutes:focus,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseCalories:focus {
+    border-color: var(--ink) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseSubmit,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseSubmit {
+    position: static !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    margin: 6px 0 0 !important;
+    border: 1px solid var(--ink) !important;
+    border-radius: 0 !important;
+    background: var(--ink) !important;
+    box-shadow: none !important;
+    color: var(--panel) !important;
+    font-family: var(--font-ui);
+    font-size: 1.32rem !important;
+    font-weight: 650 !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Canonical mobile Add sheet shell shared by Food and Exercise. */
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) {
+    align-content: start !important;
+    gap: 0 !important;
+    padding: 16px 26px calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .panel-title {
+    order: 1 !important;
+    position: relative !important;
+    display: block !important;
+    min-height: 24px !important;
+    height: 24px !important;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .modal-close-button,
+  body[data-theme="dark"]:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .modal-close-button {
+    position: absolute !important;
+    top: -5px !important;
+    right: auto !important;
+    left: -6px !important;
+    display: grid !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-size: 0 !important;
+    place-items: center !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .modal-close-button::before {
+    content: "←" !important;
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .entry-mode-header {
+    order: 2 !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: -38px 0 16px 30px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .entry-mode-header .label,
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .food-cancel-edit,
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .exercise-cancel-edit {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .entry-mode-header strong {
+    display: block !important;
+    color: var(--ink) !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    line-height: normal !important;
+  }
+
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) .add-mode-switch {
+    order: 3 !important;
+    margin: 0 0 18px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #manualFoodForm,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseForm {
+    order: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseForm {
+    gap: 14px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseType,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseMinutes,
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseCalories,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseType,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseMinutes,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseCalories {
+    height: 60px !important;
+    min-height: 60px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseSubmit,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) #exerciseSubmit {
+    height: 58px !important;
+    min-height: 58px !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* Food editing actions: keep Delete visible as a real action below Save. */
+.food-log.is-editing #deleteFoodEdit {
+  width: auto !important;
+  min-width: 96px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--warn) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.62rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.12em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  padding: 0 14px !important;
+}
+
+.food-log.is-editing #deleteFoodEdit:hover,
+.food-log.is-editing #deleteFoodEdit:focus-visible {
+  border-color: var(--warn) !important;
+  background: var(--warn) !important;
+  color: var(--panel) !important;
+  outline: none !important;
+}
+
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin: -10px 26px 22px !important;
+  }
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions,
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing .edit-modal-actions {
+    order: 4 !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin: 12px 0 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #deleteFoodEdit {
+    min-width: 112px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+/* Shared edit form rhythm for Food and Exercise. */
+.log-panel.is-editing .entry-mode-header {
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.log-panel.is-editing .entry-mode-header .label {
+  display: none !important;
+}
+
+.log-panel.is-editing .entry-mode-header strong {
+  color: var(--ink) !important;
+  font-size: 1.04rem !important;
+  font-weight: 540 !important;
+  line-height: 1 !important;
+}
+
+.log-panel.is-editing .edit-modal-actions {
+  gap: 10px !important;
+}
+
+.log-panel.is-editing .edit-delete-button {
+  width: auto !important;
+  min-width: 96px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--warn) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.62rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.12em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  padding: 0 14px !important;
+}
+
+.log-panel.is-editing .edit-delete-button:hover,
+.log-panel.is-editing .edit-delete-button:focus-visible {
+  border-color: var(--warn) !important;
+  background: var(--warn) !important;
+  color: var(--panel) !important;
+  outline: none !important;
+}
+
+.exercise-log.is-editing #exerciseForm {
+  display: grid !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.exercise-log.is-editing #exerciseType,
+.exercise-log.is-editing #exerciseMinutes,
+.exercise-log.is-editing #exerciseCalories {
+  width: 100% !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-family: var(--font-mono) !important;
+  font-weight: 520 !important;
+}
+
+.exercise-log.is-editing #exerciseType:focus,
+.exercise-log.is-editing #exerciseMinutes:focus,
+.exercise-log.is-editing #exerciseCalories:focus {
+  border-bottom-color: var(--ink) !important;
+  box-shadow: inset 0 -1px 0 var(--ink) !important;
+  outline: none !important;
+}
+
+.exercise-log.is-editing #exerciseSubmit {
+  border-radius: 0 !important;
+}
+
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .exercise-log.is-editing .exercise-field-labels {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #exerciseForm {
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 13px 10px !important;
+    margin: 0 !important;
+    padding: 20px 26px 18px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #exerciseType {
+    grid-column: 1 / 5 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #exerciseMinutes {
+    grid-column: 5 / 8 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #exerciseCalories {
+    grid-column: 8 / 10 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #exerciseSubmit {
+    grid-column: 10 / 13 !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    font-size: 0.76rem !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing .edit-modal-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin: 0 26px 22px !important;
+  }
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing {
+    align-content: start !important;
+    gap: 0 !important;
+    padding: 16px 26px calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .panel-title {
+    order: 1 !important;
+    position: relative !important;
+    display: block !important;
+    min-height: 24px !important;
+    height: 24px !important;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .modal-close-button,
+  body[data-theme="dark"]:not(.profile-landing-active) .exercise-log.is-adding.is-editing .modal-close-button {
+    position: absolute !important;
+    top: -5px !important;
+    right: auto !important;
+    left: -6px !important;
+    display: grid !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    font-size: 0 !important;
+    place-items: center !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .modal-close-button::before {
+    content: "←" !important;
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .entry-mode-header {
+    order: 2 !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: -35px 0 18px 30px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .exercise-cancel-edit {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseForm {
+    order: 3 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+    align-self: start !important;
+    align-content: start !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseType,
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseMinutes,
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseCalories {
+    min-height: 58px !important;
+    border: 1px solid var(--line) !important;
+    border-right: 0 !important;
+    border-radius: 0 !important;
+    font-size: 0.88rem !important;
+    padding: 0 14px !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseType {
+    grid-column: 1 / -1 !important;
+    border-right: 1px solid var(--line) !important;
+    border-bottom: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseMinutes {
+    grid-column: 1 / 2 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseCalories {
+    grid-column: 2 / 3 !important;
+    border-right: 1px solid var(--line) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #exerciseSubmit {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    margin: 12px 0 0 !important;
+    font-size: 0.76rem !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing .edit-modal-actions {
+    order: 4 !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    margin: 12px 0 0 !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log.is-editing #deleteExerciseEdit {
+    min-width: 112px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+}
+
+/* Logged exercise entries: clearer info spacing and no sticky touch hover. */
+body:not(.profile-landing-active) .exercise-log .entry-surface {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 58px !important;
+  padding: 13px 14px !important;
+}
+
+body:not(.profile-landing-active) .exercise-log .entry-main {
+  display: grid !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+
+body:not(.profile-landing-active) .exercise-log .entry-card strong {
+  color: var(--ink) !important;
+  font-size: 0.88rem !important;
+  font-weight: 560 !important;
+  line-height: 1.2 !important;
+}
+
+body:not(.profile-landing-active) .exercise-log .entry-card p {
+  color: var(--muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.62rem !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .entry-swipe-actions {
+  background: linear-gradient(270deg, color-mix(in srgb, var(--warn) 18%, transparent), transparent 48%) !important;
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .exercise-log .entry-list {
+    border: 1px solid var(--line) !important;
+    background: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card,
+  body:not(.profile-landing-active) .exercise-log .entry-card:last-child {
+    border-bottom: 1px solid var(--line) !important;
+  }
+
+  body:not(.profile-landing-active) .exercise-log .entry-card:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  body:not(.profile-landing-active) .entry-card:hover {
+    border-color: var(--line) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  body:not(.profile-landing-active) .entry-card:hover .entry-actions {
+    opacity: 0.58 !important;
+  }
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .entry-card:hover,
+  body:not(.profile-landing-active) .entry-card:focus:not(:focus-visible) {
+    border-color: var(--line) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  body:not(.profile-landing-active) .entry-card:hover::after {
+    opacity: 0 !important;
+    transform: translateX(4px) !important;
+  }
+
+  body:not(.profile-landing-active) .entry-card.is-selected {
+    box-shadow: inset 3px 0 0 var(--ink) !important;
+  }
+}
+
+/* Food edit actions: keep Save and secondary actions in separate rows. */
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing #manualFoodForm {
+    padding-bottom: 0 !important;
+    overflow: visible !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing #manualFoodSubmit,
+  body[data-theme="dark"]:not(.profile-landing-active) .food-log.is-adding.is-editing #manualFoodSubmit {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    grid-column: 1 / -1 !important;
+    order: 30 !important;
+    min-height: 58px !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing .edit-modal-actions,
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    grid-column: 1 / -1 !important;
+    order: 31 !important;
+    display: grid !important;
+    grid-template-columns: 46px minmax(0, 140px) !important;
+    gap: 12px !important;
+    align-items: center !important;
+    justify-content: start !important;
+    margin: 16px 0 0 !important;
+    transform: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button {
+    width: 46px !important;
+    min-width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved {
+    border-color: color-mix(in srgb, var(--warn) 48%, var(--line)) !important;
+    color: var(--warn) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:hover,
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:focus-visible {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:hover,
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:focus-visible {
+    border-color: var(--warn) !important;
+    background: var(--warn) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #deleteFoodEdit {
+    width: 140px !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+}
+
+/* Desktop food edit: keep secondary actions beside Save inside the form grid. */
+@media (min-width: 701px) {
+  body:not(.profile-landing-active) .food-log.is-editing #manualFoodSubmit {
+    grid-column: 9 / 13 !important;
+    grid-row: 4 !important;
+    order: 8 !important;
+    align-self: end !important;
+    width: 100% !important;
+    min-height: 54px !important;
+    margin: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions,
+  body:not(.profile-landing-active) .food-log.is-adding.is-editing .edit-modal-actions {
+    position: static !important;
+    grid-column: 1 / 9 !important;
+    grid-row: 4 !important;
+    order: 8 !important;
+    display: grid !important;
+    grid-template-columns: 54px minmax(130px, 170px) !important;
+    gap: 12px !important;
+    align-items: end !important;
+    justify-content: start !important;
+    align-self: end !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button {
+    width: 54px !important;
+    min-width: 54px !important;
+    height: 54px !important;
+    min-height: 54px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-editing #deleteFoodEdit {
+    width: 170px !important;
+    min-width: 0 !important;
+    height: 54px !important;
+    min-height: 54px !important;
   }
 }

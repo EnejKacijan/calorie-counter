@@ -132,6 +132,7 @@ const elements = {
   foodScanButton: document.querySelector("#foodScanButton"),
   foodScanMenu: document.querySelector("#foodScanMenu"),
   foodFilterTabs: Array.from(document.querySelectorAll("[data-food-filter]")),
+  addModeButtons: Array.from(document.querySelectorAll("[data-add-mode]")),
   foodPhotoButton: document.querySelector("#foodPhotoButton"),
   foodGalleryButton: document.querySelector("#foodGalleryButton"),
   foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
@@ -351,6 +352,7 @@ function openMobileLogForm(section, input) {
 
 function closeMobileLogForm(section) {
   section.classList.remove("is-adding");
+  clearEntryTransientState();
   if (!document.querySelector(".log-panel.is-adding")) {
     document.body.classList.remove("modal-open");
   }
@@ -364,18 +366,33 @@ function setFabMenuOpen(isOpen) {
   elements.fabActions?.setAttribute("aria-hidden", String(!isOpen));
 }
 
+function syncAddModeButtons(mode) {
+  elements.addModeButtons.forEach((button) => {
+    const isActive = button.dataset.addMode === mode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
 function openAddFoodFromFab() {
   setFabMenuOpen(false);
+  closeMobileLogForm(elements.exerciseSection);
+  if (editingExerciseId) resetExerciseForm();
   if (editingFoodId) resetFoodForm();
   foodSearchFilter = "all";
   updateFoodFilterTabs();
   elements.foodSection.classList.remove("is-viewing-saved");
+  syncAddModeButtons("food");
   openMobileLogForm(elements.foodSection, elements.manualFoodName);
 }
 
 function openAddExerciseFromFab() {
   setFabMenuOpen(false);
+  elements.foodSection.classList.remove("is-viewing-saved", "is-searching", "is-detailing");
+  closeMobileLogForm(elements.foodSection);
+  if (editingFoodId || selectedFoodBase) resetFoodForm();
   if (editingExerciseId) resetExerciseForm();
+  syncAddModeButtons("exercise");
   openMobileLogForm(elements.exerciseSection, elements.exerciseType);
 }
 
@@ -402,7 +419,9 @@ function closeMobileOnlyViewsForDesktop() {
 
 function openFoodsFromHash() {
   if (window.location.hash !== "#foods") return;
-  openSavedFoodsFromFab();
+  closeMobileLogForm(elements.foodSection);
+  closeMobileLogForm(elements.exerciseSection);
+  elements.foodSection.scrollIntoView({ behavior: "smooth", block: "start" });
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
@@ -758,15 +777,17 @@ function renderEntries() {
   elements.foodEntryCount.textContent = elements.foodList.dataset.count;
   elements.foodEntryCount.parentElement.dataset.count = elements.foodList.dataset.count;
   elements.foodEntryCount.previousElementSibling.textContent = "Today's log";
+  elements.exerciseList.dataset.count = `${day.exercises.length} ${day.exercises.length === 1 ? "entry" : "entries"}`;
+  elements.exerciseSection.dataset.count = elements.exerciseList.dataset.count;
+  elements.exerciseSection.style.setProperty("--exercise-entry-count", `"${elements.exerciseList.dataset.count}"`);
 
   renderList(elements.foodList, day.foods, "foods", (food) => {
     return `${mealLabel(food.meal)} · ${foodLoggedTime(food)}`;
   });
 
   renderList(elements.exerciseList, day.exercises, "exercises", (exercise) => {
-    const weight = exercise.weightKg ? ` · ${exercise.weightKg} kg` : "";
-    return `${exercise.minutes} min${weight} · ${Math.round(exercise.calories)} kcal burned`;
-  }, (exercise) => `${exerciseIcon(exercise.name)} ${exercise.name}`);
+    return `${exercise.minutes} min · ${Math.round(exercise.calories)} kcal burned`;
+  });
 }
 
 function renderList(container, entries, collection, subtitleFactory, titleFactory = (entry) => entry.name) {
@@ -921,6 +942,17 @@ function closeSwipedEntries(exceptCard = null) {
   });
 }
 
+function clearEntryTransientState() {
+  closeSwipedEntries();
+  document.querySelectorAll(".entry-card.is-selected, .entry-card.is-dragging").forEach((entryCard) => {
+    entryCard.classList.remove("is-selected", "is-dragging");
+    entryCard.style.removeProperty("--swipe-x");
+  });
+  if (document.activeElement?.closest?.(".entry-card")) {
+    document.activeElement.blur();
+  }
+}
+
 function attachEntrySwipe(card, collection, entry) {
   let startX = 0;
   let startY = 0;
@@ -1000,14 +1032,10 @@ function attachEntrySwipe(card, collection, entry) {
   });
 }
 
-function exerciseIcon(name) {
-  return {
-    Running: "🏃",
-    "Weight lifting": "🏋",
-    Cycling: "🚴",
-    Walking: "🚶",
-  }[name] || "✣";
-}
+document.addEventListener("pointerdown", (event) => {
+  if (event.target.closest(".entry-card")) return;
+  closeSwipedEntries();
+});
 
 function renderCalendar() {
   const selected = dateFromKey(state.selectedDate);
@@ -1230,10 +1258,20 @@ function sourceLabel(food) {
 function foodMatchesActiveFilter(food) {
   const source = String(food.source || food.brand || "").toLowerCase();
   if (foodSearchFilter === "my") return isFoodSaved(food) || source.includes("saved");
-  if (foodSearchFilter === "recent") return foodLibrary.some((recentFood) => recentFoodKey(recentFood) === recentFoodKey(food));
+  if (foodSearchFilter === "recent") return foodLibrary.some((recentFood) => foodKey(recentFood) === foodKey(foodForSaving(food)));
   if (foodSearchFilter === "usda") return source.includes("usda");
   if (foodSearchFilter === "off") return source.includes("open food facts") || source === "off";
   return true;
+}
+
+function activeFoodFilterLabel() {
+  const labels = {
+    my: "saved foods",
+    recent: "recent foods",
+    usda: "USDA",
+    off: "Open Food Facts",
+  };
+  return labels[foodSearchFilter] || "";
 }
 
 function updateFoodFilterTabs() {
@@ -1246,9 +1284,28 @@ function updateFoodFilterTabs() {
 
 function foodSearchSummary(count) {
   const query = elements.manualFoodName.value.trim();
+  if (!query && foodSearchFilter === "my") return `${count} saved ${count === 1 ? "food" : "foods"}`;
   if (!query) return "Search saved foods, USDA, or Open Food Facts.";
-  if (!count) return `0 matches for "${query}"`;
+  if (!count) {
+    const source = activeFoodFilterLabel();
+    return source ? `0 ${source} matches for "${query}"` : `0 matches for "${query}"`;
+  }
   return `${count} ${count === 1 ? "match" : "matches"} for "${query}"`;
+}
+
+function showBrowseFoodSuggestions() {
+  if (elements.manualFoodName.value.trim().length >= 2) return false;
+
+  if (foodSearchFilter === "my") {
+    renderSuggestions(savedFoods, { remember: false });
+    return true;
+  }
+
+  elements.foodSuggestions.innerHTML = "";
+  latestFoodSuggestions = [];
+  elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
+  setFoodSearchActive(false);
+  return true;
 }
 
 function addSuggestedFood(food) {
@@ -1258,6 +1315,9 @@ function addSuggestedFood(food) {
   const multiplier = portionMultiplier({ ...food, servingGrams: portion.grams || 100 }, amount, unit);
   addFood({
     name: food.name,
+    brand: food.brand || "",
+    source: food.source || "Local",
+    serving: food.serving || "",
     amount,
     unit,
     meal: defaultMealForNow(),
@@ -1272,12 +1332,18 @@ function addSuggestedFood(food) {
   resetFoodForm();
 }
 
-function renderSuggestions(foods) {
-  latestFoodSuggestions = foods;
+function renderSuggestions(foods, options = {}) {
+  const { remember = true } = options;
+  if (remember) latestFoodSuggestions = foods;
   elements.foodSuggestions.innerHTML = "";
   const filteredFoods = foods.filter(foodMatchesActiveFilter);
 
   if (!filteredFoods.length) {
+    if (elements.manualFoodName.value.trim().length < 2 && foodSearchFilter === "my") {
+      elements.searchNote.textContent = "No saved foods yet. Save foods with the heart.";
+      setFoodSearchActive(false);
+      return;
+    }
     elements.searchNote.textContent = elements.manualFoodName.value.trim().length < 2 ? "Search saved foods, USDA, or Open Food Facts." : foodSearchSummary(0);
     setFoodSearchActive(elements.manualFoodName.value.trim().length >= 2);
     return;
@@ -1378,19 +1444,20 @@ function resetFoodForm() {
   elements.foodPhotoStatus.textContent = "";
   elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
   setFoodSearchActive(false);
+  clearEntryTransientState();
   syncFoodModeHeader();
 }
 
 function syncFoodModeHeader() {
   const isEditing = Boolean(editingFoodId);
-  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : "Add food";
-  elements.foodModeTitle.textContent = isEditing ? "Edit food" : "Add food";
+  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : "Add";
+  elements.foodModeTitle.textContent = isEditing ? "Edit food" : "Add";
 }
 
 function syncExerciseModeHeader() {
   const isEditing = Boolean(editingExerciseId);
-  elements.exerciseModeEyebrow.textContent = isEditing ? "Editing entry" : "Add exercise";
-  elements.exerciseModeTitle.textContent = isEditing ? "Edit exercise" : "Add exercise";
+  elements.exerciseModeEyebrow.textContent = isEditing ? "Editing entry" : "Add";
+  elements.exerciseModeTitle.textContent = isEditing ? "Edit exercise" : "Add";
 }
 
 function setFoodSearchActive(isActive) {
@@ -1457,10 +1524,7 @@ async function searchFoodSuggestions(query) {
   const localMatches = searchFoodLibrary(query);
 
   if (query.trim().length < 2) {
-    elements.foodSuggestions.innerHTML = "";
-    latestFoodSuggestions = [];
-    elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
-    setFoodSearchActive(false);
+    showBrowseFoodSuggestions();
     return;
   }
 
@@ -1479,7 +1543,6 @@ async function searchFoodSuggestions(query) {
   });
   const data = await response.json();
   const onlineFoods = data.foods || [];
-  rememberFoods(onlineFoods);
   renderSuggestions(dedupeFoodSuggestions([...localMatches, ...onlineFoods]).slice(0, 24));
 }
 
@@ -1639,6 +1702,9 @@ elements.manualFoodForm.addEventListener("submit", (event) => {
   const isEditing = Boolean(editingFoodId);
   addFood({
     name: elements.manualFoodName.value.trim(),
+    brand: selectedFoodBase?.brand || "",
+    source: selectedFoodBase?.source || "Local",
+    serving: selectedFoodBase?.serving || "",
     amount: Number(elements.foodAmount.value || 1),
     unit: elements.foodUnit.value,
     meal: elements.foodMeal.value,
@@ -1680,6 +1746,15 @@ elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
 elements.addFoodToggle.addEventListener("click", () => {
   openAddFoodFromFab();
 });
+elements.addModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.dataset.addMode === "exercise") {
+      openAddExerciseFromFab();
+    } else {
+      openAddFoodFromFab();
+    }
+  });
+});
 elements.closeFoodModal.addEventListener("click", () => {
   closeMobileLogForm(elements.foodSection);
   resetFoodForm();
@@ -1714,6 +1789,7 @@ elements.foodFilterTabs.forEach((button) => {
   button.addEventListener("click", () => {
     foodSearchFilter = button.dataset.foodFilter || "all";
     updateFoodFilterTabs();
+    if (showBrowseFoodSuggestions()) return;
     renderSuggestions(latestFoodSuggestions);
   });
 });
@@ -1764,7 +1840,7 @@ function fillExerciseFormForEdit(exercise) {
   elements.exerciseType.value = exercise.name;
   elements.exerciseMinutes.value = exercise.minutes;
   elements.exerciseCalories.value = Math.round(Number(exercise.calories || 0));
-  elements.exerciseSubmit.textContent = "✓";
+  elements.exerciseSubmit.textContent = "Save";
   elements.exerciseSection.classList.add("is-adding", "is-editing");
   document.body.classList.add("modal-open");
   syncExerciseModeHeader();
@@ -1778,6 +1854,7 @@ function resetExerciseForm() {
   editingExerciseId = null;
   elements.exerciseSection.classList.remove("is-editing");
   applyExercisePreset();
+  clearEntryTransientState();
   syncExerciseModeHeader();
 }
 
@@ -1870,7 +1947,10 @@ elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
 elements.fabSavedFoods?.addEventListener("click", openSavedFoodsFromFab);
 elements.mobileFoodsTab?.addEventListener("click", (event) => {
   event.preventDefault();
-  openSavedFoodsFromFab();
+  closeMobileLogForm(elements.foodSection);
+  closeMobileLogForm(elements.exerciseSection);
+  setFabMenuOpen(false);
+  elements.foodSection.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 elements.fabSheetClose?.addEventListener("click", () => setFabMenuOpen(false));
 elements.fabOverlay?.addEventListener("click", () => {

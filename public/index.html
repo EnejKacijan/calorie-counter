@@ -188,12 +188,16 @@
             <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from
               yesterday</button>
           </div>
-          <div class="food-mode-header" id="foodModeHeader">
+          <div class="entry-mode-header food-mode-header" id="foodModeHeader">
             <div>
-              <p class="label" id="foodModeEyebrow">Add food</p>
-              <strong id="foodModeTitle">Add food</strong>
+              <p class="label" id="foodModeEyebrow">Add</p>
+              <strong id="foodModeTitle">Add</strong>
             </div>
             <button class="text-button food-cancel-edit" id="cancelFoodEdit" type="button">Cancel</button>
+          </div>
+          <div class="add-mode-switch" role="tablist" aria-label="Entry type">
+            <button class="is-active" type="button" data-add-mode="food" aria-pressed="true">Food</button>
+            <button type="button" data-add-mode="exercise" aria-pressed="false">Exercise</button>
           </div>
           <div class="food-field-labels" aria-hidden="true">
             <span>Food</span>
@@ -252,13 +256,13 @@
             <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number"
                 min="0" step="1" aria-label="Fat grams" /></label>
             <button id="manualFoodSubmit" type="submit">+ Add</button>
+            <div class="edit-modal-actions" id="foodEditActions">
+              <button class="edit-favorite-button" id="favoriteFoodEdit" type="button"
+                aria-label="Save food">♡</button>
+              <button class="edit-delete-button" id="deleteFoodEdit" type="button"
+                aria-label="Delete food">Delete</button>
+            </div>
           </form>
-          <div class="edit-modal-actions" id="foodEditActions">
-            <button class="edit-favorite-button" id="favoriteFoodEdit" type="button" title="Save food"
-              aria-label="Save food">♡</button>
-            <button class="edit-delete-button" id="deleteFoodEdit" type="button" title="Delete"
-              aria-label="Delete">×</button>
-          </div>
           <div class="photo-food-tools">
             <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
               capture="environment" hidden />
@@ -302,12 +306,16 @@
               aria-label="Close exercise form">×</button>
             <button class="quick-add-button" id="addExerciseToggle" type="button" aria-label="Add exercise">+</button>
           </div>
-          <div class="exercise-mode-header" id="exerciseModeHeader">
+          <div class="entry-mode-header exercise-mode-header" id="exerciseModeHeader">
             <div>
-              <p class="label" id="exerciseModeEyebrow">Add exercise</p>
-              <strong id="exerciseModeTitle">Add exercise</strong>
+              <p class="label" id="exerciseModeEyebrow">Add</p>
+              <strong id="exerciseModeTitle">Add</strong>
             </div>
             <button class="text-button exercise-cancel-edit" id="cancelExerciseEdit" type="button">Cancel</button>
+          </div>
+          <div class="add-mode-switch" role="tablist" aria-label="Entry type">
+            <button type="button" data-add-mode="food" aria-pressed="false">Food</button>
+            <button class="is-active" type="button" data-add-mode="exercise" aria-pressed="true">Exercise</button>
           </div>
           <div class="exercise-field-labels" aria-hidden="true">
             <span>Exercise</span>
@@ -327,8 +335,8 @@
             <button id="exerciseSubmit" type="submit">+</button>
           </form>
           <div class="edit-modal-actions" id="exerciseEditActions">
-            <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete"
-              aria-label="Delete">×</button>
+            <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete exercise"
+              aria-label="Delete exercise">Delete</button>
           </div>
           <div class="entry-list" id="exerciseList"></div>
         </div>
@@ -344,10 +352,9 @@
         </svg></span><b>Today</b></a>
     <a class="mobile-tab-link" id="mobileFoodsTab" href="#foods"><span class="sidebar-icon" aria-hidden="true"><svg
           viewBox="0 0 24 24">
-          <path d="M4.5 8.5h15" />
-          <path d="M7 8.5V20" />
-          <path d="M17 8.5V20" />
-          <path d="M8 4h8l1.5 4.5h-11Z" />
+          <circle cx="11" cy="12.5" r="5.2" />
+          <path d="M18 5.5v13" />
+          <path d="M16.3 5.5v4.2c0 1 .7 1.8 1.7 1.8s1.7-.8 1.7-1.8V5.5" />
         </svg></span><b>Foods</b></a>
     <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
           <path d="M4 19h16" />

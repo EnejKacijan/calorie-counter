@@ -42,7 +42,6 @@ async function searchUsda(query, usdaApiKey) {
     api_key: usdaApiKey,
     query,
     pageSize: "20",
-    dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"].join(","),
   });
   const data = await fetchJson(`https://api.nal.usda.gov/fdc/v1/foods/search?${params}`);
 

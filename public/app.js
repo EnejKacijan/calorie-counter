@@ -1868,7 +1868,10 @@ elements.floatingAddButton?.addEventListener("click", (event) => {
 elements.fabAddFood?.addEventListener("click", openAddFoodFromFab);
 elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
 elements.fabSavedFoods?.addEventListener("click", openSavedFoodsFromFab);
-elements.mobileFoodsTab?.addEventListener("click", openSavedFoodsFromFab);
+elements.mobileFoodsTab?.addEventListener("click", (event) => {
+  event.preventDefault();
+  openSavedFoodsFromFab();
+});
 elements.fabSheetClose?.addEventListener("click", () => setFabMenuOpen(false));
 elements.fabOverlay?.addEventListener("click", () => {
   setFabMenuOpen(false);

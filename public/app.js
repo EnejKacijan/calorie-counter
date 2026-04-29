@@ -35,7 +35,7 @@ const defaults = {
 const foodLibraryKey = "calorie-counter-food-library";
 const savedFoodLibraryKey = "calorie-counter-saved-foods";
 const savedFoodMigrationKey = "calorie-counter-saved-foods-v2";
-const maxFoodLibraryItems = 10;
+const maxFoodLibraryItems = 50;
 const stapleFoodLibrary = [
   { id: "usda-chicken-breast-grilled", name: "Chicken breast, grilled", brand: "USDA", source: "USDA", serving: "per 100g", calories: 165, protein: 31, carbs: 0, fat: 4 },
   { id: "usda-chicken-thigh-roasted", name: "Chicken thigh, roasted", brand: "USDA", source: "USDA", serving: "per 100g", calories: 209, protein: 26, carbs: 0, fat: 11 },
@@ -78,6 +78,7 @@ const elements = {
   fabAddFood: document.querySelector("#fabAddFood"),
   fabAddExercise: document.querySelector("#fabAddExercise"),
   fabSavedFoods: document.querySelector("#fabSavedFoods"),
+  floatingScanButton: document.querySelector("#floatingScanButton"),
   mobileFoodsTab: document.querySelector("#mobileFoodsTab"),
   appTitle: document.querySelector("#appTitle"),
   profileSummary: document.querySelector("#profileSummary"),
@@ -102,6 +103,7 @@ const elements = {
   clearDayStreakLabel: document.querySelector("#clearDayStreakLabel"),
   mobileClearDayStreak: document.querySelector("#mobileClearDayStreak"),
   mobileStreakValue: document.querySelector("#mobileStreakValue"),
+  mobileStreakUnit: document.querySelector("#mobileStreakUnit"),
   mobileWeightValue: document.querySelector("#mobileWeightValue"),
   mobileWeightDelta: document.querySelector("#mobileWeightDelta"),
   macroGrid: document.querySelector("#macroGrid"),
@@ -135,6 +137,7 @@ const elements = {
   addModeButtons: Array.from(document.querySelectorAll("[data-add-mode]")),
   foodPhotoButton: document.querySelector("#foodPhotoButton"),
   foodGalleryButton: document.querySelector("#foodGalleryButton"),
+  foodGalleryShortcut: document.querySelector("#foodGalleryShortcut"),
   foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
   copyYesterdayButton: document.querySelector("#copyYesterdayButton"),
   foodSuggestions: document.querySelector("#foodSuggestions"),
@@ -213,7 +216,7 @@ function loadSavedFoods() {
 
   try {
     const saved = JSON.parse(localStorage.getItem(savedFoodLibraryKey) || "[]");
-    return Array.isArray(saved) ? saved.map(normalizeFoodForLibrary).filter(Boolean).slice(0, maxFoodLibraryItems) : [];
+    return Array.isArray(saved) ? uniqueSavedFoods(saved.map(normalizeFoodForLibrary).filter(Boolean)).slice(0, maxFoodLibraryItems) : [];
   } catch {
     return [];
   }
@@ -224,7 +227,7 @@ function saveFoodLibrary() {
 }
 
 function saveSavedFoods() {
-  localStorage.setItem(savedFoodLibraryKey, JSON.stringify(savedFoods.slice(0, maxFoodLibraryItems)));
+  localStorage.setItem(savedFoodLibraryKey, JSON.stringify(uniqueSavedFoods(savedFoods).slice(0, maxFoodLibraryItems)));
 }
 
 function normalizeFoodForLibrary(food) {
@@ -247,11 +250,34 @@ function foodKey(food) {
   return `${food.name || ""}-${food.brand || ""}-${food.serving || food.amount || ""}-${food.unit || ""}`.toLowerCase();
 }
 
+function savedFoodKey(food) {
+  return [
+    food?.name || "",
+    food?.brand || "",
+    food?.source || "saved",
+  ]
+    .map((value) => String(value).trim().replace(/\s+/g, " ").toLowerCase())
+    .join("-");
+}
+
 function recentFoodKey(food) {
   return String(food?.name || "")
     .trim()
     .replace(/\s+/g, " ")
     .toLowerCase();
+}
+
+function uniqueSavedFoods(foods) {
+  const foodMap = new Map();
+  foods.forEach((food) => {
+    const key = savedFoodKey(food);
+    if (!key.trim()) return;
+    const existing = foodMap.get(key);
+    if (!existing || String(food.savedAt || "").localeCompare(String(existing.savedAt || "")) >= 0) {
+      foodMap.set(key, food);
+    }
+  });
+  return [...foodMap.values()].sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
 }
 
 function uniqueRecentFoods(foods) {
@@ -281,7 +307,7 @@ function rememberFoods(foods) {
 }
 
 function isFoodSaved(food) {
-  return savedFoods.some((savedFood) => foodKey(savedFood) === foodKey(foodForSaving(food)));
+  return savedFoods.some((savedFood) => savedFoodKey(savedFood) === savedFoodKey(foodForSaving(food)));
 }
 
 function foodForSaving(food) {
@@ -294,13 +320,13 @@ function foodForSaving(food) {
 
 function toggleSavedFood(food) {
   const normalizedFood = foodForSaving(food);
-  const key = foodKey(normalizedFood);
+  const key = savedFoodKey(normalizedFood);
 
   if (isFoodSaved(normalizedFood)) {
-    savedFoods = savedFoods.filter((savedFood) => foodKey(savedFood) !== key);
+    savedFoods = savedFoods.filter((savedFood) => savedFoodKey(savedFood) !== key);
     elements.searchNote.textContent = `${normalizedFood.name} removed from saved foods.`;
   } else {
-    savedFoods = [{ ...normalizedFood, savedAt: new Date().toISOString() }, ...savedFoods.filter((savedFood) => foodKey(savedFood) !== key)].slice(0, maxFoodLibraryItems);
+    savedFoods = uniqueSavedFoods([{ ...normalizedFood, savedAt: new Date().toISOString() }, ...savedFoods.filter((savedFood) => savedFoodKey(savedFood) !== key)]).slice(0, maxFoodLibraryItems);
     elements.searchNote.textContent = `${normalizedFood.name} saved.`;
   }
 
@@ -338,6 +364,15 @@ function isMobileSidebar() {
   return window.matchMedia("(max-width: 920px)").matches;
 }
 
+function isPhoneAddFoodLayout() {
+  return window.matchMedia("(max-width: 640px)").matches;
+}
+
+function focusWhenKeyboardIsStable(input) {
+  if (!input || isMobileSidebar()) return;
+  input.focus();
+}
+
 function setMobileSidebarOpen(isOpen) {
   elements.appShell.classList.toggle("mobile-sidebar-open", isOpen);
   elements.mobileMenuButton?.setAttribute("aria-expanded", String(isOpen));
@@ -347,7 +382,7 @@ function openMobileLogForm(section, input) {
   setFabMenuOpen(false);
   section.classList.add("is-adding");
   document.body.classList.add("modal-open");
-  input?.focus();
+  focusWhenKeyboardIsStable(input);
 }
 
 function closeMobileLogForm(section) {
@@ -403,6 +438,11 @@ function openSavedFoodsFromFab() {
   openMobileLogForm(elements.foodSection, null);
 }
 
+function openFoodScanFromFab() {
+  openAddFoodFromFab();
+  window.setTimeout(() => elements.foodPhotoInput?.click(), 0);
+}
+
 function closeMobileOnlyViewsForDesktop() {
   setFabMenuOpen(false);
   setMobileSidebarOpen(false);
@@ -427,7 +467,7 @@ function openFoodsFromHash() {
 
 function showFoodFormFromSavedFoods() {
   elements.foodSection.classList.remove("is-viewing-saved");
-  elements.manualFoodName.focus();
+  focusWhenKeyboardIsStable(elements.manualFoodName);
 }
 
 function syncSelectedDateWithToday() {
@@ -464,28 +504,62 @@ function totals() {
   return { ...foodTotals, netCalories: foodTotals.calories - exerciseCalories, exerciseCalories };
 }
 
-function isClearDay(day) {
-  const summary = summarizeDay(day);
-  const hasEntries = day.foods.length > 0 || day.exercises.length > 0;
-  return hasEntries && summary.netCalories <= state.goals.calories;
+const streakWindowMs = 24 * 60 * 60 * 1000;
+
+function isFutureDateKey(dateKey) {
+  return typeof dateKey === "string" && dateKey > localDateKey(new Date());
 }
 
-function clearDayStreak() {
-  const today = localDateKey(new Date());
-  let cursor = dateFromKey(today);
+function streakTimestamp(value) {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
 
-  if (!isClearDay(ensureDay(today))) {
-    cursor = addDays(cursor, -1);
-  }
+function foodLoggedForDate(food, fallbackDateKey) {
+  return food.loggedForDate || food.logged_for_date || fallbackDateKey;
+}
 
+function isFoodExcludedFromStreak(food, fallbackDateKey) {
+  return food.excludedFromStreak === true || isFutureDateKey(foodLoggedForDate(food, fallbackDateKey));
+}
+
+function foodActivityTimestamps() {
+  return Object.entries(state.days || {})
+    .flatMap(([dateKey, day]) =>
+      (day?.foods || [])
+        .filter((food) => !isFoodExcludedFromStreak(food, dateKey))
+        .map((food) => streakTimestamp(food.createdAt || food.created_at))
+        .filter((timestamp) => timestamp !== null),
+    )
+    .sort((a, b) => a - b);
+}
+
+function foodActivityStreak(now = new Date()) {
+  const nowTime = now.getTime();
   let streak = 0;
-  while (true) {
-    const dateKey = localDateKey(cursor);
-    const day = state.days[dateKey];
-    if (!day || !isClearDay(day)) return streak;
-    streak += 1;
-    cursor = addDays(cursor, -1);
-  }
+  let windowStartedAt = null;
+  let lastActivityAt = null;
+
+  foodActivityTimestamps().forEach((activityAt) => {
+    if (activityAt > nowTime) return;
+
+    if (lastActivityAt === null || activityAt - lastActivityAt > streakWindowMs) {
+      streak = 1;
+      windowStartedAt = activityAt;
+      lastActivityAt = activityAt;
+      return;
+    }
+
+    if (activityAt - windowStartedAt >= streakWindowMs) {
+      streak += 1;
+      windowStartedAt = activityAt;
+    }
+
+    lastActivityAt = activityAt;
+  });
+
+  if (lastActivityAt === null || nowTime - lastActivityAt > streakWindowMs) return 0;
+  return streak;
 }
 
 function ensureDay(dateKey, targetState = state) {
@@ -548,12 +622,13 @@ function render() {
   setAnimatedMetric(elements.exerciseCaloriesTotal, Math.round(daily.exerciseCalories), "", "exerciseCalories");
   setAnimatedMetric(elements.consumedCalories, Math.round(remaining), "", "remainingRing");
   setAnimatedMetric(elements.netCaloriesTotal, Math.round(daily.netCalories), "", "netCalories");
-  const streak = clearDayStreak();
+  const streak = foodActivityStreak();
   const streakLabel = `${streak} ${streak === 1 ? "day" : "days"}`;
   elements.clearDayStreak.textContent = streak;
-  elements.clearDayStreakLabel.textContent = streak === 1 ? "clear day" : "clear days";
+  elements.clearDayStreakLabel.textContent = streak === 1 ? "food day" : "food days";
   elements.mobileClearDayStreak.textContent = `${streakLabel} streak`;
   elements.mobileStreakValue.textContent = streak;
+  elements.mobileStreakUnit.textContent = streak === 1 ? "day" : "days";
   renderMobileWeightStat();
   elements.goalCaloriesText.textContent = state.goals.calories;
   elements.calorieRing.style.strokeDashoffset = ringLength - ringLength * calorieProgress;
@@ -1053,9 +1128,16 @@ function renderCalendar() {
     const day = ensureDay(dateKey);
     const summary = summarizeDay(day);
     const hasEntries = day.foods.length > 0 || day.exercises.length > 0;
+    const isFuture = dateKey > todayKey;
     const isOverGoal = summary.netCalories > state.goals.calories;
-    const status = hasEntries ? (isOverGoal ? "over" : "complete") : "empty";
-    const statusLabel = status === "empty" ? "No entries" : status === "over" ? "Over calorie goal" : "Within calorie goal";
+    const status = hasEntries && !isFuture ? (isOverGoal ? "over" : "complete") : "empty";
+    const statusLabel = isFuture && hasEntries
+      ? "Planned entries"
+      : status === "empty"
+        ? "No entries"
+        : status === "over"
+          ? "Over calorie goal"
+          : "Within calorie goal";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "day-tile";
@@ -1252,6 +1334,8 @@ function sourceLabel(food) {
   if (source.includes("open food facts") || source === "off") return "OPEN FOOD FACTS";
   if (source.includes("usda")) return "USDA";
   if (source.includes("saved") || isFoodSaved(food)) return "MY FOODS";
+  if (source.includes("recent") || foodLibrary.some((recentFood) => foodKey(recentFood) === foodKey(foodForSaving(food)))) return "RECENT";
+  if (source.includes("starter") || source.includes("local")) return "STARTER";
   return String(food.source || food.brand || "MY FOODS").toUpperCase();
 }
 
@@ -1316,7 +1400,7 @@ function addSuggestedFood(food) {
   addFood({
     name: food.name,
     brand: food.brand || "",
-    source: food.source || "Local",
+    source: food.source || "Recent",
     serving: food.serving || "",
     amount,
     unit,
@@ -1530,7 +1614,7 @@ async function searchFoodSuggestions(query) {
 
   if (localMatches.length) {
     renderSuggestions(localMatches);
-    elements.searchNote.textContent = "Showing saved foods while searching online sources...";
+    elements.searchNote.textContent = "Showing saved and recent foods while searching online sources...";
   } else {
     elements.searchNote.textContent = "Searching USDA and Open Food Facts...";
     setFoodSearchActive(true);
@@ -1555,10 +1639,14 @@ async function analyzeFoodPhoto(file) {
   }
 
   const previousScanText = elements.foodScanButton?.querySelector("b")?.textContent || "Scan";
+  const scanLoadingText = isPhoneAddFoodLayout() ? "Scan" : "Analyzing";
   elements.foodPhotoButton.disabled = true;
   elements.foodGalleryButton.disabled = true;
-  elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = "Analyzing");
-  elements.foodPhotoStatus.textContent = "Estimating nutrition...";
+  if (elements.foodScanButton) elements.foodScanButton.disabled = true;
+  if (elements.foodGalleryShortcut) elements.foodGalleryShortcut.disabled = true;
+  elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = scanLoadingText);
+  elements.foodScanButton?.setAttribute("aria-label", "Scanning food");
+  elements.foodPhotoStatus.textContent = "Scanning food...";
 
   try {
     const imageDataUrl = await resizeImageForAnalysis(file);
@@ -1576,7 +1664,10 @@ async function analyzeFoodPhoto(file) {
   } finally {
     elements.foodPhotoButton.disabled = false;
     elements.foodGalleryButton.disabled = false;
+    if (elements.foodScanButton) elements.foodScanButton.disabled = false;
+    if (elements.foodGalleryShortcut) elements.foodGalleryShortcut.disabled = false;
     elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = previousScanText);
+    elements.foodScanButton?.setAttribute("aria-label", "Scan food");
     elements.foodPhotoInput.value = "";
     elements.foodGalleryInput.value = "";
   }
@@ -1600,8 +1691,11 @@ function fillManualFoodFromPhoto(food) {
 
   editingFoodId = null;
   elements.foodSection.classList.remove("is-editing");
+  elements.foodSection.classList.add("is-detailing");
   elements.manualFoodSubmit.textContent = "+ Add";
   elements.manualFoodName.value = food.name || "Unknown food";
+  elements.manualFoodName.readOnly = true;
+  elements.foodEditName.textContent = food.name || "Unknown food";
   elements.foodAmount.value = amount;
   elements.foodUnit.value = unit;
   elements.foodMeal.value = defaultMealForNow();
@@ -1638,6 +1732,8 @@ function resizeImageForAnalysis(file) {
 
 function addFood(food) {
   const now = new Date().toISOString();
+  const loggedForDate = state.selectedDate;
+  const excludedFromStreak = isFutureDateKey(loggedForDate);
   const nextFood = {
     ...food,
     calories: Math.round(Number(food.calories || 0)),
@@ -1648,14 +1744,29 @@ function addFood(food) {
   let addedId = null;
   if (editingFoodId) {
     currentDay().foods = currentDay().foods.map((entry) =>
-      entry.id === editingFoodId ? { ...entry, ...nextFood, updatedAt: new Date().toISOString() } : entry,
+      entry.id === editingFoodId
+        ? {
+          ...entry,
+          ...nextFood,
+          loggedForDate: foodLoggedForDate(entry, loggedForDate),
+          excludedFromStreak: entry.excludedFromStreak ?? isFutureDateKey(foodLoggedForDate(entry, loggedForDate)),
+          updatedAt: now,
+        }
+        : entry,
     );
   } else {
     addedId = crypto.randomUUID();
-    currentDay().foods.unshift({ ...nextFood, id: addedId, loggedAt: now, createdAt: now });
+    currentDay().foods.unshift({
+      ...nextFood,
+      id: addedId,
+      loggedAt: now,
+      createdAt: now,
+      loggedForDate,
+      excludedFromStreak,
+    });
     recentSuccess = { collection: "foods", id: addedId };
   }
-  rememberFoods([{ ...nextFood, source: nextFood.source || "Local", serving: nextFood.amount && nextFood.unit ? `${nextFood.amount} ${nextFood.unit}` : "1 serving" }]);
+  rememberFoods([{ ...nextFood, source: nextFood.source || "Recent", serving: nextFood.amount && nextFood.unit ? `${nextFood.amount} ${nextFood.unit}` : "1 serving" }]);
   saveState();
   render();
   return addedId;
@@ -1682,11 +1793,24 @@ function copyFoodsFromYesterday() {
   }
 
   const copiedAt = new Date().toISOString();
-  const copiedFoods = sourceFoods.map(({ id, createdAt, updatedAt, copiedFromDate, ...food }) => ({
+  const loggedForDate = state.selectedDate;
+  const excludedFromStreak = isFutureDateKey(loggedForDate);
+  const copiedFoods = sourceFoods.map(({
+    id,
+    createdAt,
+    updatedAt,
+    copiedFromDate,
+    loggedForDate: _loggedForDate,
+    logged_for_date: _loggedForDateLegacy,
+    excludedFromStreak: _excludedFromStreak,
+    ...food
+  }) => ({
     ...food,
     id: crypto.randomUUID(),
     loggedAt: copiedAt,
     createdAt: copiedAt,
+    loggedForDate,
+    excludedFromStreak,
     copiedFromDate: sourceDateKey,
   }));
 
@@ -1703,7 +1827,7 @@ elements.manualFoodForm.addEventListener("submit", (event) => {
   addFood({
     name: elements.manualFoodName.value.trim(),
     brand: selectedFoodBase?.brand || "",
-    source: selectedFoodBase?.source || "Local",
+    source: selectedFoodBase?.source || "Recent",
     serving: selectedFoodBase?.serving || "",
     amount: Number(elements.foodAmount.value || 1),
     unit: elements.foodUnit.value,
@@ -1795,9 +1919,13 @@ elements.foodFilterTabs.forEach((button) => {
 });
 elements.foodScanButton?.addEventListener("click", (event) => {
   event.stopPropagation();
-  const isOpen = elements.foodScanMenu?.classList.toggle("is-open");
-  elements.foodScanButton.setAttribute("aria-expanded", String(Boolean(isOpen)));
-  elements.foodScanMenu?.setAttribute("aria-hidden", String(!isOpen));
+  if (isPhoneAddFoodLayout()) {
+    elements.foodPhotoInput.click();
+    return;
+  }
+  elements.foodScanMenu?.classList.remove("is-open");
+  elements.foodScanMenu?.setAttribute("aria-hidden", "true");
+  elements.foodGalleryInput.click();
 });
 elements.foodPhotoButton.addEventListener("click", () => {
   elements.foodScanMenu?.classList.remove("is-open");
@@ -1809,6 +1937,9 @@ elements.foodGalleryButton.addEventListener("click", () => {
   elements.foodScanMenu?.classList.remove("is-open");
   elements.foodScanMenu?.setAttribute("aria-hidden", "true");
   elements.foodScanButton?.setAttribute("aria-expanded", "false");
+  elements.foodGalleryInput.click();
+});
+elements.foodGalleryShortcut?.addEventListener("click", () => {
   elements.foodGalleryInput.click();
 });
 elements.foodPhotoInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodPhotoInput.files?.[0]));
@@ -1945,6 +2076,7 @@ elements.floatingAddButton?.addEventListener("click", (event) => {
 elements.fabAddFood?.addEventListener("click", openAddFoodFromFab);
 elements.fabAddExercise?.addEventListener("click", openAddExerciseFromFab);
 elements.fabSavedFoods?.addEventListener("click", openSavedFoodsFromFab);
+elements.floatingScanButton?.addEventListener("click", openFoodScanFromFab);
 elements.mobileFoodsTab?.addEventListener("click", (event) => {
   event.preventDefault();
   closeMobileLogForm(elements.foodSection);

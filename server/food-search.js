@@ -1,17 +1,3 @@
-const localFoods = [
-  { id: "local-pizza", name: "Slice of pizza", aliases: ["pizza", "pica"], source: "local", serving: "1 slice", calories: 285, protein: 12, carbs: 36, fat: 10 },
-  { id: "local-pita", name: "Pita bread", aliases: ["pita"], source: "local", serving: "1 medium", calories: 165, protein: 5.5, carbs: 33, fat: 1.1 },
-  { id: "local-fries", name: "Fries", aliases: ["french fries", "pomfri", "krompirček"], source: "local", serving: "150 g", calories: 365, protein: 4, carbs: 48, fat: 17 },
-  { id: "local-chicken", name: "Chicken breast", aliases: ["chicken", "piščanec", "piščančje prsi"], source: "local", serving: "150 g", calories: 250, protein: 47, carbs: 0, fat: 5 },
-  { id: "local-rice", name: "Rice", aliases: ["riž"], source: "local", serving: "1 cup", calories: 205, protein: 4, carbs: 45, fat: 0.4 },
-  { id: "local-salmon", name: "Salmon", aliases: ["losos"], source: "local", serving: "150 g", calories: 310, protein: 34, carbs: 0, fat: 18 },
-  { id: "local-salad", name: "Salad", aliases: ["solata"], source: "local", serving: "1 serving", calories: 90, protein: 3, carbs: 12, fat: 4 },
-  { id: "local-banana", name: "Banana", aliases: ["banana"], source: "local", serving: "1 medium", calories: 105, protein: 1.3, carbs: 27, fat: 0.4 },
-  { id: "local-eggs", name: "Eggs", aliases: ["egg", "jajca", "jajce"], source: "local", serving: "2 eggs", calories: 156, protein: 12.6, carbs: 1.2, fat: 10.6 },
-  { id: "local-oats", name: "Oats", aliases: ["oatmeal", "ovseni kosmiči"], source: "local", serving: "60 g", calories: 228, protein: 8, carbs: 40, fat: 4 },
-  { id: "local-yogurt", name: "Greek yogurt", aliases: ["yogurt", "jogurt", "grški jogurt"], source: "local", serving: "200 g", calories: 146, protein: 20, carbs: 7, fat: 4 },
-];
-
 const foodCache = new Map();
 
 export async function searchFoods(query, { usdaApiKey = process.env.USDA_API_KEY || "DEMO_KEY" } = {}) {
@@ -20,13 +6,11 @@ export async function searchFoods(query, { usdaApiKey = process.env.USDA_API_KEY
 
   if (foodCache.has(cleanQuery)) return foodCache.get(cleanQuery);
 
-  const localMatches = localFoods.filter((food) => localFoodMatches(food, cleanQuery)).slice(0, 10);
   const [usdaFoods, offFoods] = await Promise.allSettled([
     searchUsda(cleanQuery, usdaApiKey),
     searchOpenFoodFacts(cleanQuery),
   ]);
   const combined = [
-    ...localMatches,
     ...(usdaFoods.status === "fulfilled" ? usdaFoods.value : []),
     ...(offFoods.status === "fulfilled" ? offFoods.value : []),
   ];
@@ -111,17 +95,13 @@ function normalizeFood(food) {
     id: food.id,
     name: titleCase(food.name || "Unknown food"),
     brand: food.brand || "",
-    source: food.source || "local",
+    source: food.source || "USDA",
     serving: food.serving || "1 serving",
     calories: round(food.calories),
     protein: roundWhole(food.protein),
     carbs: roundWhole(food.carbs),
     fat: roundWhole(food.fat),
   };
-}
-
-function localFoodMatches(food, query) {
-  return [food.name, ...(food.aliases || [])].some((value) => value.toLowerCase().includes(query));
 }
 
 function dedupeFoods(foods) {

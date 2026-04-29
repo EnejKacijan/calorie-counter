@@ -11,6 +11,17 @@ const elements = {
   progressChart: document.querySelector("#progressChart"),
   weightChartAxis: document.querySelector(".weight-chart-axis"),
   progressList: document.querySelector("#progressList"),
+  progressViewButtons: Array.from(document.querySelectorAll("[data-progress-view]")),
+  progressViews: Array.from(document.querySelectorAll("[data-progress-panel]")),
+  nutritionMetricButtons: Array.from(document.querySelectorAll("[data-nutrition-metric]")),
+  nutritionRangeButtons: Array.from(document.querySelectorAll("[data-nutrition-range]")),
+  nutritionChart: document.querySelector("#nutritionChart"),
+  nutritionChartAxis: document.querySelector("#nutritionChartAxis"),
+  nutritionAverageCalories: document.querySelector("#nutritionAverageCalories"),
+  nutritionGoalDays: document.querySelector("#nutritionGoalDays"),
+  nutritionMacroHit: document.querySelector("#nutritionMacroHit"),
+  nutritionLoggedDays: document.querySelector("#nutritionLoggedDays"),
+  nutritionInsightText: document.querySelector("#nutritionInsightText"),
   appShell: document.querySelector(".app-shell"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
   mobileMenuButton: document.querySelector("#mobileMenuButton"),
@@ -19,6 +30,19 @@ const elements = {
   profileMeta: document.querySelector("#profileMeta"),
   logoutButton: document.querySelector("#logoutButton"),
 };
+
+let activeProgressView = window.location.hash === "#nutrition" ? "nutrition" : "weight";
+let nutritionMetric = localStorage.getItem("daily-fuel-nutrition-metric") || "calories";
+let nutritionRange = Number(localStorage.getItem("daily-fuel-nutrition-range") || 7);
+
+const nutritionMetrics = {
+  calories: { label: "Calories", unit: "kcal", goalKey: "calories", valueKey: "calories" },
+  net: { label: "Net", unit: "kcal", goalKey: "calories", valueKey: "netCalories" },
+  macros: { label: "Macros", unit: "%", isMacro: true },
+};
+
+if (!nutritionMetrics[nutritionMetric]) nutritionMetric = "calories";
+if (![7, 30].includes(nutritionRange)) nutritionRange = 7;
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
@@ -86,35 +110,13 @@ function summarizeDay(day = { foods: [], exercises: [] }) {
     (sum, food) => ({
       calories: sum.calories + Math.round(Number(food.calories || 0)),
       protein: sum.protein + Math.round(Number(food.protein || 0)),
+      carbs: sum.carbs + Math.round(Number(food.carbs || 0)),
+      fat: sum.fat + Math.round(Number(food.fat || 0)),
     }),
-    { calories: 0, protein: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
   const exerciseCalories = (day.exercises || []).reduce((sum, exercise) => sum + Math.round(Number(exercise.calories || 0)), 0);
   return { ...foodTotals, exerciseCalories, netCalories: foodTotals.calories - exerciseCalories };
-}
-
-function isClearDay(day) {
-  const summary = summarizeDay(day);
-  const hasEntries = (day?.foods || []).length > 0 || (day?.exercises || []).length > 0;
-  return hasEntries && summary.netCalories <= Number(state.goals?.calories || 2300);
-}
-
-function clearDayStreak() {
-  const today = localDateKey(new Date());
-  let cursor = dateFromKey(today);
-
-  if (!isClearDay(state.days?.[today])) {
-    cursor = addDays(cursor, -1);
-  }
-
-  let streak = 0;
-  while (true) {
-    const dateKey = localDateKey(cursor);
-    const day = state.days?.[dateKey];
-    if (!day || !isClearDay(day)) return streak;
-    streak += 1;
-    cursor = addDays(cursor, -1);
-  }
 }
 
 function currentWeight() {
@@ -174,8 +176,10 @@ function render() {
   elements.progressDate.value = elements.progressDate.value || today;
   if (elements.progressDate.value > today) elements.progressDate.value = today;
   elements.progressWeight.value = elements.progressWeight.value || currentWeight();
+  syncProgressView();
   renderChart(entries);
   renderList(entries);
+  renderNutrition();
 }
 
 function renderChart(entries) {
@@ -281,6 +285,286 @@ function renderList(entries) {
   });
 }
 
+function syncProgressView() {
+  document.body.dataset.progressView = activeProgressView;
+  elements.progressViewButtons.forEach((button) => {
+    const isActive = button.dataset.progressView === activeProgressView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  elements.progressViews.forEach((view) => {
+    const isActive = view.dataset.progressPanel === activeProgressView;
+    view.classList.toggle("is-active", isActive);
+    view.hidden = !isActive;
+  });
+}
+
+function setProgressView(view) {
+  if (!["weight", "nutrition"].includes(view)) return;
+  activeProgressView = view;
+  const nextHash = view === "nutrition" ? "#nutrition" : window.location.pathname;
+  window.history.replaceState(null, "", nextHash);
+  render();
+}
+
+function nutritionRows(range) {
+  const today = dateFromKey(localDateKey(new Date()));
+  return Array.from({ length: range }, (_, index) => {
+    const date = addDays(today, index - range + 1);
+    const dateKey = localDateKey(date);
+    const day = state.days?.[dateKey] || { foods: [], exercises: [] };
+    const summary = summarizeDay(day);
+    const foodCount = (day.foods || []).length;
+    const exerciseCount = (day.exercises || []).length;
+    return {
+      dateKey,
+      foodCount,
+      exerciseCount,
+      hasEntries: foodCount > 0,
+      calories: summary.calories,
+      protein: summary.protein,
+      carbs: summary.carbs,
+      fat: summary.fat,
+      exerciseCalories: summary.exerciseCalories,
+      netCalories: summary.netCalories,
+    };
+  });
+}
+
+function renderNutrition() {
+  const rows = nutritionRows(nutritionRange);
+  const metric = nutritionMetrics[nutritionMetric] || nutritionMetrics.calories;
+  const goal = Number(state.goals?.[metric.goalKey] || 0);
+  const loggedRows = rows.filter((row) => row.hasEntries);
+  const loggedCount = loggedRows.length;
+  const avgCalories = loggedCount ? average(loggedRows.map((row) => row.calories)) : 0;
+  const goalDays = loggedRows.filter((row) => row.netCalories <= Number(state.goals?.calories || 2300)).length;
+  const macroHitDays = loggedRows.filter(isMacroHitDay).length;
+
+  elements.nutritionAverageCalories.textContent = Math.round(avgCalories);
+  elements.nutritionGoalDays.textContent = `${goalDays}/${nutritionRange}`;
+  elements.nutritionMacroHit.textContent = `${macroHitDays}/${nutritionRange}`;
+  elements.nutritionLoggedDays.textContent = `${loggedCount}/${nutritionRange}`;
+  elements.nutritionInsightText.textContent = nutritionInsight(rows, loggedRows, goalDays);
+
+  elements.nutritionMetricButtons.forEach((button) => {
+    const isActive = button.dataset.nutritionMetric === nutritionMetric;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  elements.nutritionRangeButtons.forEach((button) => {
+    const isActive = Number(button.dataset.nutritionRange) === nutritionRange;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+
+  renderNutritionChart(rows, metric, goal);
+}
+
+function renderNutritionChart(rows, metric, goal) {
+  if (metric.isMacro) {
+    renderMacroNutritionChart(rows);
+    return;
+  }
+
+  const values = rows.map((row) => Number(row[metric.valueKey] || 0));
+  const minValue = Math.min(0, ...values);
+  const maxValue = Math.max(goal || 0, ...values, 1);
+  const padding = Math.max(10, (maxValue - minValue) * 0.12);
+  const min = Math.min(0, Math.floor(minValue - padding));
+  const max = Math.ceil(maxValue + padding);
+  const { width, height, plotWidth } = nutritionChartSize();
+  const xInset = Math.round((width - plotWidth) / 2);
+  const chart = {
+    left: xInset,
+    right: xInset + plotWidth,
+    top: 28,
+    bottom: height - 56,
+  };
+  const range = max - min || 1;
+  const yFor = (value) => chart.bottom - ((value - min) / range) * (chart.bottom - chart.top);
+  const zeroY = yFor(0);
+  const goalY = goal > 0 ? yFor(goal) : null;
+  const slot = (chart.right - chart.left) / rows.length;
+  const barWidth = Math.max(5, Math.min(nutritionRange === 7 ? 28 : 12, slot * 0.48));
+  const bars = rows.map((row, index) => {
+    const value = Number(row[metric.valueKey] || 0);
+    const x = chart.left + index * slot + (slot - barWidth) / 2;
+    const y = Math.min(yFor(value), zeroY);
+    const heightValue = Math.max(2, Math.abs(zeroY - yFor(value)));
+    const tone = row.netCalories > Number(state.goals?.calories || 2300) ? "is-over" : "is-good";
+    return `<rect class="nutrition-bar ${tone}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"></rect>`;
+  });
+  const goalLabel = `${Math.round(goal)} ${metric.unit}`;
+  const axisLabels = nutritionAxisLabels(rows, chart, slot);
+  const axisTicks = nutritionAxisTicks(rows, chart, slot);
+  const axisLabelY = chart.bottom + 27;
+
+  elements.nutritionChart.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metric.label} trend chart">
+      <path class="nutrition-grid" d="M${chart.left} ${zeroY} H${chart.right}"></path>
+      ${goalY === null ? "" : `<path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>`}
+      ${goalY === null ? "" : `<text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">${goalLabel}</text>`}
+      ${bars.join("")}
+      ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
+      ${axisLabels.map((label) => `<text class="nutrition-axis-label" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+    </svg>
+  `;
+
+  elements.nutritionChartAxis.innerHTML = "";
+}
+
+function renderMacroNutritionChart(rows) {
+  const goals = {
+    protein: Number(state.goals?.protein || 150),
+    carbs: Number(state.goals?.carbs || 260),
+    fat: Number(state.goals?.fat || 75),
+  };
+  const { width, height, plotWidth } = nutritionChartSize();
+  const xInset = Math.round((width - plotWidth) / 2);
+  const chart = {
+    left: xInset,
+    right: xInset + plotWidth,
+    top: 30,
+    bottom: height - 56,
+  };
+  const maxPercent = Math.max(
+    130,
+    ...rows.flatMap((row) => macroKeys().map((key) => macroPercent(row, key, goals[key]))),
+  );
+  const chartMax = Math.min(180, Math.ceil(maxPercent / 10) * 10);
+  const yFor = (value) => chart.bottom - (Math.min(value, chartMax) / chartMax) * (chart.bottom - chart.top);
+  const slot = (chart.right - chart.left) / rows.length;
+  const groupWidth = Math.max(12, Math.min(nutritionRange === 7 ? 36 : 18, slot * 0.62));
+  const gap = Math.max(1.5, groupWidth * 0.12);
+  const barWidth = (groupWidth - gap * 2) / 3;
+  const goalY = yFor(100);
+  const bars = rows.flatMap((row, index) => {
+    const groupX = chart.left + index * slot + (slot - groupWidth) / 2;
+    return macroKeys().map((key, macroIndex) => {
+      const percent = macroPercent(row, key, goals[key]);
+      const x = groupX + macroIndex * (barWidth + gap);
+      const y = yFor(percent);
+      const heightValue = Math.max(2, chart.bottom - y);
+      return `<rect class="nutrition-bar nutrition-macro-bar is-${key}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"></rect>`;
+    });
+  });
+  const axisLabels = nutritionAxisLabels(rows, chart, slot);
+  const axisTicks = nutritionAxisTicks(rows, chart, slot);
+  const axisLabelY = chart.bottom + 27;
+
+  elements.nutritionChart.innerHTML = `
+    <div class="nutrition-macro-legend" aria-hidden="true">
+      <span class="is-protein">P</span>
+      <span class="is-carbs">C</span>
+      <span class="is-fat">F</span>
+    </div>
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Macro percent of goal chart">
+      <path class="nutrition-grid" d="M${chart.left} ${chart.bottom} H${chart.right}"></path>
+      <path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>
+      <text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">100% goal</text>
+      ${bars.join("")}
+      ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
+      ${axisLabels.map((label) => `<text class="nutrition-axis-label" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+    </svg>
+  `;
+  elements.nutritionChartAxis.innerHTML = "";
+}
+
+function nutritionChartSize() {
+  const rect = elements.nutritionChart.getBoundingClientRect();
+  const width = Math.max(320, Math.round(rect.width || elements.nutritionChart.clientWidth || 320));
+  const height = width >= 700 ? 340 : 280;
+  const sidePadding = width >= 700 ? 50 : 18;
+  const maxPlotWidth = nutritionRange <= 7 && width >= 900 ? 560 : width - sidePadding * 2;
+  const plotWidth = Math.max(260, Math.min(width - sidePadding * 2, maxPlotWidth));
+  return { width, height, plotWidth };
+}
+
+function nutritionAxisLabels(rows, chart, slot) {
+  const every = rows.length <= 7 ? 1 : rows.length <= 14 ? 2 : 5;
+  return rows
+    .map((row, index) => ({
+      index,
+      x: chart.left + index * slot + slot / 2,
+      text: rows.length <= 7 ? shortWeekday(row.dateKey) : shortDateLabel(row.dateKey),
+    }))
+    .filter((label) => label.index === 0 || label.index === rows.length - 1 || label.index % every === 0);
+}
+
+function nutritionAxisTicks(rows, chart, slot) {
+  return rows.map((_, index) => ({
+    x: chart.left + index * slot + slot / 2,
+  }));
+}
+
+function macroKeys() {
+  return ["protein", "carbs", "fat"];
+}
+
+function macroPercent(row, key, goal) {
+  if (!goal) return 0;
+  return Math.max(0, (Number(row[key] || 0) / goal) * 100);
+}
+
+function isMacroHitDay(row) {
+  const proteinPercent = macroPercent(row, "protein", Number(state.goals?.protein || 150));
+  const carbsPercent = macroPercent(row, "carbs", Number(state.goals?.carbs || 260));
+  const fatPercent = macroPercent(row, "fat", Number(state.goals?.fat || 75));
+  return proteinPercent >= 80 && carbsPercent >= 70 && carbsPercent <= 130 && fatPercent >= 70 && fatPercent <= 130;
+}
+
+function average(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + Number(value || 0), 0) / values.length;
+}
+
+function shortWeekday(dateKey) {
+  return dateFromKey(dateKey).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+}
+
+function nutritionInsight(rows, loggedRows, goalDays) {
+  const loggedCount = loggedRows.length;
+  const calorieGoal = Number(state.goals?.calories || 2300);
+  const proteinGoal = Number(state.goals?.protein || 150);
+
+  if (!loggedCount) {
+    return "Start logging meals and this note will turn into a weekly read of calories, protein, and consistency.";
+  }
+
+  const overGoalDays = loggedRows.filter((row) => row.netCalories > calorieGoal).length;
+  const avgProtein = average(loggedRows.map((row) => row.protein));
+  const avgCarbsPercent = average(loggedRows.map((row) => macroPercent(row, "carbs", Number(state.goals?.carbs || 260))));
+  const avgFatPercent = average(loggedRows.map((row) => macroPercent(row, "fat", Number(state.goals?.fat || 75))));
+  const consistency = loggedCount / rows.length;
+
+  if (consistency < 0.5) {
+    return `You logged ${loggedCount} of ${rows.length} days. Next week, the biggest win is simply filling more days so the pattern becomes easier to trust.`;
+  }
+
+  if (overGoalDays === 0 && avgProtein >= proteinGoal * 0.8) {
+    return `Strong stretch: ${goalDays} goal days and protein is close to target. Keep the same structure next week.`;
+  }
+
+  if (overGoalDays >= Math.max(2, Math.ceil(loggedCount * 0.35))) {
+    return `${overGoalDays} logged days went over your calorie goal. Next week, watch the highest-calorie meal window first instead of trying to change everything.`;
+  }
+
+  if (avgProtein < proteinGoal * 0.7) {
+    return `Calories are fairly controlled, but protein is averaging ${Math.round(avgProtein)}g. Add one reliable protein anchor earlier in the day next week.`;
+  }
+
+  if (avgFatPercent > 120) {
+    return `Calories are close, but fat is averaging ${Math.round(avgFatPercent)}% of target. Watch oils, sauces, and snack portions first.`;
+  }
+
+  if (avgCarbsPercent < 70) {
+    return `Protein is in a decent place, but carbs are averaging ${Math.round(avgCarbsPercent)}% of target. Add steady carbs around training or busy days if energy dips.`;
+  }
+
+  return `Good baseline: ${goalDays} of ${loggedCount} logged days landed within goal. Keep logging and look for the meal that most often pushes net calories up.`;
+}
+
 function shortEntryDate(dateKey) {
   const date = dateFromKey(dateKey);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
@@ -307,6 +591,26 @@ elements.progressForm.addEventListener("submit", (event) => {
   if (state.user) state.user.weightKg = entry.weightKg;
   saveState();
   render();
+});
+
+elements.progressViewButtons.forEach((button) => {
+  button.addEventListener("click", () => setProgressView(button.dataset.progressView));
+});
+
+elements.nutritionMetricButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    nutritionMetric = button.dataset.nutritionMetric || "calories";
+    localStorage.setItem("daily-fuel-nutrition-metric", nutritionMetric);
+    renderNutrition();
+  });
+});
+
+elements.nutritionRangeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    nutritionRange = Number(button.dataset.nutritionRange || 7);
+    localStorage.setItem("daily-fuel-nutrition-range", String(nutritionRange));
+    renderNutrition();
+  });
 });
 
 elements.sidebarToggle.addEventListener("click", () => {

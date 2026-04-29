@@ -1,0 +1,33 @@
+{
+  "name": "Daily Fuel",
+  "short_name": "Daily Fuel",
+  "description": "Food, macro, streak, and body weight tracking.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f7f5ee",
+  "theme_color": "#f7f5ee",
+  "orientation": "portrait-primary",
+  "categories": ["health", "fitness", "food"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add food",
+      "short_name": "Add food",
+      "url": "/index.html#add-food"
+    },
+    {
+      "name": "Body weight",
+      "short_name": "Weight",
+      "url": "/progress.html"
+    }
+  ]
+}

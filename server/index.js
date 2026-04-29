@@ -18,12 +18,18 @@ const displayHost = host === "0.0.0.0" ? "localhost" : host;
 const usdaApiKey = process.env.USDA_API_KEY || "DEMO_KEY";
 const openAiApiKey = process.env.OPENAI_API_KEY;
 const openAiModel = process.env.OPENAI_MODEL;
+const aiScanRateLimit = {
+  maxRequests: positiveInteger(process.env.AI_SCAN_RATE_LIMIT, 5),
+  windowMs: positiveInteger(process.env.AI_SCAN_RATE_WINDOW_MS, 60_000),
+};
+const aiScanBuckets = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
@@ -39,9 +45,19 @@ const server = createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/foods/analyze-image" && request.method === "POST") {
+      const rateLimit = consumeAiScanRateLimit(request);
+      if (!rateLimit.allowed) {
+        return sendJson(
+          response,
+          429,
+          { error: `Too many scans. Try again in ${rateLimit.retryAfterSeconds} seconds.` },
+          rateLimit.headers,
+        );
+      }
+
       const body = await readJsonBody(request);
       const food = await analyzeFoodImage(body.imageDataUrl, { openAiApiKey, model: openAiModel });
-      return sendJson(response, 200, { food });
+      return sendJson(response, 200, { food }, rateLimit.headers);
     }
 
     if (url.pathname.startsWith("/api/")) {
@@ -93,9 +109,64 @@ async function serveStatic(pathname, response) {
   }
 }
 
-function sendJson(response, status, data) {
-  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+function sendJson(response, status, data, headers = {}) {
+  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers });
   response.end(JSON.stringify(data));
+}
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : fallback;
+}
+
+function consumeAiScanRateLimit(request) {
+  const now = Date.now();
+  const key = clientRateLimitKey(request);
+  const existing = aiScanBuckets.get(key);
+  const bucket = existing && existing.resetAt > now
+    ? existing
+    : { count: 0, resetAt: now + aiScanRateLimit.windowMs };
+
+  pruneAiScanBuckets(now);
+
+  if (bucket.count >= aiScanRateLimit.maxRequests) {
+    aiScanBuckets.set(key, bucket);
+    return rateLimitResult(false, bucket);
+  }
+
+  bucket.count += 1;
+  aiScanBuckets.set(key, bucket);
+  return rateLimitResult(true, bucket);
+}
+
+function rateLimitResult(allowed, bucket) {
+  const retryAfterSeconds = Math.max(1, Math.ceil((bucket.resetAt - Date.now()) / 1000));
+  const remaining = Math.max(0, aiScanRateLimit.maxRequests - bucket.count);
+  return {
+    allowed,
+    retryAfterSeconds,
+    headers: {
+      "Retry-After": String(retryAfterSeconds),
+      "X-RateLimit-Limit": String(aiScanRateLimit.maxRequests),
+      "X-RateLimit-Remaining": String(remaining),
+      "X-RateLimit-Reset": String(Math.ceil(bucket.resetAt / 1000)),
+    },
+  };
+}
+
+function clientRateLimitKey(request) {
+  const forwardedFor = String(request.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((item) => item.trim())
+    .find(Boolean);
+  return forwardedFor || request.socket.remoteAddress || "unknown";
+}
+
+function pruneAiScanBuckets(now) {
+  if (aiScanBuckets.size < 1000) return;
+  aiScanBuckets.forEach((bucket, key) => {
+    if (bucket.resetAt <= now) aiScanBuckets.delete(key);
+  });
 }
 
 function readJsonBody(request) {

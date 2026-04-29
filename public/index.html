@@ -4,9 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f5ee" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Daily Fuel</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  <link rel="manifest" href="manifest.webmanifest?v=6" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 
 <body>
@@ -36,7 +42,7 @@
               <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
               <path d="M17.5 8.5h-4" />
               <path d="M17.5 8.5v4" />
-            </svg></span><b>Weight</b></a>
+            </svg></span><b>Progress</b></a>
         <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
               <circle cx="12" cy="7.5" r="4.2" />
               <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
@@ -166,7 +172,7 @@
         <div class="mobile-diary-stats" aria-label="Daily stats">
           <article>
             <span>Streak</span>
-            <strong><b id="mobileStreakValue">0</b> <small>days</small></strong>
+            <strong><b id="mobileStreakValue">0</b> <small id="mobileStreakUnit">days</small></strong>
           </article>
           <article>
             <span>Weight</span>
@@ -214,8 +220,10 @@
             <div class="food-search-row">
               <label class="food-form-field food-name-field" for="manualFoodName"><span>Food</span><input
                   id="manualFoodName" type="text" placeholder="Search food" autocomplete="off" required /></label>
-              <button class="scan-food-button" id="foodScanButton" type="button" aria-haspopup="true"
-                aria-expanded="false"><span aria-hidden="true">▣</span><b>Scan</b></button>
+              <button class="scan-food-button" id="foodScanButton" type="button"><span
+                  aria-hidden="true">▣</span><b>Scan</b></button>
+              <button class="scan-food-button gallery-food-button" id="foodGalleryShortcut" type="button"><span
+                  aria-hidden="true">▧</span><b>Gallery</b></button>
               <div class="scan-choice-menu" id="foodScanMenu" aria-hidden="true">
                 <button id="foodPhotoButton" type="button">Camera</button>
                 <button id="foodGalleryButton" type="button">Gallery</button>
@@ -324,14 +332,17 @@
             <span></span>
           </div>
           <form class="compact-form exercise-form" id="exerciseForm">
-            <select id="exerciseType">
-              <option value="Running">Running</option>
-              <option value="Weight lifting">Weight lifting</option>
-              <option value="Cycling">Cycling</option>
-              <option value="Walking">Walking</option>
-            </select>
-            <input id="exerciseMinutes" type="number" min="1" value="60" aria-label="Minutes" required />
-            <input id="exerciseCalories" type="number" min="0" aria-label="Calories burned" required />
+            <label class="exercise-form-field exercise-type-field" for="exerciseType"><span>Exercise</span><select
+                id="exerciseType">
+                <option value="Running">Running</option>
+                <option value="Weight lifting">Weight lifting</option>
+                <option value="Cycling">Cycling</option>
+                <option value="Walking">Walking</option>
+              </select></label>
+            <label class="exercise-form-field" for="exerciseMinutes"><span>Minutes</span><input id="exerciseMinutes"
+                type="number" min="1" value="60" aria-label="Minutes" required /></label>
+            <label class="exercise-form-field" for="exerciseCalories"><span>Calories</span><input id="exerciseCalories"
+                type="number" min="0" aria-label="Calories burned" required /></label>
             <button id="exerciseSubmit" type="submit">+</button>
           </form>
           <div class="edit-modal-actions" id="exerciseEditActions">
@@ -361,14 +372,22 @@
           <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
           <path d="M17.5 8.5h-4" />
           <path d="M17.5 8.5v4" />
-        </svg></span><b>Weight</b></a>
+        </svg></span><b>Progress</b></a>
     <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
           <circle cx="12" cy="7.5" r="4.2" />
           <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
         </svg></span><b>Profile</b></a>
   </nav>
-  <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add food"
-    aria-expanded="false">+</button>
+  <div class="floating-action-stack">
+    <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add food"
+      aria-expanded="false">+</button>
+    <button class="floating-scan-button" id="floatingScanButton" type="button" aria-label="Scan food">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7.5 8.25h1.9l1.15-1.45h2.9l1.15 1.45h1.9a2.25 2.25 0 0 1 2.25 2.25v5.75a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25V10.5a2.25 2.25 0 0 1 2.25-2.25Z" />
+        <circle cx="12" cy="13.35" r="2.65" />
+      </svg>
+    </button>
+  </div>
   <button class="fab-overlay" id="fabOverlay" type="button" aria-label="Close add menu"></button>
   <div class="fab-actions" id="fabActions" aria-hidden="true">
     <span aria-hidden="true"></span>
@@ -393,7 +412,8 @@
     </article>
   </template>
 
-  <script src="app.js"></script>
+  <script src="pwa.js?v=6"></script>
+  <script src="app.js?v=6"></script>
 </body>
 
 </html>

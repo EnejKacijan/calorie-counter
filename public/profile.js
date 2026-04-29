@@ -8,6 +8,8 @@ const defaults = {
   days: {},
 };
 
+document.body.classList.add("profile-page");
+
 let state = loadState();
 let goalsAreCustom = false;
 let isIntroActive = !state.user;

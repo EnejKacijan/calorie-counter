@@ -14,6 +14,7 @@ loadEnvFile(join(rootDir, ".env"));
 
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
+const displayHost = host === "0.0.0.0" ? "localhost" : host;
 const usdaApiKey = process.env.USDA_API_KEY || "DEMO_KEY";
 const openAiApiKey = process.env.OPENAI_API_KEY;
 const openAiModel = process.env.OPENAI_MODEL;
@@ -29,7 +30,7 @@ const mimeTypes = {
   ".svg": "image/svg+xml",
 };
 
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
 
@@ -52,8 +53,20 @@ createServer(async (request, response) => {
     if (!error.status || error.status >= 500) console.error(error);
     return sendJson(response, error.status || 500, { error: error.message || "Something went wrong on the server." });
   }
-}).listen(port, host, () => {
-  console.log(`Calorie Counter running at http://${host}:${port}`);
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${port} is already in use. The app may already be running at http://${displayHost}:${port}`);
+    console.error("Stop the existing server with Ctrl+C in its terminal, or set PORT to another value in .env.");
+    process.exit(1);
+  }
+
+  throw error;
+});
+
+server.listen(port, host, () => {
+  console.log(`Calorie Counter running at http://${displayHost}:${port}`);
 });
 
 async function serveStatic(pathname, response) {

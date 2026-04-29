@@ -23,6 +23,7 @@ const elements = {
   appShell: document.querySelector(".app-shell"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
   mobileMenuButton: document.querySelector("#mobileMenuButton"),
+  mobileTabLinks: [...document.querySelectorAll(".mobile-tabbar a")],
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   logoutButton: document.querySelector("#logoutButton"),
   profilePageLogoutButton: document.querySelector("#profilePageLogoutButton"),
@@ -133,6 +134,7 @@ function renderProfileShell() {
   document.body.classList.toggle("is-logged-out-profile", !state.user);
   document.body.classList.toggle("profile-landing-active", !state.user && isIntroActive);
   elements.appShell.classList.toggle("is-auth-only", !state.user);
+  updateSetupNavigationLock();
   if (!state.user) elements.appShell.classList.remove("sidebar-collapsed");
 
   if (!state.user) {
@@ -154,6 +156,29 @@ function renderProfileShell() {
   elements.profileSubmitButton.textContent = "Update goals";
   elements.profilePageLogoutButton.hidden = false;
 }
+
+function updateSetupNavigationLock() {
+  const shouldLock = !state.user;
+  elements.mobileTabLinks.forEach((link) => {
+    const isProfileLink = link.getAttribute("href") === "profile.html";
+    const isLocked = shouldLock && !isProfileLink;
+    link.classList.toggle("is-disabled-during-setup", isLocked);
+    link.setAttribute("aria-disabled", String(isLocked));
+    if (isLocked) {
+      link.setAttribute("tabindex", "-1");
+    } else {
+      link.removeAttribute("tabindex");
+    }
+  });
+}
+
+elements.mobileTabLinks.forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (link.classList.contains("is-disabled-during-setup")) {
+      event.preventDefault();
+    }
+  });
+});
 
 function fillProfileForm() {
   const user = state.user || {};

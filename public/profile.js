@@ -11,7 +11,8 @@ const defaults = {
 document.body.classList.add("profile-page");
 
 let state = loadState();
-let goalsAreCustom = false;
+let goalsAreCustom = Boolean(state.goalsAreCustom);
+let isGoalEditing = false;
 let isIntroActive = !state.user;
 
 const activityDescriptions = {
@@ -59,7 +60,6 @@ const elements = {
   goalEditButton: document.querySelector("#goalEditButton"),
   goalResetButton: document.querySelector("#goalResetButton"),
   goalEditor: document.querySelector("#goalEditor"),
-  customTargets: document.querySelector("#customTargets"),
   goalCalories: document.querySelector("#goalCalories"),
   goalProtein: document.querySelector("#goalProtein"),
   goalCarbs: document.querySelector("#goalCarbs"),
@@ -258,11 +258,9 @@ function updateRecommendationPreview() {
   elements.recommendationPreview.textContent = goalsAreCustom
     ? "Suggested baseline from your profile."
     : "These suggestions will be used unless you edit them.";
-  updateRecommendedSummary(goals);
-
-  if (!goalsAreCustom) {
-    fillGoalInputs(goals);
-  }
+  const displayedGoals = goalsAreCustom ? (isGoalEditing ? goalsFromInputs() : state.goals) : goals;
+  updateRecommendedSummary({ ...displayedGoals, tdee: goals.tdee });
+  fillGoalInputs(displayedGoals);
 
   updateSubmitState();
 }
@@ -296,18 +294,18 @@ function goalsFromInputs() {
 }
 
 function setGoalEditing(isEditing) {
-  goalsAreCustom = isEditing;
+  isGoalEditing = isEditing;
   [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat].forEach((input) => {
     input.readOnly = !isEditing;
+    input.hidden = !isEditing;
   });
   elements.goalEditor.classList.toggle("is-editing-custom", isEditing);
-  elements.customTargets.hidden = !isEditing;
   elements.goalEditButton.classList.toggle("is-active", isEditing);
   elements.goalEditButton.setAttribute("aria-pressed", String(isEditing));
   elements.goalEditButton.title = isEditing ? "Custom targets are open" : "Edit custom targets";
   elements.goalEditButton.setAttribute("aria-label", isEditing ? "Custom targets are open" : "Edit custom targets");
-  elements.goalEditButton.textContent = "Edit manually";
-  elements.goalResetButton.disabled = !isEditing;
+  elements.goalEditButton.textContent = isEditing ? "Done" : "Edit";
+  elements.goalResetButton.disabled = !goalsAreCustom;
   updateSubmitState();
 }
 
@@ -392,11 +390,21 @@ elements.profileTheme.addEventListener("change", () => {
 });
 
 elements.goalEditButton.addEventListener("click", () => {
-  setGoalEditing(!goalsAreCustom);
-  if (!goalsAreCustom) updateRecommendationPreview();
+  if (!isGoalEditing) {
+    goalsAreCustom = true;
+    setGoalEditing(true);
+    elements.recommendationPreview.textContent = "Adjust your daily targets directly below.";
+    return;
+  }
+
+  const recommendation = calculateRecommendedGoals(profileFromForm());
+  setGoalEditing(false);
+  updateRecommendedSummary({ ...goalsFromInputs(), tdee: recommendation?.tdee });
+  elements.recommendationPreview.textContent = "Your custom daily targets.";
 });
 
 elements.goalResetButton.addEventListener("click", () => {
+  goalsAreCustom = false;
   setGoalEditing(false);
   updateRecommendationPreview();
 });

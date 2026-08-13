@@ -61,6 +61,8 @@ let editingFoodId = null;
 let editingExerciseId = null;
 let foodSearchFilter = "all";
 let latestFoodSuggestions = [];
+let scannedFoodItems = [];
+let scannedFoodAnalysis = null;
 let undoToastTimer = null;
 let renderSnapshot = null;
 let recentSuccess = null;
@@ -118,6 +120,7 @@ const elements = {
   manualFoodName: document.querySelector("#manualFoodName"),
   foodEditName: document.querySelector("#foodEditName"),
   foodEditSummary: document.querySelector("#foodEditSummary"),
+  openScanReview: document.querySelector("#openScanReview"),
   foodAmount: document.querySelector("#foodAmount"),
   foodUnit: document.querySelector("#foodUnit"),
   foodMeal: document.querySelector("#foodMeal"),
@@ -139,6 +142,17 @@ const elements = {
   foodGalleryButton: document.querySelector("#foodGalleryButton"),
   foodGalleryShortcut: document.querySelector("#foodGalleryShortcut"),
   foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
+  foodScanLoading: document.querySelector("#foodScanLoading"),
+  scanReview: document.querySelector("#scanReview"),
+  scanFoodList: document.querySelector("#scanFoodList"),
+  scanReviewMeal: document.querySelector("#scanReviewMeal"),
+  closeScanReview: document.querySelector("#closeScanReview"),
+  scanSelectedCount: document.querySelector("#scanSelectedCount"),
+  scanTotalCalories: document.querySelector("#scanTotalCalories"),
+  scanTotalProtein: document.querySelector("#scanTotalProtein"),
+  scanTotalCarbs: document.querySelector("#scanTotalCarbs"),
+  scanTotalFat: document.querySelector("#scanTotalFat"),
+  scanAddSelectedFoods: document.querySelector("#scanAddSelectedFoods"),
   copyYesterdayButton: document.querySelector("#copyYesterdayButton"),
   foodSuggestions: document.querySelector("#foodSuggestions"),
   savedFoods: document.querySelector("#savedFoods"),
@@ -238,6 +252,7 @@ function normalizeFoodForLibrary(food) {
     brand: food.brand || "",
     source: food.source || "Saved",
     serving: food.serving || (food.amount && food.unit ? `${food.amount} ${food.unit}` : "1 serving"),
+    servingGrams: Number(food.servingGrams || 0) || null,
     calories: Math.round(Number(food.calories || 0)),
     protein: Math.round(Number(food.protein || 0)),
     carbs: Math.round(Number(food.carbs || 0)),
@@ -423,9 +438,9 @@ function openAddFoodFromFab() {
 
 function openAddExerciseFromFab() {
   setFabMenuOpen(false);
-  elements.foodSection.classList.remove("is-viewing-saved", "is-searching", "is-detailing");
+  elements.foodSection.classList.remove("is-viewing-saved", "is-searching", "is-detailing", "is-reviewing-scan");
   closeMobileLogForm(elements.foodSection);
-  if (editingFoodId || selectedFoodBase) resetFoodForm();
+  if (editingFoodId || selectedFoodBase || scannedFoodItems.length) resetFoodForm();
   if (editingExerciseId) resetExerciseForm();
   syncAddModeButtons("exercise");
   openMobileLogForm(elements.exerciseSection, elements.exerciseType);
@@ -458,10 +473,14 @@ function closeMobileOnlyViewsForDesktop() {
 }
 
 function openFoodsFromHash() {
-  if (window.location.hash !== "#foods") return;
-  closeMobileLogForm(elements.foodSection);
-  closeMobileLogForm(elements.exerciseSection);
-  elements.foodSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!["#foods", "#add-food"].includes(window.location.hash)) return;
+  if (window.location.hash === "#add-food") {
+    openAddFoodFromFab();
+  } else {
+    closeMobileLogForm(elements.foodSection);
+    closeMobileLogForm(elements.exerciseSection);
+    elements.foodSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
@@ -607,6 +626,15 @@ function formatMacro(value, unit) {
   return `${rounded}${unit === "kcal" ? " kcal" : " g"}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function render() {
   applyTheme(state.user?.theme || state.theme || "light");
   renderProfileState();
@@ -659,6 +687,7 @@ function render() {
       const progress = goal > 0 ? Math.max(0, Math.min((daily[macro.key] / goal) * 100, 100)) : 0;
       return [macro.key, progress];
     })),
+    macroValues: Object.fromEntries(macroConfig.map((macro) => [macro.key, Math.round(Number(daily[macro.key] || 0))])),
   };
 }
 
@@ -785,17 +814,21 @@ function playSuccessCue(success) {
 function renderMacros(daily) {
   elements.macroGrid.innerHTML = "";
 
-  macroConfig.forEach((macro) => {
+  macroConfig.forEach((macro, index) => {
     const consumed = daily[macro.key];
+    const roundedConsumed = Math.round(Number(consumed || 0));
     const goal = state.goals[macro.key];
     const progress = goal > 0 ? Math.max(0, Math.min((consumed / goal) * 100, 100)) : 0;
     const isOver = consumed > goal;
     const remaining = Math.abs(goal - consumed);
     const progressLabel = `${Math.round(progress)}%`;
-    const macroAmountLabel = `<span class="macro-eaten">${Math.round(Number(consumed || 0))}</span><span class="macro-goal">/${Math.round(Number(goal || 0))}${macro.unit}</span>`;
-    const macroConsumedLabel = `${Math.round(Number(consumed || 0))}${macro.unit}`;
+    const previousConsumed = renderSnapshot?.macroValues?.[macro.key];
+    const initialConsumed = previousConsumed === undefined ? roundedConsumed : previousConsumed;
+    const macroAmountLabel = `<span class="macro-eaten">${initialConsumed}</span><span class="macro-goal">/${Math.round(Number(goal || 0))}${macro.unit}</span>`;
+    const macroConsumedLabel = `${initialConsumed}${macro.unit}`;
     const macroGoalLabel = `of ${Math.round(Number(goal || 0))}${macro.unit}`;
     const previousProgress = renderSnapshot?.macros?.[macro.key];
+    const initialBarProgress = previousProgress === undefined ? progress : previousProgress;
     const progressOffset = 113.1 - 113.1 * (progress / 100);
     const initialProgressOffset = previousProgress === undefined
       ? progressOffset
@@ -803,6 +836,7 @@ function renderMacros(daily) {
 
     const card = document.createElement("article");
     card.className = "macro-card";
+    card.style.setProperty("--macro-animation-index", index);
     card.classList.toggle("is-over", isOver);
     card.innerHTML = `
       <div class="macro-card-header">
@@ -824,7 +858,7 @@ function renderMacros(daily) {
       <div>
         <p class="macro-mobile-goal">${macroGoalLabel}</p>
         <div class="macro-bar" aria-label="${macro.label} progress: ${progressLabel}">
-          <span style="width:${progress}%; background:${macro.color}"></span>
+          <span style="width:${initialBarProgress}%; background:${macro.color}"></span>
         </div>
         <div class="macro-card-footer">
           <p class="label">${isOver ? `${formatMacro(remaining, macro.unit)} over` : `${formatMacro(remaining, macro.unit)} left`}</p>
@@ -833,10 +867,17 @@ function renderMacros(daily) {
       </div>
     `;
     elements.macroGrid.appendChild(card);
+    if (previousConsumed !== undefined && previousConsumed !== roundedConsumed) {
+      animateNumber(card.querySelector(".macro-eaten"), previousConsumed, roundedConsumed);
+      animateNumber(card.querySelector(".macro-ring-value"), previousConsumed, roundedConsumed, macro.unit);
+    }
     if (previousProgress !== undefined && previousProgress !== progress) {
       const progressCircle = card.querySelector(".macro-ring-progress");
+      const progressBar = card.querySelector(".macro-bar span");
+      progressBar.getBoundingClientRect();
       requestAnimationFrame(() => {
         progressCircle.style.strokeDashoffset = progressOffset;
+        progressBar.style.width = `${progress}%`;
       });
     }
   });
@@ -844,6 +885,7 @@ function renderMacros(daily) {
 
 function renderEntries() {
   const day = currentDay();
+  const logHeading = selectedLogHeading();
   syncFoodModeHeader();
   syncExerciseModeHeader();
   elements.foodList.dataset.count = `${day.foods.length} ${day.foods.length === 1 ? "entry" : "entries"}`;
@@ -851,7 +893,7 @@ function renderEntries() {
   elements.foodSection.style.setProperty("--food-entry-count", `"${elements.foodList.dataset.count}"`);
   elements.foodEntryCount.textContent = elements.foodList.dataset.count;
   elements.foodEntryCount.parentElement.dataset.count = elements.foodList.dataset.count;
-  elements.foodEntryCount.previousElementSibling.textContent = "Today's log";
+  elements.foodEntryCount.previousElementSibling.textContent = logHeading;
   elements.exerciseList.dataset.count = `${day.exercises.length} ${day.exercises.length === 1 ? "entry" : "entries"}`;
   elements.exerciseSection.dataset.count = elements.exerciseList.dataset.count;
   elements.exerciseSection.style.setProperty("--exercise-entry-count", `"${elements.exerciseList.dataset.count}"`);
@@ -872,8 +914,8 @@ function renderList(container, entries, collection, subtitleFactory, titleFactor
     const empty = document.createElement("div");
     empty.className = "empty-state";
     const emptyText = {
-      foods: "No food logged today.",
-      exercises: "No exercise logged today.",
+      foods: `No food logged ${selectedLogEmptySuffix()}.`,
+      exercises: `No exercise logged ${selectedLogEmptySuffix()}.`,
       progress: "No weight entries yet.",
     };
     empty.textContent = emptyText[collection] || "No entries yet.";
@@ -1206,8 +1248,8 @@ function createLibraryFoodCard(food, { saved }) {
     ${saved ? "" : `<div class="recent-food-swipe-actions" aria-hidden="true"><button class="recent-food-delete-action" type="button" tabindex="-1">×</button></div>`}
     <div class="saved-food-surface">
       <button class="saved-food-load" type="button">
-        <strong>${food.name}</strong>
-        <span>${food.serving} · ${Math.round(food.calories)} kcal</span>
+        <strong>${escapeHtml(food.name)}</strong>
+        <span>${escapeHtml(food.serving)} · ${Math.round(food.calories)} kcal</span>
       </button>
       <button class="saved-food-heart ${saved ? "is-saved" : ""}" type="button" title="${saved ? "Remove saved food" : "Save food"}" aria-label="${saved ? "Remove saved food" : "Save food"}">${saved ? "♥" : "♡"}</button>
     </div>
@@ -1394,21 +1436,19 @@ function showBrowseFoodSuggestions() {
 
 function addSuggestedFood(food) {
   const portion = parseServing(food.serving);
-  const unit = portion.grams ? "g" : portion.unit;
-  const amount = portion.grams || portion.amount || 1;
-  const multiplier = portionMultiplier({ ...food, servingGrams: portion.grams || 100 }, amount, unit);
   addFood({
     name: food.name,
     brand: food.brand || "",
     source: food.source || "Recent",
     serving: food.serving || "",
-    amount,
-    unit,
+    amount: 1,
+    unit: "serving",
+    servingGrams: Number(food.servingGrams || portion.grams || 0) || null,
     meal: defaultMealForNow(),
-    calories: scaleCalories(food.calories, multiplier),
-    protein: scaleMacro(food.protein, multiplier),
-    carbs: scaleMacro(food.carbs, multiplier),
-    fat: scaleMacro(food.fat, multiplier),
+    calories: Number(food.calories || 0),
+    protein: Number(food.protein || 0),
+    carbs: Number(food.carbs || 0),
+    fat: Number(food.fat || 0),
   });
   elements.searchNote.textContent = `${food.name} added.`;
   playSubmitSuccess(elements.floatingAddButton || elements.manualFoodSubmit);
@@ -1443,8 +1483,8 @@ function renderSuggestions(foods, options = {}) {
     button.type = "button";
     button.innerHTML = `
       <div>
-        <strong>${food.name}</strong>
-        <p>${sourceLabel(food)} · ${food.serving || "per 100g"}</p>
+        <strong>${escapeHtml(food.name)}</strong>
+        <p>${escapeHtml(sourceLabel(food))} · ${escapeHtml(food.serving || "per 100g")}</p>
       </div>
       <span class="suggestion-kcal">${Math.round(food.calories)}</span>
     `;
@@ -1457,14 +1497,17 @@ function renderSuggestions(foods, options = {}) {
 
 function fillManualFood(food) {
   const portion = parseServing(food.serving);
-  selectedFoodBase = { ...food, servingGrams: portion.grams || 100 };
+  selectedFoodBase = {
+    ...food,
+    servingGrams: Number(food.servingGrams || portion.grams || 0) || 100,
+  };
 
   elements.foodSection.classList.add("is-detailing");
   elements.manualFoodName.readOnly = true;
   elements.manualFoodName.value = food.name;
   elements.foodEditName.textContent = food.name;
-  elements.foodAmount.value = 100;
-  elements.foodUnit.value = "g";
+  elements.foodAmount.value = 1;
+  elements.foodUnit.value = "serving";
   elements.foodMeal.value = defaultMealForNow();
   elements.manualFoodSubmit.textContent = "+ Add";
   updateFoodAmountStep();
@@ -1477,13 +1520,16 @@ function fillFoodFormForEdit(food) {
   editingFoodId = food.id;
   const amount = Number(food.amount || 1);
   const divisor = food.unit === "g" ? 1 : amount || 1;
+  const portion = parseServing(food.serving);
   selectedFoodBase = {
     ...food,
     calories: food.unit === "g" ? Math.round(Number(food.calories || 0)) : Math.round(Number(food.calories || 0) / divisor),
     protein: food.unit === "g" ? Math.round(Number(food.protein || 0)) : Math.round(Number(food.protein || 0) / divisor),
     carbs: food.unit === "g" ? Math.round(Number(food.carbs || 0)) : Math.round(Number(food.carbs || 0) / divisor),
     fat: food.unit === "g" ? Math.round(Number(food.fat || 0)) : Math.round(Number(food.fat || 0) / divisor),
-    servingGrams: food.unit === "g" ? amount || 100 : null,
+    servingGrams: food.unit === "g"
+      ? amount || 100
+      : Number(food.servingGrams || portion.grams || 0) || 100,
   };
   elements.manualFoodName.value = food.name;
   elements.manualFoodName.readOnly = true;
@@ -1520,12 +1566,20 @@ function resetFoodForm() {
   elements.foodMeal.value = defaultMealForNow();
   updateFoodAmountStep();
   elements.manualFoodSubmit.textContent = "+ Add";
+  elements.manualFoodSubmit.disabled = false;
   editingFoodId = null;
   selectedFoodBase = null;
   latestFoodSuggestions = [];
-  elements.foodSection.classList.remove("is-editing", "is-detailing");
+  scannedFoodItems = [];
+  scannedFoodAnalysis = null;
+  elements.scanReview.hidden = true;
+  elements.openScanReview.hidden = true;
+  elements.scanFoodList.replaceChildren();
+  elements.foodSection.classList.remove("is-editing", "is-detailing", "is-reviewing-scan");
   elements.foodSuggestions.innerHTML = "";
   elements.foodPhotoStatus.textContent = "";
+  elements.foodScanLoading.hidden = true;
+  document.body.classList.remove("food-scan-active");
   elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
   setFoodSearchActive(false);
   clearEntryTransientState();
@@ -1534,8 +1588,9 @@ function resetFoodForm() {
 
 function syncFoodModeHeader() {
   const isEditing = Boolean(editingFoodId);
-  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : "Add";
-  elements.foodModeTitle.textContent = isEditing ? "Edit food" : "Add";
+  const isReviewingScan = elements.foodSection.classList.contains("is-reviewing-scan");
+  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : isReviewingScan ? "Photo estimate" : "Add";
+  elements.foodModeTitle.textContent = isEditing ? "Edit food" : isReviewingScan ? "Review scan" : "Add";
 }
 
 function syncExerciseModeHeader() {
@@ -1549,11 +1604,13 @@ function setFoodSearchActive(isActive) {
 }
 
 function updateFoodAmountStep() {
-  elements.foodAmount.step = elements.foodUnit.value === "g" ? "5" : "1";
+  elements.foodAmount.step = "0.1";
 }
 
 function updateFoodAmountForUnit() {
-  elements.foodAmount.value = elements.foodUnit.value === "g" ? 100 : 1;
+  elements.foodAmount.value = elements.foodUnit.value === "g"
+    ? Number(selectedFoodBase?.servingGrams || 100)
+    : 1;
   updateFoodAmountStep();
 }
 
@@ -1572,7 +1629,7 @@ function parseServing(serving = "") {
   const amountMatch = normalized.match(/(\d+(?:\.\d+)?)/);
   const amount = amountMatch ? Number(amountMatch[1]) : 1;
 
-  if (/\bg\b|gram/.test(normalized)) return { amount, unit: "g", grams: amount };
+  if (/(?:^|[^a-z])(?:g|gr|grm|gram|grams)\b/.test(normalized)) return { amount, unit: "g", grams: amount };
   if (amountMatch && !/[a-z]/i.test(normalized.replace(amountMatch[0], ""))) return { amount, unit: "g", grams: amount };
   if (/slice|piece|egg|medium/.test(normalized)) return { amount, unit: "piece", grams: null };
   return { amount, unit: "serving", grams: null };
@@ -1590,17 +1647,6 @@ function scaleMacro(value, multiplier) {
 
 function scaleCalories(value, multiplier) {
   return Math.round(Number(value || 0) * multiplier);
-}
-
-function normalizeCalorieInput() {
-  if (elements.manualFoodCalories.value === "") return;
-  elements.manualFoodCalories.value = Math.round(Number(elements.manualFoodCalories.value || 0));
-}
-
-function normalizeFoodMacroInputs() {
-  [elements.manualFoodProtein, elements.manualFoodCarbs, elements.manualFoodFat].forEach((input) => {
-    if (input.value !== "") input.value = Math.round(Number(input.value || 0));
-  });
 }
 
 async function searchFoodSuggestions(query) {
@@ -1626,6 +1672,7 @@ async function searchFoodSuggestions(query) {
     signal: suggestionAbortController.signal,
   });
   const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Food search failed.");
   const onlineFoods = data.foods || [];
   renderSuggestions(dedupeFoodSuggestions([...localMatches, ...onlineFoods]).slice(0, 24));
 }
@@ -1647,6 +1694,8 @@ async function analyzeFoodPhoto(file) {
   elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = scanLoadingText);
   elements.foodScanButton?.setAttribute("aria-label", "Scanning food");
   elements.foodPhotoStatus.textContent = "Scanning food...";
+  elements.foodScanLoading.hidden = false;
+  document.body.classList.add("food-scan-active");
 
   try {
     const imageDataUrl = await resizeImageForAnalysis(file);
@@ -1658,7 +1707,8 @@ async function analyzeFoodPhoto(file) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) throw new Error(data.error || "Food photo analysis failed.");
-    fillManualFoodFromPhoto(data.food || {});
+    const analysis = data.analysis || { foods: data.food ? [data.food] : [] };
+    showSimpleScannedPlate(analysis, imageDataUrl);
   } catch (error) {
     elements.foodPhotoStatus.textContent = error.message || "Photo analysis failed.";
   } finally {
@@ -1668,43 +1718,425 @@ async function analyzeFoodPhoto(file) {
     if (elements.foodGalleryShortcut) elements.foodGalleryShortcut.disabled = false;
     elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = previousScanText);
     elements.foodScanButton?.setAttribute("aria-label", "Scan food");
+    elements.foodScanLoading.hidden = true;
+    document.body.classList.remove("food-scan-active");
     elements.foodPhotoInput.value = "";
     elements.foodGalleryInput.value = "";
   }
 }
 
-function fillManualFoodFromPhoto(food) {
-  const unit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
-  const amount = unit === "g"
-    ? Math.max(1, Math.round(Number(food.amount || 100)))
-    : Math.max(1, Number(food.amount || 1));
-  const divisor = unit === "g" ? 1 : amount;
+function showSimpleScannedPlate(analysis = null, imageDataUrl = "") {
+  const foods = Array.isArray(analysis?.foods) ? analysis.foods : [];
+  if (!scannedFoodItems.length && !foods.length) throw new Error("No food was detected in this photo.");
+
+  if (foods.length) {
+    scannedFoodItems = foods.map((food) => createScannedFoodItem(food));
+    scannedFoodAnalysis = {
+      confidence: analysis.confidence || "low",
+      notes: String(analysis.notes || "").trim(),
+      imageDataUrl,
+    };
+  }
+
+  const includedFoods = scannedFoodItems.filter((food) => food.included);
+  const total = (key) => Math.round(includedFoods.reduce((sum, food) => sum + Number(food[key] || 0), 0) * 10) / 10;
+  const plateName = includedFoods.length === 1
+    ? includedFoods[0].name
+    : includedFoods.length > 1
+      ? includedFoods.length <= 3
+        ? includedFoods.map((food) => food.name).join(", ")
+        : `Scanned plate (${includedFoods.length} foods)`
+      : "Scanned plate";
+  const servingGrams = includedFoods.reduce((sum, food) => sum + Number(food.servingGrams || 0), 0);
 
   selectedFoodBase = {
-    ...food,
-    calories: unit === "g" ? Math.round(Number(food.calories || 0)) : Math.round(Number(food.calories || 0) / divisor),
-    protein: unit === "g" ? Math.round(Number(food.protein || 0)) : Math.round(Number(food.protein || 0) / divisor),
-    carbs: unit === "g" ? Math.round(Number(food.carbs || 0)) : Math.round(Number(food.carbs || 0) / divisor),
-    fat: unit === "g" ? Math.round(Number(food.fat || 0)) : Math.round(Number(food.fat || 0) / divisor),
-    servingGrams: unit === "g" ? amount : null,
+    name: plateName,
+    source: "OpenAI photo estimate",
+    serving: "1 serving",
+    servingGrams: servingGrams || 100,
+    calories: total("calories"),
+    protein: total("protein"),
+    carbs: total("carbs"),
+    fat: total("fat"),
   };
 
   editingFoodId = null;
   elements.foodSection.classList.remove("is-editing");
+  elements.foodSection.classList.remove("is-reviewing-scan");
   elements.foodSection.classList.add("is-detailing");
-  elements.manualFoodSubmit.textContent = "+ Add";
-  elements.manualFoodName.value = food.name || "Unknown food";
+  elements.scanReview.hidden = true;
+  elements.openScanReview.hidden = scannedFoodItems.length === 0;
+  elements.openScanReview.textContent = scannedFoodItems.length === 1
+    ? "Review estimate"
+    : `Review your plate · ${scannedFoodItems.length} items`;
+  elements.manualFoodSubmit.textContent = includedFoods.length === 1
+    ? "+ Add 1 food"
+    : `+ Add ${includedFoods.length} foods`;
+  elements.manualFoodSubmit.disabled = includedFoods.length === 0;
+  elements.manualFoodName.value = plateName;
   elements.manualFoodName.readOnly = true;
-  elements.foodEditName.textContent = food.name || "Unknown food";
-  elements.foodAmount.value = amount;
-  elements.foodUnit.value = unit;
-  elements.foodMeal.value = defaultMealForNow();
+  elements.foodEditName.textContent = plateName;
+  elements.foodAmount.value = 1;
+  elements.foodUnit.value = "serving";
+  if (!elements.foodMeal.value) elements.foodMeal.value = defaultMealForNow();
   updateFoodAmountStep();
   updateNutritionForPortion();
   elements.foodSuggestions.innerHTML = "";
-  elements.searchNote.textContent = food.notes || "Photo estimate filled in. Review it, then add it to your log.";
-  elements.foodPhotoStatus.textContent = `AI estimate: ${food.confidence || "low"} confidence.`;
+  elements.searchNote.textContent = scannedFoodAnalysis?.notes || "The detected foods will be added separately. Review the plate only if something needs changing.";
+  elements.foodPhotoStatus.textContent = `${scannedFoodItems.length} ${scannedFoodItems.length === 1 ? "food" : "foods"} detected · ${scannedFoodAnalysis?.confidence || "low"} confidence.`;
   setFoodSearchActive(false);
+  syncFoodModeHeader();
+}
+
+function selectedLogHeading() {
+  const today = localDateKey(new Date());
+  const yesterday = previousDayKey(today);
+  if (state.selectedDate === today) return "Today's log";
+  if (state.selectedDate === yesterday) return "Yesterday's log";
+  return `${dateFromKey(state.selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} log`;
+}
+
+function selectedLogEmptySuffix() {
+  const today = localDateKey(new Date());
+  const yesterday = previousDayKey(today);
+  if (state.selectedDate === today) return "today";
+  if (state.selectedDate === yesterday) return "yesterday";
+  return `on ${dateFromKey(state.selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
+function showScannedFoodsReview() {
+  if (!scannedFoodItems.length) return;
+  elements.foodSection.classList.add("is-detailing", "is-reviewing-scan");
+  elements.scanReview.hidden = false;
+  elements.scanReviewMeal.value = elements.foodMeal.value || defaultMealForNow();
+  selectedFoodBase = null;
+  syncFoodModeHeader();
+  renderScanReview();
+}
+
+function createScannedFoodItem(food) {
+  const servingGrams = Math.max(0, Number(food.servingGrams || (food.unit === "g" ? food.amount : 0)) || 0);
+  const nutrients = {
+    calories: Math.max(0, Number(food.calories || 0)),
+    protein: Math.max(0, Number(food.protein || 0)),
+    carbs: Math.max(0, Number(food.carbs || 0)),
+    fat: Math.max(0, Number(food.fat || 0)),
+  };
+
+  return {
+    id: crypto.randomUUID(),
+    included: true,
+    name: String(food.name || "Unknown food").trim() || "Unknown food",
+    amount: 1,
+    unit: "serving",
+    servingGrams,
+    confidence: food.confidence || "low",
+    notes: String(food.notes || "").trim(),
+    source: food.source || "OpenAI photo estimate",
+    correctionOpen: false,
+    correctionText: "",
+    correctionStatus: "",
+    isCorrecting: false,
+    detailsOpen: false,
+    ...nutrients,
+    baseNutrition: { ...nutrients },
+  };
+}
+
+function renderScanReview() {
+  elements.scanFoodList.replaceChildren();
+  scannedFoodItems.forEach((food, index) => {
+    const card = document.createElement("article");
+    card.className = `scan-food-card${food.included ? "" : " is-excluded"}`;
+    card.dataset.scanFoodId = food.id;
+
+    const top = document.createElement("div");
+    top.className = "scan-food-card-top";
+    const number = document.createElement("span");
+    number.className = "scan-food-number";
+    number.textContent = String(index + 1).padStart(2, "0");
+    const summary = document.createElement("div");
+    summary.className = "scan-food-summary";
+    const name = document.createElement("strong");
+    name.textContent = food.name;
+    const meta = document.createElement("span");
+    meta.textContent = `${formatScannedFoodPortion(food)} · ${Math.round(Number(food.calories || 0))} kcal`;
+    summary.append(name, meta);
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "scan-food-remove";
+    removeButton.dataset.scanAction = "toggle";
+    removeButton.textContent = food.included ? "Remove" : "Restore";
+    removeButton.setAttribute("aria-pressed", String(!food.included));
+    const actions = document.createElement("div");
+    actions.className = "scan-food-card-actions";
+    const correctButton = document.createElement("button");
+    correctButton.type = "button";
+    correctButton.className = "scan-food-correct";
+    correctButton.dataset.scanAction = "correct";
+    correctButton.textContent = food.correctionOpen ? "Close" : "Change food";
+    correctButton.setAttribute("aria-expanded", String(food.correctionOpen));
+    if (food.included) actions.append(correctButton);
+    actions.append(removeButton);
+    top.append(number, summary, actions);
+
+    let correction = null;
+    if (food.correctionOpen) {
+      correction = document.createElement("div");
+      correction.className = "scan-food-correction";
+      const correctionLabel = document.createElement("label");
+      const correctionCaption = document.createElement("span");
+      correctionCaption.textContent = "What is it instead?";
+      const correctionInput = document.createElement("input");
+      correctionInput.type = "text";
+      correctionInput.maxLength = 240;
+      correctionInput.placeholder = "e.g. mashed potatoes, not rice";
+      correctionInput.value = food.correctionText;
+      correctionInput.dataset.scanCorrectionInput = "";
+      correctionInput.disabled = food.isCorrecting;
+      correctionLabel.append(correctionCaption, correctionInput);
+      const correctionSubmit = document.createElement("button");
+      correctionSubmit.type = "button";
+      correctionSubmit.dataset.scanAction = "apply-correction";
+      correctionSubmit.disabled = food.isCorrecting || food.correctionText.trim().length < 2;
+      correctionSubmit.textContent = food.isCorrecting ? "Checking…" : "Update estimate";
+      correction.append(correctionLabel, correctionSubmit);
+      if (food.correctionStatus) {
+        const correctionStatus = document.createElement("p");
+        correctionStatus.className = "scan-food-correction-status";
+        correctionStatus.textContent = food.correctionStatus;
+        correction.append(correctionStatus);
+      }
+    }
+
+    const fields = document.createElement("div");
+    fields.className = "scan-food-fields";
+    fields.append(
+      createScanField("Amount", "amount", food.amount, "number"),
+      createScanUnitField(food.unit),
+      createScanField("Calories", "calories", food.calories, "number"),
+      createScanField("Protein", "protein", food.protein, "number", "g"),
+      createScanField("Carbs", "carbs", food.carbs, "number", "g"),
+      createScanField("Fat", "fat", food.fat, "number", "g"),
+    );
+
+    const detailsButton = document.createElement("button");
+    detailsButton.type = "button";
+    detailsButton.className = "scan-food-details-toggle";
+    detailsButton.dataset.scanAction = "details";
+    detailsButton.setAttribute("aria-expanded", String(food.detailsOpen));
+    detailsButton.textContent = food.detailsOpen ? "Hide nutrition details ↑" : "Edit portion & nutrition ↓";
+
+    card.append(top);
+    if (correction) card.append(correction);
+    if (food.included) card.append(detailsButton);
+    if (food.detailsOpen && food.notes) {
+      const notes = document.createElement("p");
+      notes.className = "scan-food-notes";
+      notes.textContent = food.notes;
+      card.append(fields, notes);
+    } else if (food.detailsOpen) {
+      card.append(fields);
+    }
+    elements.scanFoodList.append(card);
+  });
+  updateScanReviewTotals();
+}
+
+function formatScannedFoodPortion(food) {
+  const amount = Math.round(Number(food.amount || 0) * 10) / 10;
+  if (food.unit === "g") return `${amount} g`;
+  const unit = food.unit === "piece"
+    ? amount === 1 ? "piece" : "pieces"
+    : amount === 1 ? "serving" : "servings";
+  return `${amount} ${unit}`;
+}
+
+function createScanField(label, field, value, type, suffix = "") {
+  const wrapper = document.createElement("label");
+  wrapper.className = `scan-item-field scan-item-${field}`;
+  const caption = document.createElement("span");
+  caption.textContent = label;
+  const inputWrap = document.createElement("span");
+  inputWrap.className = "scan-item-input";
+  const input = document.createElement("input");
+  input.type = type;
+  input.value = value;
+  input.dataset.scanField = field;
+  input.disabled = false;
+  if (type === "number") {
+    input.min = "0";
+    input.step = "0.1";
+    input.inputMode = "decimal";
+  }
+  inputWrap.append(input);
+  if (suffix) {
+    const unit = document.createElement("small");
+    unit.textContent = suffix;
+    inputWrap.append(unit);
+  }
+  wrapper.append(caption, inputWrap);
+  return wrapper;
+}
+
+function createScanUnitField(value) {
+  const wrapper = document.createElement("label");
+  wrapper.className = "scan-item-field scan-item-unit";
+  const caption = document.createElement("span");
+  caption.textContent = "Unit";
+  const select = document.createElement("select");
+  select.dataset.scanField = "unit";
+  [["serving", "serving"], ["piece", "piece"], ["g", "g"]].forEach(([optionValue, label]) => {
+    const option = document.createElement("option");
+    option.value = optionValue;
+    option.textContent = label;
+    option.selected = optionValue === value;
+    select.append(option);
+  });
+  wrapper.append(caption, select);
+  return wrapper;
+}
+
+function scannedFoodMultiplier(food) {
+  if (food.unit === "g") return food.amount / (food.servingGrams || 100);
+  return food.amount;
+}
+
+function updateScanFoodPortion(food) {
+  const multiplier = scannedFoodMultiplier(food);
+  ["calories", "protein", "carbs", "fat"].forEach((key) => {
+    food[key] = Math.round(Number(food.baseNutrition[key] || 0) * multiplier * 10) / 10;
+  });
+}
+
+function updateScanReviewTotals() {
+  const selected = scannedFoodItems.filter((food) => food.included);
+  const total = (key) => Math.round(selected.reduce((sum, food) => sum + Number(food[key] || 0), 0) * 10) / 10;
+  elements.scanSelectedCount.textContent = `${selected.length} ${selected.length === 1 ? "food" : "foods"}`;
+  elements.scanTotalCalories.textContent = total("calories");
+  elements.scanTotalProtein.textContent = total("protein");
+  elements.scanTotalCarbs.textContent = total("carbs");
+  elements.scanTotalFat.textContent = total("fat");
+  elements.scanAddSelectedFoods.disabled = selected.length === 0;
+  elements.scanAddSelectedFoods.textContent = selected.length === 1 ? "Add food" : `Add ${selected.length} foods`;
+}
+
+function syncScanCardNutrition(card, food) {
+  ["calories", "protein", "carbs", "fat"].forEach((key) => {
+    const input = card.querySelector(`[data-scan-field="${key}"]`);
+    if (input) input.value = food[key];
+  });
+}
+
+async function correctScannedFood(foodId) {
+  const food = scannedFoodItems.find((item) => item.id === foodId);
+  const correction = food?.correctionText.trim();
+  if (!food || correction.length < 2 || food.isCorrecting) return;
+
+  if (!scannedFoodAnalysis?.imageDataUrl) {
+    food.correctionStatus = "The original photo is no longer available. Scan the plate again.";
+    renderScanReview();
+    return;
+  }
+
+  food.isCorrecting = true;
+  food.correctionStatus = "";
+  renderScanReview();
+
+  try {
+    const response = await fetch("/api/foods/correct-image-item", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageDataUrl: scannedFoodAnalysis.imageDataUrl,
+        currentFood: {
+          name: food.name,
+          servingGrams: food.servingGrams,
+        },
+        correction,
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Food correction failed.");
+
+    const corrected = createScannedFoodItem(data.food || {});
+    Object.assign(food, corrected, {
+      id: food.id,
+      included: food.included,
+      correctionOpen: false,
+      correctionText: "",
+      correctionStatus: "",
+      isCorrecting: false,
+    });
+  } catch (error) {
+    food.isCorrecting = false;
+    food.correctionStatus = error.message || "Food correction failed. Try again.";
+  }
+
+  renderScanReview();
+}
+
+function addSelectedScannedFoods() {
+  const selected = scannedFoodItems.filter((food) => food.included && food.name.trim());
+  logScannedFoods(selected, elements.scanReviewMeal.value);
+}
+
+function addSimpleScannedFoods() {
+  const selected = scannedFoodItems.filter((food) => food.included && food.name.trim());
+  if (!selected.length) return;
+
+  const baseTotals = Object.fromEntries(["calories", "protein", "carbs", "fat"].map((key) => [
+    key,
+    selected.reduce((sum, food) => sum + Number(food[key] || 0), 0),
+  ]));
+  const desiredTotals = {
+    calories: Math.max(0, Number(elements.manualFoodCalories.value || 0)),
+    protein: Math.max(0, Number(elements.manualFoodProtein.value || 0)),
+    carbs: Math.max(0, Number(elements.manualFoodCarbs.value || 0)),
+    fat: Math.max(0, Number(elements.manualFoodFat.value || 0)),
+  };
+  const quantityMultiplier = selectedFoodBase
+    ? portionMultiplier(selectedFoodBase, Number(elements.foodAmount.value || 0), elements.foodUnit.value)
+    : 1;
+
+  const scaledFoods = selected.map((food) => {
+    const scaled = { ...food };
+    scaled.amount = Math.round(Number(food.amount || 1) * quantityMultiplier * 10) / 10;
+    ["calories", "protein", "carbs", "fat"].forEach((key) => {
+      scaled[key] = baseTotals[key] > 0
+        ? Math.round(Number(food[key] || 0) * (desiredTotals[key] / baseTotals[key]) * 10) / 10
+        : Math.round((desiredTotals[key] / selected.length) * 10) / 10;
+    });
+    return scaled;
+  });
+
+  logScannedFoods(scaledFoods, elements.foodMeal.value);
+}
+
+function logScannedFoods(foods, meal) {
+  if (!foods.length) return;
+
+  [...foods].reverse().forEach((food) => {
+    addFood({
+      name: food.name.trim(),
+      brand: "",
+      source: food.source,
+      serving: food.unit === "serving" ? "1 serving" : `${food.amount} ${food.unit}`,
+      servingGrams: food.servingGrams || null,
+      amount: food.amount,
+      unit: food.unit,
+      meal,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+    }, { deferSaveRender: true });
+  });
+
+  saveState();
+  render();
+  resetFoodForm();
+  closeMobileLogForm(elements.foodSection);
 }
 
 function resizeImageForAnalysis(file) {
@@ -1730,7 +2162,7 @@ function resizeImageForAnalysis(file) {
   });
 }
 
-function addFood(food) {
+function addFood(food, options = {}) {
   const now = new Date().toISOString();
   const loggedForDate = state.selectedDate;
   const excludedFromStreak = isFutureDateKey(loggedForDate);
@@ -1767,8 +2199,10 @@ function addFood(food) {
     recentSuccess = { collection: "foods", id: addedId };
   }
   rememberFoods([{ ...nextFood, source: nextFood.source || "Recent", serving: nextFood.amount && nextFood.unit ? `${nextFood.amount} ${nextFood.unit}` : "1 serving" }]);
-  saveState();
-  render();
+  if (!options.deferSaveRender) {
+    saveState();
+    render();
+  }
   return addedId;
 }
 
@@ -1823,19 +2257,28 @@ function copyFoodsFromYesterday() {
 
 elements.manualFoodForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (elements.foodSection.classList.contains("is-reviewing-scan")) {
+    addSelectedScannedFoods();
+    return;
+  }
+  if (scannedFoodItems.length && selectedFoodBase) {
+    addSimpleScannedFoods();
+    return;
+  }
   const isEditing = Boolean(editingFoodId);
   addFood({
     name: elements.manualFoodName.value.trim(),
     brand: selectedFoodBase?.brand || "",
     source: selectedFoodBase?.source || "Recent",
     serving: selectedFoodBase?.serving || "",
+    servingGrams: Number(selectedFoodBase?.servingGrams || 0) || null,
     amount: Number(elements.foodAmount.value || 1),
     unit: elements.foodUnit.value,
     meal: elements.foodMeal.value,
-    calories: Math.round(Number(elements.manualFoodCalories.value || 0)),
-    protein: Math.round(Number(elements.manualFoodProtein.value || 0)),
-    carbs: Math.round(Number(elements.manualFoodCarbs.value || 0)),
-    fat: Math.round(Number(elements.manualFoodFat.value || 0)),
+    calories: Number(elements.manualFoodCalories.value || 0),
+    protein: Number(elements.manualFoodProtein.value || 0),
+    carbs: Number(elements.manualFoodCarbs.value || 0),
+    fat: Number(elements.manualFoodFat.value || 0),
   });
   resetFoodForm();
   if (!isEditing) playSubmitSuccess(elements.manualFoodSubmit);
@@ -1862,10 +2305,86 @@ elements.foodUnit.addEventListener("change", () => {
   updateFoodAmountForUnit();
   updateNutritionForPortion();
 });
-elements.manualFoodCalories.addEventListener("input", normalizeCalorieInput);
-elements.manualFoodProtein.addEventListener("input", normalizeFoodMacroInputs);
-elements.manualFoodCarbs.addEventListener("input", normalizeFoodMacroInputs);
-elements.manualFoodFat.addEventListener("input", normalizeFoodMacroInputs);
+elements.scanFoodList.addEventListener("input", (event) => {
+  const correctionInput = event.target.closest("[data-scan-correction-input]");
+  const input = event.target.closest("[data-scan-field]");
+  const card = event.target.closest("[data-scan-food-id]");
+  if (!card) return;
+  const food = scannedFoodItems.find((item) => item.id === card.dataset.scanFoodId);
+  if (!food) return;
+
+  if (correctionInput) {
+    food.correctionText = correctionInput.value;
+    food.correctionStatus = "";
+    const submit = card.querySelector('[data-scan-action="apply-correction"]');
+    if (submit) submit.disabled = food.correctionText.trim().length < 2;
+    return;
+  }
+
+  if (!input) return;
+
+  const field = input.dataset.scanField;
+  if (field === "name") {
+    food.name = input.value;
+  } else if (field === "amount") {
+    food.amount = Math.max(0, Number(input.value || 0));
+    updateScanFoodPortion(food);
+    syncScanCardNutrition(card, food);
+  } else if (["calories", "protein", "carbs", "fat"].includes(field)) {
+    food[field] = Math.max(0, Number(input.value || 0));
+    const multiplier = scannedFoodMultiplier(food);
+    food.baseNutrition[field] = multiplier ? food[field] / multiplier : food[field];
+  }
+  updateScanReviewTotals();
+});
+elements.scanFoodList.addEventListener("change", (event) => {
+  const select = event.target.closest('[data-scan-field="unit"]');
+  const card = event.target.closest("[data-scan-food-id]");
+  if (!select || !card) return;
+  const food = scannedFoodItems.find((item) => item.id === card.dataset.scanFoodId);
+  if (!food) return;
+  food.unit = select.value;
+  food.amount = food.unit === "g" ? food.servingGrams || 100 : 1;
+  updateScanFoodPortion(food);
+  renderScanReview();
+});
+elements.scanFoodList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-scan-action]");
+  const card = event.target.closest("[data-scan-food-id]");
+  if (!button || !card) return;
+  const food = scannedFoodItems.find((item) => item.id === card.dataset.scanFoodId);
+  if (!food) return;
+  if (button.dataset.scanAction === "toggle") {
+    food.included = !food.included;
+    renderScanReview();
+  } else if (button.dataset.scanAction === "correct") {
+    food.correctionOpen = !food.correctionOpen;
+    if (food.correctionOpen) food.detailsOpen = false;
+    food.correctionStatus = "";
+    renderScanReview();
+    if (food.correctionOpen) {
+      elements.scanFoodList.querySelector(`[data-scan-food-id="${food.id}"] [data-scan-correction-input]`)?.focus();
+    }
+  } else if (button.dataset.scanAction === "apply-correction") {
+    correctScannedFood(food.id);
+  } else if (button.dataset.scanAction === "details") {
+    food.detailsOpen = !food.detailsOpen;
+    if (food.detailsOpen) food.correctionOpen = false;
+    renderScanReview();
+  }
+});
+elements.scanFoodList.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !event.target.matches("[data-scan-correction-input]")) return;
+  event.preventDefault();
+  const card = event.target.closest("[data-scan-food-id]");
+  if (card) correctScannedFood(card.dataset.scanFoodId);
+});
+elements.openScanReview.addEventListener("click", showScannedFoodsReview);
+elements.closeScanReview.addEventListener("click", () => {
+  elements.foodMeal.value = elements.scanReviewMeal.value;
+  showSimpleScannedPlate();
+});
+elements.scanAddSelectedFoods.addEventListener("click", addSelectedScannedFoods);
 elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
 elements.addFoodToggle.addEventListener("click", () => {
   openAddFoodFromFab();

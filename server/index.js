@@ -4,7 +4,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { searchFoods } from "./food-search.js";
-import { analyzeFoodImage } from "./food-image-analysis.js";
+import { analyzeFoodImage, correctFoodImageItem } from "./food-image-analysis.js";
+import { askNutritionAssistant } from "./nutrition-assistant.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = normalize(join(__dirname, ".."));
@@ -18,11 +19,17 @@ const displayHost = host === "0.0.0.0" ? "localhost" : host;
 const usdaApiKey = process.env.USDA_API_KEY || "DEMO_KEY";
 const openAiApiKey = process.env.OPENAI_API_KEY;
 const openAiModel = process.env.OPENAI_MODEL;
+const openAiAssistantModel = process.env.OPENAI_ASSISTANT_MODEL || openAiModel;
 const aiScanRateLimit = {
   maxRequests: positiveInteger(process.env.AI_SCAN_RATE_LIMIT, 5),
   windowMs: positiveInteger(process.env.AI_SCAN_RATE_WINDOW_MS, 60_000),
 };
 const aiScanBuckets = new Map();
+const assistantRateLimit = {
+  maxRequests: positiveInteger(process.env.AI_ASSISTANT_RATE_LIMIT, 20),
+  windowMs: positiveInteger(process.env.AI_ASSISTANT_RATE_WINDOW_MS, 10 * 60_000),
+};
+const assistantBuckets = new Map();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -56,8 +63,43 @@ const server = createServer(async (request, response) => {
       }
 
       const body = await readJsonBody(request);
-      const food = await analyzeFoodImage(body.imageDataUrl, { openAiApiKey, model: openAiModel });
+      const analysis = await analyzeFoodImage(body.imageDataUrl, { openAiApiKey, model: openAiModel });
+      return sendJson(response, 200, { analysis }, rateLimit.headers);
+    }
+
+    if (url.pathname === "/api/foods/correct-image-item" && request.method === "POST") {
+      const rateLimit = consumeAiScanRateLimit(request);
+      if (!rateLimit.allowed) {
+        return sendJson(
+          response,
+          429,
+          { error: `Too many scans. Try again in ${rateLimit.retryAfterSeconds} seconds.` },
+          rateLimit.headers,
+        );
+      }
+
+      const body = await readJsonBody(request);
+      const food = await correctFoodImageItem(body, { openAiApiKey, model: openAiModel });
       return sendJson(response, 200, { food }, rateLimit.headers);
+    }
+
+    if (url.pathname === "/api/assistant/chat" && request.method === "POST") {
+      const rateLimit = consumeAssistantRateLimit(request);
+      if (!rateLimit.allowed) {
+        return sendJson(
+          response,
+          429,
+          { error: `Too many messages. Try again in ${rateLimit.retryAfterSeconds} seconds.` },
+          rateLimit.headers,
+        );
+      }
+
+      const body = await readJsonBody(request);
+      const result = await askNutritionAssistant(body, {
+        openAiApiKey,
+        model: openAiAssistantModel,
+      });
+      return sendJson(response, 200, result, rateLimit.headers);
     }
 
     if (url.pathname.startsWith("/api/")) {
@@ -120,34 +162,42 @@ function positiveInteger(value, fallback) {
 }
 
 function consumeAiScanRateLimit(request) {
+  return consumeRateLimit(request, aiScanRateLimit, aiScanBuckets);
+}
+
+function consumeAssistantRateLimit(request) {
+  return consumeRateLimit(request, assistantRateLimit, assistantBuckets);
+}
+
+function consumeRateLimit(request, config, buckets) {
   const now = Date.now();
   const key = clientRateLimitKey(request);
-  const existing = aiScanBuckets.get(key);
+  const existing = buckets.get(key);
   const bucket = existing && existing.resetAt > now
     ? existing
-    : { count: 0, resetAt: now + aiScanRateLimit.windowMs };
+    : { count: 0, resetAt: now + config.windowMs };
 
-  pruneAiScanBuckets(now);
+  pruneRateLimitBuckets(buckets, now);
 
-  if (bucket.count >= aiScanRateLimit.maxRequests) {
-    aiScanBuckets.set(key, bucket);
-    return rateLimitResult(false, bucket);
+  if (bucket.count >= config.maxRequests) {
+    buckets.set(key, bucket);
+    return rateLimitResult(false, bucket, config);
   }
 
   bucket.count += 1;
-  aiScanBuckets.set(key, bucket);
-  return rateLimitResult(true, bucket);
+  buckets.set(key, bucket);
+  return rateLimitResult(true, bucket, config);
 }
 
-function rateLimitResult(allowed, bucket) {
+function rateLimitResult(allowed, bucket, config) {
   const retryAfterSeconds = Math.max(1, Math.ceil((bucket.resetAt - Date.now()) / 1000));
-  const remaining = Math.max(0, aiScanRateLimit.maxRequests - bucket.count);
+  const remaining = Math.max(0, config.maxRequests - bucket.count);
   return {
     allowed,
     retryAfterSeconds,
     headers: {
       "Retry-After": String(retryAfterSeconds),
-      "X-RateLimit-Limit": String(aiScanRateLimit.maxRequests),
+      "X-RateLimit-Limit": String(config.maxRequests),
       "X-RateLimit-Remaining": String(remaining),
       "X-RateLimit-Reset": String(Math.ceil(bucket.resetAt / 1000)),
     },
@@ -162,10 +212,10 @@ function clientRateLimitKey(request) {
   return forwardedFor || request.socket.remoteAddress || "unknown";
 }
 
-function pruneAiScanBuckets(now) {
-  if (aiScanBuckets.size < 1000) return;
-  aiScanBuckets.forEach((bucket, key) => {
-    if (bucket.resetAt <= now) aiScanBuckets.delete(key);
+function pruneRateLimitBuckets(buckets, now) {
+  if (buckets.size < 1000) return;
+  buckets.forEach((bucket, key) => {
+    if (bucket.resetAt <= now) buckets.delete(key);
   });
 }
 

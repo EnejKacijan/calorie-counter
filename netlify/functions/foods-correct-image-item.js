@@ -1,4 +1,4 @@
-import { analyzeFoodImage } from "../../server/food-image-analysis.js";
+import { correctFoodImageItem } from "../../server/food-image-analysis.js";
 
 export default async (request) => {
   try {
@@ -6,11 +6,11 @@ export default async (request) => {
       return Response.json({ error: "Method not allowed." }, { status: 405 });
     }
 
-    const body = await request.json();
-    const analysis = await analyzeFoodImage(body.imageDataUrl);
+    const payload = await request.json();
+    const food = await correctFoodImageItem(payload);
 
     return Response.json(
-      { analysis },
+      { food },
       {
         headers: {
           "Cache-Control": "no-store",
@@ -19,6 +19,6 @@ export default async (request) => {
     );
   } catch (error) {
     console.error(error);
-    return Response.json({ error: error.message || "Food photo analysis failed." }, { status: error.status || 500 });
+    return Response.json({ error: error.message || "Food correction failed." }, { status: error.status || 500 });
   }
 };

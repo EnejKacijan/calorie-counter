@@ -11,3 +11,13 @@
   from = "/api/foods/analyze-image"
   to = "/.netlify/functions/foods-analyze-image"
   status = 200
+
+[[redirects]]
+  from = "/api/foods/correct-image-item"
+  to = "/.netlify/functions/foods-correct-image-item"
+  status = 200
+
+[[redirects]]
+  from = "/api/assistant/chat"
+  to = "/.netlify/functions/nutrition-assistant"
+  status = 200

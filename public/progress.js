@@ -138,7 +138,14 @@ function trendForEntries(entries) {
   const days = Math.max(1, Math.round((latestDate - dateFromKey(baseline.date)) / 86400000));
   const delta = Number(latest.weightKg) - Number(baseline.weightKg);
   const arrow = delta < -0.05 ? "↓" : delta > 0.05 ? "↑" : "→";
-  const tone = delta < -0.05 ? "good" : delta > 0.05 ? "bad" : "neutral";
+  const goalType = state.user?.goalType || "maintain";
+  const tone = Math.abs(delta) <= 0.05
+    ? "neutral"
+    : goalType === "gain"
+      ? delta > 0 ? "good" : "bad"
+      : goalType === "lose"
+        ? delta < 0 ? "good" : "bad"
+        : Math.abs(delta) <= 0.5 ? "good" : "bad";
   const target = Number(state.user?.targetWeightKg || state.user?.startWeightKg || latest.weightKg);
   const label = `${arrow} ${Math.abs(delta).toFixed(1)} kg in ${days} ${days === 1 ? "day" : "days"} · target ${formatWeight(target)} kg`;
   return { delta, days, label, tone };

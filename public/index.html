@@ -37,6 +37,7 @@
               <path d="M6.5 9.5V20h11V9.5" />
               <path d="M10 20v-6h4v6" />
             </svg></span><b>Today</b></a>
+        <a href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
         <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
               <path d="M4 19h16" />
               <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
@@ -240,11 +241,39 @@
               <span>Food entry</span>
               <strong id="foodEditName">Food</strong>
               <small>Adjust serving, meal, or nutrition values.</small>
+              <button class="scan-review-option" id="openScanReview" type="button" hidden>Review your plate</button>
             </div>
             <p class="search-note" id="searchNote">Search saved foods, USDA, or Open Food Facts.</p>
             <div class="suggestions" id="foodSuggestions"></div>
+            <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle" hidden>
+              <div class="scan-review-heading">
+                <div>
+                  <p class="label">Detected foods</p>
+                  <h3 id="scanReviewTitle">Review your plate</h3>
+                  <p>Check the detected foods and portions before adding them.</p>
+                </div>
+                <div class="scan-review-heading-actions">
+                  <label class="scan-review-meal" for="scanReviewMeal"><span>Meal</span><select id="scanReviewMeal">
+                      <option value="breakfast">Breakfast</option>
+                      <option value="lunch">Lunch</option>
+                      <option value="dinner">Dinner</option>
+                    </select></label>
+                  <button class="scan-simple-view" id="closeScanReview" type="button">Back to simple view</button>
+                </div>
+              </div>
+              <div class="scan-food-list" id="scanFoodList"></div>
+              <div class="scan-review-footer">
+                <div class="scan-review-total" aria-live="polite">
+                  <span id="scanSelectedCount">0 selected</span>
+                  <strong><span id="scanTotalCalories">0</span> kcal</strong>
+                  <small><span id="scanTotalProtein">0</span>g protein · <span id="scanTotalCarbs">0</span>g carbs ·
+                    <span id="scanTotalFat">0</span>g fat</small>
+                </div>
+                <button class="scan-add-selected" id="scanAddSelectedFoods" type="button">Add selected foods</button>
+              </div>
+            </section>
             <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number"
-                min="0" step="1" value="1" aria-label="Amount" /></label>
+                min="0" step="0.1" value="1" aria-label="Amount" /></label>
             <label class="food-form-field" for="foodUnit"><span>Unit</span><select id="foodUnit" aria-label="Unit">
                 <option value="serving">serving</option>
                 <option value="piece">piece</option>
@@ -256,13 +285,13 @@
                 <option value="dinner">Dinner</option>
               </select></label>
             <label class="food-form-field" for="manualFoodCalories"><span>Calories</span><input id="manualFoodCalories"
-                type="number" min="0" step="1" aria-label="Calories" required /></label>
+                type="number" min="0" step="0.1" aria-label="Calories" required /></label>
             <label class="food-form-field" for="manualFoodProtein"><span>Protein</span><input id="manualFoodProtein"
-                type="number" min="0" step="1" aria-label="Protein grams" /></label>
+                type="number" min="0" step="0.1" aria-label="Protein grams" /></label>
             <label class="food-form-field" for="manualFoodCarbs"><span>Carbs</span><input id="manualFoodCarbs"
-                type="number" min="0" step="1" aria-label="Carbs grams" /></label>
+                type="number" min="0" step="0.1" aria-label="Carbs grams" /></label>
             <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number"
-                min="0" step="1" aria-label="Fat grams" /></label>
+                min="0" step="0.1" aria-label="Fat grams" /></label>
             <button id="manualFoodSubmit" type="submit">+ Add</button>
             <div class="edit-modal-actions" id="foodEditActions">
               <button class="edit-favorite-button" id="favoriteFoodEdit" type="button"
@@ -276,6 +305,15 @@
               capture="environment" hidden />
             <input id="foodGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
             <span class="photo-food-status" id="foodPhotoStatus" aria-live="polite"></span>
+          </div>
+          <div class="food-scan-loading" id="foodScanLoading" role="status" aria-live="polite" hidden>
+            <div class="food-scan-loading-card">
+              <span class="food-scan-spinner" aria-hidden="true"></span>
+              <div>
+                <strong>Analyzing your food</strong>
+                <small>Identifying foods and estimating portions…</small>
+              </div>
+            </div>
           </div>
           <div class="logged-list-heading">
             <p class="label">Today's log</p>
@@ -361,12 +399,7 @@
           <path d="M6.5 9.5V20h11V9.5" />
           <path d="M10 20v-6h4v6" />
         </svg></span><b>Today</b></a>
-    <a class="mobile-tab-link" id="mobileFoodsTab" href="#foods"><span class="sidebar-icon" aria-hidden="true"><svg
-          viewBox="0 0 24 24">
-          <circle cx="11" cy="12.5" r="5.2" />
-          <path d="M18 5.5v13" />
-          <path d="M16.3 5.5v4.2c0 1 .7 1.8 1.7 1.8s1.7-.8 1.7-1.8V5.5" />
-        </svg></span><b>Foods</b></a>
+    <a class="mobile-tab-link" href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
     <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
           <path d="M4 19h16" />
           <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />

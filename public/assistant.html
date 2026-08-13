@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f5ee" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Assistant · Daily Fuel</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
+    <link rel="manifest" href="manifest.webmanifest?v=7" />
+    <link rel="stylesheet" href="styles.css?v=7" />
+  </head>
+  <body class="assistant-page">
+    <main class="app-shell" id="appShell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand-mark">
+          <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+          <strong>Daily Fuel</strong>
+          <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
+        </div>
+
+        <nav class="side-nav" aria-label="App navigation">
+          <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
+          <a class="is-active" href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
+          <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+          <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+        </nav>
+
+        <div class="profile-card">
+          <div class="avatar" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="14" r="10" /><path d="M8 44a16 16 0 0 1 32 0Z" /></svg></div>
+          <div><strong id="profileSummary">Your plan</strong><small id="profileMeta">Goal</small></div>
+        </div>
+
+        <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log out</b></button>
+      </aside>
+      <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
+
+      <section class="main-content assistant-main-content">
+        <section class="topbar assistant-topbar">
+          <a class="topbar-home-link" href="index.html" aria-label="Back to Today">←</a>
+          <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation" aria-controls="sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg></button>
+          <div class="topbar-heading">
+            <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /></svg></span>
+            <div><p class="eyebrow mobile-page-eyebrow">Daily Fuel</p><h1 class="mobile-page-title">Assistant</h1></div>
+          </div>
+        </section>
+
+        <section class="assistant-shell" aria-labelledby="assistantTitle">
+          <header class="assistant-header">
+            <div>
+              <p class="label">AI nutrition assistant</p>
+              <h2 id="assistantTitle">Talk through your food.</h2>
+              <p>Ask about patterns in your diary, nutrition, digestion, energy, or skin. The assistant can suggest possible connections, not diagnose a condition.</p>
+            </div>
+            <div class="assistant-header-actions">
+              <button class="assistant-history-open" id="assistantHistoryOpen" type="button" aria-expanded="false"
+                aria-controls="assistantHistory">Conversations</button>
+              <button class="assistant-clear" id="assistantClear" type="button">New conversation</button>
+            </div>
+          </header>
+
+          <button class="assistant-history-backdrop" id="assistantHistoryBackdrop" type="button"
+            aria-label="Close conversations" hidden></button>
+          <aside class="assistant-history" id="assistantHistory" aria-labelledby="assistantHistoryTitle" hidden>
+            <header>
+              <div>
+                <p class="label">Saved locally</p>
+                <h3 id="assistantHistoryTitle">Conversations</h3>
+              </div>
+              <button class="assistant-history-close" id="assistantHistoryClose" type="button"
+                aria-label="Close conversations">×</button>
+            </header>
+            <div class="assistant-history-list" id="assistantHistoryList"></div>
+            <button class="assistant-history-delete-all" id="assistantHistoryDeleteAll" type="button">Delete all
+              conversations</button>
+          </aside>
+
+          <div class="assistant-context-bar">
+            <label class="assistant-context-toggle">
+              <input id="assistantDiaryToggle" type="checkbox" checked />
+              <span aria-hidden="true"></span>
+              <b>Use my food diary</b>
+            </label>
+            <label class="assistant-range" for="assistantRange"><span>Context</span><select id="assistantRange">
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+              </select></label>
+            <p class="assistant-context-note" id="assistantContextNote">Your selected diary entries are sent only when you ask a question.</p>
+          </div>
+
+          <section class="assistant-conversation">
+            <div class="assistant-empty" id="assistantEmpty">
+              <div class="assistant-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 5.5 22.8 17l11.7 3-11.7 3L20 34.5 17.2 23 5.5 20l11.7-3L20 5.5Z" /></svg></div>
+              <h3>What would you like to understand?</h3>
+              <p>I can look for patterns in what you logged and ask a few useful follow-up questions.</p>
+              <div class="assistant-starters" aria-label="Conversation starters">
+                <button type="button" data-assistant-prompt="I have been feeling more bloated lately. Can you look at my food diary for possible patterns?">Why am I bloated?</button>
+                <button type="button" data-assistant-prompt="Could anything in my recent food diary be connected with a skin breakout?">Food and my skin</button>
+                <button type="button" data-assistant-prompt="Review my recent food diary and tell me the most useful pattern you notice.">Review recent days</button>
+                <button type="button" data-assistant-prompt="How could I improve my protein intake based on what I have logged?">Improve my protein</button>
+              </div>
+            </div>
+
+            <div class="assistant-messages" id="assistantMessages" aria-live="polite"></div>
+            <div class="assistant-typing" id="assistantTyping" hidden aria-label="Assistant is thinking"><i></i><i></i><i></i></div>
+          </section>
+
+          <form class="assistant-composer" id="assistantForm">
+            <label class="sr-only" for="assistantInput">Message the nutrition assistant</label>
+            <textarea id="assistantInput" rows="1" maxlength="2000" placeholder="Ask about your food or how you feel..." required></textarea>
+            <button id="assistantSend" type="submit" aria-label="Send message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3.2-5.1L5 12Z" /><path d="M11.8 13.9 19 5" /></svg></button>
+          </form>
+          <p class="assistant-footnote">AI can make mistakes. For severe, worsening, or persistent symptoms, contact a healthcare professional.</p>
+        </section>
+      </section>
+    </main>
+
+    <nav class="mobile-tabbar" aria-label="Mobile navigation">
+      <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
+      <a class="is-active" href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
+      <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
+      <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+    </nav>
+
+    <script src="pwa.js?v=7"></script>
+    <script src="assistant.js?v=7"></script>
+  </body>
+</html>

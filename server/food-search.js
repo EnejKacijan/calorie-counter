@@ -10,6 +10,9 @@ export async function searchFoods(query, { usdaApiKey = process.env.USDA_API_KEY
     searchUsda(cleanQuery, usdaApiKey),
     searchOpenFoodFacts(cleanQuery),
   ]);
+  if (usdaFoods.status === "rejected" && offFoods.status === "rejected") {
+    throw new Error("Food sources are temporarily unavailable.");
+  }
   const combined = [
     ...(usdaFoods.status === "fulfilled" ? usdaFoods.value : []),
     ...(offFoods.status === "fulfilled" ? offFoods.value : []),
@@ -31,16 +34,19 @@ async function searchUsda(query, usdaApiKey) {
 
   return (data.foods || []).map((food) => {
     const nutrients = nutrientMap(food.foodNutrients || []);
+    const serving = usdaGramServing(food);
+    const multiplier = serving.grams / 100;
     return normalizeFood({
       id: `usda-${food.fdcId}`,
       name: titleCase(food.description || food.brandName || query),
       brand: food.brandName || "",
       source: "USDA",
-      serving: food.servingSize && food.servingSizeUnit ? `${food.servingSize} ${food.servingSizeUnit}` : "100 g",
-      calories: nutrients.calories,
-      protein: nutrients.protein,
-      carbs: nutrients.carbs,
-      fat: nutrients.fat,
+      serving: serving.label,
+      servingGrams: serving.grams,
+      calories: nutrients.calories * multiplier,
+      protein: nutrients.protein * multiplier,
+      carbs: nutrients.carbs * multiplier,
+      fat: nutrients.fat * multiplier,
     });
   });
 }
@@ -55,19 +61,58 @@ async function searchOpenFoodFacts(query) {
     headers: { "User-Agent": "CalorieCounter/0.1 (local-dev@example.com)" },
   });
 
-  return (data.products || []).map((product) =>
-    normalizeFood({
+  return (data.products || []).map((product) => {
+    const serving = openFoodFactsServing(product);
+    const nutrientValue = (name) => openFoodFactsNutrient(product, name, serving);
+    return normalizeFood({
       id: `off-${product.code}`,
       name: product.product_name || query,
       brand: product.brands || "",
       source: "Open Food Facts",
-      serving: product.serving_size || "100 g",
-      calories: product.nutriments?.["energy-kcal_serving"] || product.nutriments?.["energy-kcal_100g"],
-      protein: product.nutriments?.proteins_serving || product.nutriments?.proteins_100g,
-      carbs: product.nutriments?.carbohydrates_serving || product.nutriments?.carbohydrates_100g,
-      fat: product.nutriments?.fat_serving || product.nutriments?.fat_100g,
-    }),
-  );
+      serving: serving.label,
+      servingGrams: serving.grams,
+      calories: nutrientValue("energy-kcal"),
+      protein: nutrientValue("proteins"),
+      carbs: nutrientValue("carbohydrates"),
+      fat: nutrientValue("fat"),
+    });
+  });
+}
+
+function openFoodFactsNutrient(product, name, serving) {
+  const nutriments = product?.nutriments || {};
+  if (!serving.useServingNutrition) return nutriments[`${name}_100g`];
+
+  const perServing = Number(nutriments[`${name}_serving`]);
+  if (Number.isFinite(perServing)) return perServing;
+
+  const per100g = Number(nutriments[`${name}_100g`]);
+  if (Number.isFinite(per100g) && Number.isFinite(serving.grams)) {
+    return per100g * serving.grams / 100;
+  }
+  return 0;
+}
+
+function usdaGramServing(food) {
+  const amount = Number(food?.servingSize || 0);
+  const unit = String(food?.servingSizeUnit || "").trim().toLowerCase();
+  const isGrams = ["g", "gr", "grm", "gram", "grams"].includes(unit);
+  if (!Number.isFinite(amount) || amount <= 0 || !isGrams) return { label: "100 g", grams: 100 };
+  return { label: `${round(amount)} g`, grams: round(amount) };
+}
+
+function openFoodFactsServing(product) {
+  const label = String(product?.serving_size || "").trim();
+  const calories = Number(product?.nutriments?.["energy-kcal_serving"]);
+  const useServingNutrition = Boolean(label) && Number.isFinite(calories) && calories > 0;
+  if (!useServingNutrition) return { label: "100 g", grams: 100, useServingNutrition: false };
+
+  const gramsMatch = label.toLowerCase().replace(",", ".").match(/(\d+(?:\.\d+)?)\s*(?:g|gr|grm|gram|grams)\b/);
+  return {
+    label,
+    grams: gramsMatch ? Number(gramsMatch[1]) : null,
+    useServingNutrition: true,
+  };
 }
 
 function nutrientMap(nutrients) {
@@ -97,6 +142,7 @@ function normalizeFood(food) {
     brand: food.brand || "",
     source: food.source || "USDA",
     serving: food.serving || "1 serving",
+    servingGrams: Number(food.servingGrams || 0) || null,
     calories: round(food.calories),
     protein: roundWhole(food.protein),
     carbs: roundWhole(food.carbs),
@@ -115,7 +161,7 @@ function dedupeFoods(foods) {
 }
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
+  const response = await fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(12_000) });
   if (!response.ok) throw new Error(`Request failed ${response.status}: ${url}`);
   return response.json();
 }

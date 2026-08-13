@@ -8796,12 +8796,16 @@ body[data-theme="dark"] .progress-stats article {
     padding: 0 0 env(safe-area-inset-bottom);
   }
 
-  .mobile-tabbar a[href="progress.html"] {
-    order: 3;
+  .mobile-tabbar a[href="index.html"] {
+    order: 1;
   }
 
-  .mobile-tabbar .mobile-tab-link {
+  .mobile-tabbar a[href="assistant.html"] {
     order: 2;
+  }
+
+  .mobile-tabbar a[href="progress.html"] {
+    order: 3;
   }
 
   .mobile-tabbar a[href="profile.html"] {
@@ -13787,6 +13791,11 @@ body[data-theme="dark"]:not(.profile-landing-active) .saved-food-surface {
   body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
     order: 1 !important;
     grid-column: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a[href="assistant.html"] {
+    order: 2 !important;
+    grid-column: 2 !important;
   }
 
   body:not(.profile-landing-active) .mobile-tabbar > #mobileFoodsTab {

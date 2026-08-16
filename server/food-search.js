@@ -1,5 +1,29 @@
 const foodCache = new Map();
 
+export async function lookupFoodBarcode(barcode) {
+  const cleanBarcode = String(barcode || "").replace(/\D/g, "");
+  if (!/^\d{8,14}$/.test(cleanBarcode)) throw new Error("Enter a valid 8–14 digit barcode.");
+
+  const data = await fetchJson(`https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json?fields=code,product_name,brands,nutriments,serving_size`);
+  if (data.status !== 1 || !data.product) return null;
+
+  const product = data.product;
+  const serving = openFoodFactsServing(product);
+  const nutrientValue = (name) => openFoodFactsNutrient(product, name, serving);
+  return normalizeFood({
+    id: `off-${product.code || cleanBarcode}`,
+    name: product.product_name || `Product ${cleanBarcode}`,
+    brand: product.brands || "",
+    source: "Open Food Facts",
+    serving: serving.label,
+    servingGrams: serving.grams,
+    calories: nutrientValue("energy-kcal"),
+    protein: nutrientValue("proteins"),
+    carbs: nutrientValue("carbohydrates"),
+    fat: nutrientValue("fat"),
+  });
+}
+
 export async function searchFoods(query, { usdaApiKey = process.env.USDA_API_KEY || "DEMO_KEY" } = {}) {
   const cleanQuery = query.trim().toLowerCase();
   if (cleanQuery.length < 2) return [];
@@ -32,23 +56,45 @@ async function searchUsda(query, usdaApiKey) {
   });
   const data = await fetchJson(`https://api.nal.usda.gov/fdc/v1/foods/search?${params}`);
 
-  return (data.foods || []).map((food) => {
+  return (data.foods || []).map((food, index) => {
     const nutrients = nutrientMap(food.foodNutrients || []);
     const serving = usdaGramServing(food);
     const multiplier = serving.grams / 100;
-    return normalizeFood({
-      id: `usda-${food.fdcId}`,
-      name: titleCase(food.description || food.brandName || query),
-      brand: food.brandName || "",
-      source: "USDA",
-      serving: serving.label,
-      servingGrams: serving.grams,
-      calories: nutrients.calories * multiplier,
-      protein: nutrients.protein * multiplier,
-      carbs: nutrients.carbs * multiplier,
-      fat: nutrients.fat * multiplier,
-    });
-  });
+    return {
+      index,
+      score: usdaRelevanceScore(food, query),
+      food: normalizeFood({
+        id: `usda-${food.fdcId}`,
+        name: titleCase(food.description || food.brandName || query),
+        brand: food.brandName || "",
+        source: "USDA",
+        serving: serving.label,
+        servingGrams: serving.grams,
+        calories: nutrients.calories * multiplier,
+        protein: nutrients.protein * multiplier,
+        carbs: nutrients.carbs * multiplier,
+        fat: nutrients.fat * multiplier,
+      }),
+    };
+  }).sort((a, b) => b.score - a.score || a.index - b.index).map((result) => result.food);
+}
+
+function usdaRelevanceScore(food, query) {
+  const name = String(food.description || "").trim().toLowerCase();
+  const words = query.split(/\s+/).filter(Boolean);
+  const dataType = String(food.dataType || "").toLowerCase();
+  let score = 0;
+
+  if (name === query) score += 120;
+  else if (name.startsWith(`${query},`) || name.startsWith(`${query} `)) score += 80;
+  else if (name.includes(query)) score += 45;
+  score += words.filter((word) => name.includes(word)).length * 12;
+
+  if (/foundation|sr legacy|survey/.test(dataType)) score += 30;
+  if (dataType.includes("branded")) score -= 18;
+  if (food.brandName) score -= 8;
+  score -= Math.min(name.length, 100) * 0.12;
+  return score;
 }
 
 async function searchOpenFoodFacts(query) {
@@ -153,7 +199,8 @@ function normalizeFood(food) {
 function dedupeFoods(foods) {
   const seen = new Set();
   return foods.filter((food) => {
-    const key = `${food.name}-${food.brand}-${food.serving}`.toLowerCase();
+    const sourceId = String(food.id || "").trim().toLowerCase();
+    const key = sourceId || `${food.source}-${food.name}-${food.brand}-${food.serving}`.toLowerCase();
     if (seen.has(key) || !food.name || !Number.isFinite(food.calories)) return false;
     seen.add(key);
     return true;

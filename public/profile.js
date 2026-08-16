@@ -14,6 +14,7 @@ let state = loadState();
 let goalsAreCustom = Boolean(state.goalsAreCustom);
 let isGoalEditing = false;
 let isIntroActive = !state.user;
+let isProfileDirty = false;
 
 const activityDescriptions = {
   "1.2": "Mostly sitting: desk work and little planned exercise.",
@@ -65,6 +66,25 @@ const elements = {
   goalCarbs: document.querySelector("#goalCarbs"),
   goalFat: document.querySelector("#goalFat"),
 };
+
+const planNumberInputs = [
+  elements.profileAge,
+  elements.profileHeight,
+  elements.profileWeight,
+  elements.profileTargetWeight,
+  elements.goalCalories,
+  elements.goalProtein,
+  elements.goalCarbs,
+  elements.goalFat,
+];
+
+// Number inputs change with the mouse wheel by default. On plan fields that
+// makes it too easy to alter a target while simply scrolling the page.
+planNumberInputs.forEach((input) => {
+  input?.addEventListener("wheel", () => {
+    if (document.activeElement === input) input.blur();
+  }, { passive: true });
+});
 
 function loadState() {
   const saved = localStorage.getItem("calorie-counter-state");
@@ -140,11 +160,12 @@ function renderProfileShell() {
   if (!state.user) elements.appShell.classList.remove("sidebar-collapsed");
 
   if (!state.user) {
-    elements.profileSummary.textContent = "Your plan";
+    elements.profileSummary.textContent = "Your Plan";
     elements.profileMeta.textContent = "Set up profile";
     elements.profilePageTitle.textContent = "Set Up Profile";
     elements.profileFormTitle.textContent = "Set Up Your Goals";
     elements.profileFormCopy.textContent = "Create a local profile so the app can estimate daily calories and macros from your body stats and goal.";
+    document.querySelector("#profileRequiredNote").hidden = false;
     elements.profileSubmitButton.textContent = "Start tracking";
     elements.profilePageLogoutButton.hidden = true;
     return;
@@ -153,8 +174,9 @@ function renderProfileShell() {
   elements.profileSummary.textContent = state.user.name;
   elements.profileMeta.textContent = `${state.user.weightKg} kg · ${state.user.heightCm} cm`;
   elements.profilePageTitle.textContent = "Profile";
-  elements.profileFormTitle.textContent = "Edit Profile";
-  elements.profileFormCopy.textContent = "Adjust your body stats and goal. Daily calories and macros will refresh from the updated plan.";
+  elements.profileFormTitle.textContent = "Your Plan";
+  elements.profileFormCopy.textContent = "Your calories and macro targets are based on these details.";
+  document.querySelector("#profileRequiredNote").hidden = true;
   elements.profileSubmitButton.textContent = "Update goals";
   elements.profilePageLogoutButton.hidden = false;
 }
@@ -185,14 +207,14 @@ elements.mobileTabLinks.forEach((link) => {
 function fillProfileForm() {
   const user = state.user || {};
   elements.profileName.value = user.name || "";
-  elements.profileSex.value = user.sex || "male";
+  elements.profileSex.value = user.sex || "";
   elements.profileAge.value = user.age || "";
   elements.profileHeight.value = user.heightCm || "";
   elements.profileWeight.value = user.weightKg || "";
   elements.profileTargetWeight.value = user.targetWeightKg || user.weightKg || "";
   elements.profileGoalType.value = user.goalType || "lose";
   elements.profileActivity.value = String(user.activityMultiplier || 1.375);
-  elements.profileGoalPace.value = String(user.weeklyRateKg || 0.5);
+  elements.profileGoalPace.value = String(user.weeklyRateKg ?? user.goalPace ?? 0.5);
   elements.profileTheme.value = user.theme || state.theme || localStorage.getItem("calorie-counter-theme") || "light";
   setGoalEditing(false);
   applyTheme(elements.profileTheme.value);
@@ -293,6 +315,15 @@ function goalsFromInputs() {
   };
 }
 
+function hasCustomGoalChangesFromRecommendation() {
+  if (!goalsAreCustom || !isProfileReady()) return false;
+  const recommendation = calculateRecommendedGoals(profileFromForm());
+  if (!recommendation) return false;
+  const currentGoals = goalsFromInputs();
+  return ["calories", "protein", "carbs", "fat"]
+    .some((key) => Number(currentGoals[key]) !== Number(recommendation[key]));
+}
+
 function setGoalEditing(isEditing) {
   isGoalEditing = isEditing;
   [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat].forEach((input) => {
@@ -305,7 +336,7 @@ function setGoalEditing(isEditing) {
   elements.goalEditButton.title = isEditing ? "Custom targets are open" : "Edit custom targets";
   elements.goalEditButton.setAttribute("aria-label", isEditing ? "Custom targets are open" : "Edit custom targets");
   elements.goalEditButton.textContent = isEditing ? "Done" : "Edit";
-  elements.goalResetButton.disabled = !goalsAreCustom;
+  elements.goalResetButton.disabled = !hasCustomGoalChangesFromRecommendation();
   updateSubmitState();
 }
 
@@ -327,11 +358,61 @@ function isProfileReady() {
   return profileFieldsValid && goalsValid;
 }
 
+function hasProfileChanges() {
+  if (!state.user) return false;
+
+  const current = profileFromForm();
+  const profileKeys = [
+    "name",
+    "sex",
+    "age",
+    "heightCm",
+    "weightKg",
+    "targetWeightKg",
+    "goalType",
+    "activityMultiplier",
+    "weeklyRateKg",
+  ];
+  const savedProfile = {
+    ...state.user,
+    // Older profiles stored the pace under goalPace. Treat it as the same
+    // value so opening an unchanged profile does not enable Update goals.
+    weeklyRateKg: state.user.weeklyRateKg ?? state.user.goalPace ?? 0.5,
+  };
+  const profileChanged = profileKeys.some((key) => String(current[key]) !== String(savedProfile[key]));
+  if (profileChanged) return true;
+
+  if (goalsAreCustom !== Boolean(state.goalsAreCustom)) {
+    // Merely opening the custom editor is not a profile change. It becomes
+    // one only once the user moves a target away from its recommendation.
+    if (!goalsAreCustom) return true;
+    const recommendation = calculateRecommendedGoals(current);
+    const currentGoals = goalsFromInputs();
+    return ["calories", "protein", "carbs", "fat"]
+      .some((key) => Number(currentGoals[key]) !== Number(recommendation?.[key]));
+  }
+
+  if (!goalsAreCustom) return false;
+
+  const savedGoals = state.goals || {};
+  const currentGoals = goalsFromInputs();
+  return ["calories", "protein", "carbs", "fat"]
+    .some((key) => Number(currentGoals[key]) !== Number(savedGoals[key]));
+}
+
 function updateSubmitState() {
   const isReady = isProfileReady();
-  elements.profileSubmitButton.disabled = !isReady;
-  elements.profileSubmitButton.setAttribute("aria-disabled", String(!isReady));
-  elements.profileSubmitButton.title = isReady ? "" : "Fill in your profile to start tracking";
+  isProfileDirty = hasProfileChanges();
+  elements.goalResetButton.disabled = !hasCustomGoalChangesFromRecommendation();
+  const needsChanges = Boolean(state.user);
+  const canSubmit = isReady && (!needsChanges || isProfileDirty);
+  elements.profileSubmitButton.disabled = !canSubmit;
+  elements.profileSubmitButton.setAttribute("aria-disabled", String(!canSubmit));
+  elements.profileSubmitButton.title = !isReady
+    ? "Fill in your profile to start tracking"
+    : needsChanges && !isProfileDirty
+      ? "Change your profile or targets to update goals"
+      : "";
 }
 
 elements.profileForm.addEventListener("submit", (event) => {
@@ -355,6 +436,7 @@ elements.profileForm.addEventListener("submit", (event) => {
   state.goals = goalsFromInputs();
   state.goalsAreCustom = goalsAreCustom;
 
+  isProfileDirty = false;
   saveState();
   window.location.href = "index.html";
 });
@@ -410,8 +492,12 @@ elements.goalResetButton.addEventListener("click", () => {
 });
 
 [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat].forEach((input) => {
-  input.addEventListener("input", updateSubmitState);
-  input.addEventListener("change", updateSubmitState);
+  input.addEventListener("input", () => {
+    updateSubmitState();
+  });
+  input.addEventListener("change", () => {
+    updateSubmitState();
+  });
 });
 
 elements.introStartButton.addEventListener("click", () => {
@@ -448,6 +534,18 @@ elements.mobileMenuButton?.addEventListener("click", () => setMobileSidebarOpen(
 elements.sidebarBackdrop?.addEventListener("click", () => setMobileSidebarOpen(false));
 elements.appShell.querySelectorAll(".side-nav a").forEach((link) => {
   link.addEventListener("click", () => setMobileSidebarOpen(false));
+});
+document.querySelectorAll('a[href]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    if (!isProfileDirty) return;
+    if (window.confirm("Leave without saving your profile changes?")) return;
+    event.preventDefault();
+  });
+});
+window.addEventListener("beforeunload", (event) => {
+  if (!isProfileDirty) return;
+  event.preventDefault();
+  event.returnValue = "";
 });
 window.addEventListener("resize", () => {
   if (!isMobileSidebar()) setMobileSidebarOpen(false);

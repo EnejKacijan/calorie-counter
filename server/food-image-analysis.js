@@ -105,6 +105,42 @@ export async function analyzeFoodImage(imageDataUrl, options = {}) {
   return normalizeAnalysis(parseResponseText(data));
 }
 
+export async function analyzeFoodDescription(description, options = {}) {
+  const openAiApiKey = options.openAiApiKey || process.env.OPENAI_API_KEY;
+  const model = options.model || process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const cleanDescription = String(description || "").trim().slice(0, 500);
+
+  if (!openAiApiKey) {
+    const error = new Error("AI estimation is unavailable. Add the food manually instead.");
+    error.status = 503;
+    throw error;
+  }
+  if (cleanDescription.length < 2) {
+    const error = new Error("Describe what you ate.");
+    error.status = 400;
+    throw error;
+  }
+
+  const response = await fetch(openAiResponsesUrl, {
+    method: "POST",
+    signal: AbortSignal.timeout(45_000),
+    headers: { Authorization: `Bearer ${openAiApiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      instructions: "Estimate nutrition from a short meal description for a calorie tracker. Split clearly separate foods, but keep mixed dishes as one item. Make cautious editable estimates for the described total portion. Return no more than 8 foods.",
+      input: [{ role: "user", content: [{ type: "input_text", text: cleanDescription }] }],
+      text: { format: { type: "json_schema", name: "food_text_nutrition", strict: true, schema: nutritionSchema } },
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error?.message || "AI food estimate failed.");
+    error.status = response.status;
+    throw error;
+  }
+  return normalizeAnalysis(parseResponseText(data));
+}
+
 export async function correctFoodImageItem(input = {}, options = {}) {
   const openAiApiKey = options.openAiApiKey || process.env.OPENAI_API_KEY;
   const model = options.model || process.env.OPENAI_MODEL || "gpt-4.1-mini";

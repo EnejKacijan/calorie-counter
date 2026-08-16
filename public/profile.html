@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f5ee" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
@@ -37,7 +37,7 @@
             </svg>
           </div>
           <div>
-            <strong id="profileSummary">Your plan</strong>
+            <strong id="profileSummary">Your Plan</strong>
             <small id="profileMeta">Goal</small>
           </div>
         </div>
@@ -48,7 +48,6 @@
 
       <section class="main-content">
         <section class="topbar">
-          <a class="topbar-home-link" href="index.html" aria-label="Back to Today">←</a>
           <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation" aria-controls="sidebar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
           </button>
@@ -72,16 +71,17 @@
             <div class="intro-actions">
               <button class="primary-action" id="introStartButton" type="button">Start tracking</button>
             </div>
+            <p class="intro-preview-label">Static sample preview</p>
             <div class="intro-stats" aria-label="Daily Fuel preview metrics">
               <article>
                 <span>Remaining</span>
-                <strong>925</strong>
+                  <strong>1310</strong>
                 <small>kcal today</small>
               </article>
               <article>
                 <span>Protein</span>
-                <strong>188g</strong>
-                <small>of 240g</small>
+                  <strong>94g</strong>
+                  <small>of 150g</small>
               </article>
               <article>
                 <span>Weight</span>
@@ -91,7 +91,10 @@
             </div>
           </div>
           <div class="intro-preview app-screenshot-preview" aria-hidden="true">
-            <img src="landing-preview.png" alt="" />
+            <picture>
+              <source media="(max-width: 640px)" srcset="landing-preview-mobile.png" />
+              <img src="landing-preview.png" alt="" />
+            </picture>
           </div>
         </section>
 
@@ -99,24 +102,18 @@
           <form class="auth-panel" id="profileForm">
             <div class="profile-form-header">
               <div>
-                <p class="eyebrow">Your plan</p>
+                <p class="eyebrow">PLAN SETTINGS</p>
                 <h2 id="profileFormTitle">Set Up Your Goals</h2>
                 <p class="auth-copy" id="profileFormCopy">Create a local profile so the app can estimate daily calories and macros from your body stats and goal.</p>
+                <p class="profile-required-note" id="profileRequiredNote">All fields are required. Measurements use cm and kg.</p>
               </div>
-              <label class="theme-control">
-                Theme
-                <select id="profileTheme" required>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
-              </label>
             </div>
 
             <div class="profile-grid">
-              <section class="profile-section profile-section-main">
+              <section class="profile-section profile-section-main profile-section-basics">
                 <div class="section-heading">
-                  <span>Basics</span>
-                  <strong>Identity</strong>
+                  <span>Body</span>
+                  <strong>Basics</strong>
                 </div>
                 <div class="profile-fields compact-profile-fields">
                   <label class="wide-field">
@@ -126,6 +123,7 @@
                   <label>
                     Sex
                     <select id="profileSex" required>
+                      <option value="" disabled selected>Select</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                     </select>
@@ -135,26 +133,26 @@
                     <input id="profileAge" type="number" min="13" max="100" required />
                   </label>
                   <label>
-                    Height
-                    <input id="profileHeight" type="number" min="120" max="230" placeholder="cm" required />
+                    Height (cm)
+                    <input id="profileHeight" type="number" min="120" max="230" required />
                   </label>
                   <label>
-                    Current
-                    <input id="profileWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
-                  </label>
-                  <label>
-                    Goal
-                    <input id="profileTargetWeight" type="number" min="35" max="250" step="0.1" placeholder="kg" required />
+                    Current weight (kg)
+                    <input id="profileWeight" type="number" min="35" max="250" step="0.1" required />
                   </label>
                 </div>
               </section>
 
-              <section class="profile-section">
+              <section class="profile-section profile-section-goal">
                 <div class="section-heading">
-                  <span>Plan</span>
-                  <strong>Goal setup</strong>
+                  <span>Goal</span>
+                  <strong>Direction</strong>
                 </div>
                 <div class="profile-fields">
+                  <label>
+                    Goal weight (kg)
+                    <input id="profileTargetWeight" type="number" min="35" max="250" step="0.1" required />
+                  </label>
                   <label>
                     Main goal
                     <select id="profileGoalType" required>
@@ -162,16 +160,6 @@
                       <option value="maintain">Maintain weight</option>
                       <option value="gain">Build muscle</option>
                     </select>
-                  </label>
-                  <label>
-                    Activity level
-                    <select id="profileActivity" required>
-                      <option value="1.2">Mostly sitting</option>
-                      <option value="1.375">Lightly active</option>
-                      <option value="1.55">Moderately active</option>
-                      <option value="1.725">Very active</option>
-                    </select>
-                    <small class="field-hint" id="activityHint">Mostly sitting: desk work and little planned exercise.</small>
                   </label>
                   <label>
                     Goal pace
@@ -184,12 +172,31 @@
                   </label>
                 </div>
               </section>
+
+              <section class="profile-section profile-section-activity">
+                <div class="section-heading">
+                  <span>Activity</span>
+                  <strong>Daily Routine</strong>
+                </div>
+                <div class="profile-fields">
+                  <label>
+                    Activity level
+                    <select id="profileActivity" required>
+                      <option value="1.2">Mostly sitting</option>
+                      <option value="1.375">Lightly active</option>
+                      <option value="1.55">Moderately active</option>
+                      <option value="1.725">Very active</option>
+                    </select>
+                    <small class="field-hint" id="activityHint">Mostly sitting: desk work and little planned exercise.</small>
+                  </label>
+                </div>
+              </section>
             </div>
 
             <section class="recommendation goal-editor" id="goalEditor">
               <div class="goal-editor-header">
                 <div>
-                  <span>Suggested targets</span>
+                  <span>Nutrition targets</span>
                   <strong id="recommendationPreview">Fill in your profile to preview your recommended daily calories and macros.</strong>
                 </div>
               </div>
@@ -224,6 +231,13 @@
               </div>
 
             </section>
+            <label class="theme-control profile-theme-control">
+              Theme
+              <select id="profileTheme" required>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
             <button class="primary-action" id="profileSubmitButton" type="submit">Start tracking</button>
           </form>
           <button class="profile-page-logout" id="profilePageLogoutButton" type="button">Log out</button>
@@ -232,10 +246,10 @@
     </main>
 
     <nav class="mobile-tabbar" aria-label="Mobile navigation">
-      <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
-      <a href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
-      <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
-      <a class="is-active" href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+      <a href="index.html"><b>Today</b></a>
+      <a href="assistant.html"><b>Assistant</b></a>
+      <a href="progress.html"><b>Progress</b></a>
+      <a class="is-active" href="profile.html"><b>Profile</b></a>
     </nav>
 
     <script src="pwa.js?v=6"></script>

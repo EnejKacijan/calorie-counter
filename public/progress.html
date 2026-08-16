@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f5ee" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
@@ -11,7 +11,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="favicon.svg" />
     <link rel="manifest" href="manifest.webmanifest?v=6" />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=7" />
   </head>
   <body>
     <main class="app-shell">
@@ -37,7 +37,7 @@
             </svg>
           </div>
           <div>
-            <strong id="profileSummary">Your plan</strong>
+            <strong id="profileSummary">Your Plan</strong>
             <small id="profileMeta">Goal</small>
           </div>
         </div>
@@ -48,7 +48,6 @@
 
       <section class="main-content">
         <section class="topbar">
-          <a class="topbar-home-link" href="index.html" aria-label="Back to Today">←</a>
           <button class="mobile-menu-button" id="mobileMenuButton" type="button" aria-label="Open navigation" aria-controls="sidebar">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
           </button>
@@ -68,12 +67,18 @@
 
         <section class="progress-view is-active" id="weightProgressView" data-progress-panel="weight">
           <section class="weight-current-panel progress-panel">
-            <p class="label">Current</p>
+            <div class="weight-current-heading">
+              <p class="label">Current</p>
+              <button class="weight-log-jump" id="weightLogJump" type="button">Log weight</button>
+            </div>
             <div class="weight-current-value">
               <strong id="currentWeightValue">--</strong>
               <span>kg</span>
             </div>
-            <p class="weight-trend" id="weightTrendText">No trend yet</p>
+            <div class="weight-summary-details">
+              <p class="weight-trend" id="weightTrendText">No trend yet</p>
+              <p class="weight-target-status" id="weightTargetStatus">Target not set</p>
+            </div>
           </section>
 
           <section class="weight-layout">
@@ -112,7 +117,7 @@
               <div class="nutrition-panel-heading">
                 <div>
                   <p class="label">Nutrition</p>
-                  <h2>Daily trend</h2>
+                  <h2>Daily Trend</h2>
                 </div>
                 <div class="nutrition-range-toggle" role="tablist" aria-label="Nutrition range">
                   <button class="is-active" type="button" data-nutrition-range="7" aria-selected="true">7D</button>
@@ -125,14 +130,24 @@
                 <button type="button" data-nutrition-metric="macros" aria-selected="false">Macros</button>
               </div>
               <div class="nutrition-chart" id="nutritionChart"></div>
-              <div class="nutrition-chart-axis" id="nutritionChartAxis" aria-hidden="true"></div>
+              <div class="nutrition-chart-detail" aria-live="polite">
+                <span class="nutrition-chart-detail-date" id="nutritionChartDetailDate"></span>
+                <span class="nutrition-chart-detail-value" id="nutritionChartDetail"></span>
+              </div>
+              <div class="nutrition-chart-footer">
+                <button id="nutritionPreviousRange" type="button" aria-label="Previous date range">&#8592;</button>
+                <div>
+                  <span class="nutrition-chart-axis" id="nutritionChartAxis"></span>
+                </div>
+                <button id="nutritionNextRange" type="button" aria-label="Next date range">&#8594;</button>
+              </div>
             </section>
 
             <section class="nutrition-summary-panel progress-panel">
               <div class="nutrition-panel-heading">
                 <div>
                   <p class="label">Coach note</p>
-                  <h2>Weekly read</h2>
+                  <h2>Weekly Read</h2>
                 </div>
               </div>
               <div class="nutrition-summary-grid" aria-label="Nutrition summary">
@@ -153,7 +168,10 @@
                   <strong id="nutritionLoggedDays">0/7</strong>
                 </article>
               </div>
-              <p class="nutrition-insight" id="nutritionInsightText">Log meals for a few days and this view will show a useful pattern.</p>
+              <div class="nutrition-insight" aria-live="polite">
+                <p class="nutrition-insight-title" id="nutritionInsightTitle">Not enough data yet</p>
+                <p id="nutritionInsightText">Log meals for a few days and this view will show a useful pattern.</p>
+              </div>
             </section>
           </section>
         </section>
@@ -161,10 +179,10 @@
     </main>
 
     <nav class="mobile-tabbar" aria-label="Mobile navigation">
-      <a href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /><path d="M10 20v-6h4v6" /></svg></span><b>Today</b></a>
-      <a href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
-      <a class="is-active" href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16" /><path d="M6.5 16.5 10 13l3 2.5 4.5-7" /><path d="M17.5 8.5h-4" /><path d="M17.5 8.5v4" /></svg></span><b>Progress</b></a>
-      <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.2" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" /></svg></span><b>Profile</b></a>
+      <a href="index.html"><b>Today</b></a>
+      <a href="assistant.html"><b>Assistant</b></a>
+      <a class="is-active" href="progress.html"><b>Progress</b></a>
+      <a href="profile.html"><b>Profile</b></a>
     </nav>
 
     <template id="entryTemplate">
@@ -178,6 +196,6 @@
     </template>
 
     <script src="pwa.js?v=6"></script>
-    <script src="progress.js?v=6"></script>
+    <script src="progress.js?v=8"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-const cacheName = "daily-fuel-v7";
+const cacheName = "daily-fuel-v25";
 const appShellFiles = [
   "/",
   "/index.html",

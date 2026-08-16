@@ -2,6 +2,7 @@ const storageKey = "calorie-counter-state";
 const legacyConversationKey = "calorie-counter-assistant-conversation-v1";
 const conversationsKey = "calorie-counter-assistant-conversations-v1";
 const activeConversationKey = "calorie-counter-assistant-active-conversation-v1";
+const activeConversationSessionKey = "calorie-counter-assistant-active-conversation-session-v1";
 const diaryPreferenceKey = "calorie-counter-assistant-diary-enabled";
 const rangePreferenceKey = "calorie-counter-assistant-range";
 const safetyIdentifierKey = "calorie-counter-assistant-safety-id";
@@ -25,6 +26,7 @@ const elements = {
   historyList: document.querySelector("#assistantHistoryList"),
   historyDeleteAll: document.querySelector("#assistantHistoryDeleteAll"),
   diaryToggle: document.querySelector("#assistantDiaryToggle"),
+  diaryState: document.querySelector("#assistantDiaryState"),
   range: document.querySelector("#assistantRange"),
   contextNote: document.querySelector("#assistantContextNote"),
   empty: document.querySelector("#assistantEmpty"),
@@ -38,9 +40,13 @@ const elements = {
 
 let conversations = loadConversations();
 let activeConversationId = loadActiveConversationId();
+// Older versions stored the active selection persistently. Keep the conversations,
+// but discard that selection so a new app session always starts empty.
+localStorage.removeItem(activeConversationKey);
 let messages = activeConversation()?.messages.map((message) => ({ ...message })) || [];
 let transientError = "";
 let isSending = false;
+let historyOpener = null;
 
 applyTheme();
 hydrateProfile();
@@ -79,7 +85,6 @@ function loadConversations() {
       : [];
     if (normalized.length) return normalized;
   } catch {
-    // Fall through to the legacy single-conversation migration.
   }
 
   const legacyMessages = loadLegacyMessages();
@@ -96,7 +101,6 @@ function loadConversations() {
     messages: legacyMessages,
   };
   localStorage.setItem(conversationsKey, JSON.stringify([migrated]));
-  localStorage.setItem(activeConversationKey, migrated.id);
   localStorage.removeItem(legacyConversationKey);
   return [migrated];
 }
@@ -144,9 +148,22 @@ function validDateString(value) {
 }
 
 function loadActiveConversationId() {
-  const storedId = localStorage.getItem(activeConversationKey);
-  if (conversations.some((conversation) => conversation.id === storedId)) return storedId;
-  return conversations[0]?.id || null;
+  try {
+    const storedId = sessionStorage.getItem(activeConversationSessionKey);
+    return conversations.some((conversation) => conversation.id === storedId) ? storedId : null;
+  } catch {
+    return null;
+  }
+}
+
+function setActiveConversationId(conversationId) {
+  activeConversationId = conversationId;
+  try {
+    if (conversationId) sessionStorage.setItem(activeConversationSessionKey, conversationId);
+    else sessionStorage.removeItem(activeConversationSessionKey);
+  } catch {
+    // Without session storage, fall back to an empty Assistant view on navigation.
+  }
 }
 
 function activeConversation() {
@@ -166,8 +183,7 @@ function ensureActiveConversation(firstMessage) {
     messages: [],
   };
   conversations.unshift(conversation);
-  activeConversationId = conversation.id;
-  localStorage.setItem(activeConversationKey, activeConversationId);
+  setActiveConversationId(conversation.id);
 }
 
 function saveConversation() {
@@ -180,7 +196,6 @@ function saveConversation() {
   conversations.sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt));
   conversations = conversations.slice(0, 50);
   localStorage.setItem(conversationsKey, JSON.stringify(conversations));
-  localStorage.setItem(activeConversationKey, conversation.id);
   renderHistory();
 }
 
@@ -195,7 +210,7 @@ function applyTheme() {
 }
 
 function hydrateProfile() {
-  elements.profileSummary.textContent = state.user?.name || "Your plan";
+  elements.profileSummary.textContent = state.user?.name || "Your Plan";
   elements.profileMeta.textContent = state.user
     ? `${formatNumber(state.user.weightKg)} kg · ${formatNumber(state.user.heightCm)} cm`
     : "Goal";
@@ -209,6 +224,7 @@ function hydratePreferences() {
 }
 
 function renderConversation() {
+  document.body.classList.toggle("assistant-has-messages", messages.length > 0 || Boolean(transientError));
   elements.messages.replaceChildren();
   elements.empty.hidden = messages.length > 0;
   elements.clear.disabled = isSending || (messages.length === 0 && !transientError);
@@ -220,15 +236,15 @@ function renderConversation() {
 
   requestAnimationFrame(() => {
     const conversation = document.querySelector(".assistant-conversation");
-    if (messages.length || transientError) conversation.scrollTop = conversation.scrollHeight;
+    conversation.scrollTop = messages.length || transientError ? conversation.scrollHeight : 0;
   });
 }
 
 function renderHistory() {
   elements.historyList.replaceChildren();
   elements.historyOpen.textContent = conversations.length
-    ? `Conversations · ${conversations.length}`
-    : "Conversations";
+    ? `History · ${conversations.length}`
+    : "History";
   elements.historyDeleteAll.disabled = conversations.length === 0;
 
   if (!conversations.length) {
@@ -251,15 +267,22 @@ function renderHistory() {
     title.textContent = conversation.title;
     const meta = document.createElement("span");
     const context = conversation.diaryEnabled ? `${conversation.diaryRange}-day diary` : "No diary";
-    meta.textContent = `${formatConversationDate(conversation.updatedAt)} · ${context}`;
+    meta.className = "assistant-history-meta";
+    const date = document.createElement("span");
+    date.className = "assistant-history-date";
+    date.textContent = formatConversationDate(conversation.updatedAt);
+    const contextBadge = document.createElement("span");
+    contextBadge.className = "assistant-history-context";
+    contextBadge.textContent = context;
     openButton.append(title, meta);
+    meta.append(date, contextBadge);
 
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "assistant-history-delete";
     deleteButton.dataset.deleteConversationId = conversation.id;
     deleteButton.setAttribute("aria-label", `Delete ${conversation.title}`);
-    deleteButton.textContent = "×";
+    deleteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M8 10v8M12 10v8M16 10v8M7 7l1 14h8l1-14" /></svg>';
     item.append(openButton, deleteButton);
     elements.historyList.appendChild(item);
   });
@@ -275,20 +298,56 @@ function formatConversationDate(value) {
 }
 
 function setHistoryOpen(isOpen) {
+  if (isOpen) historyOpener = document.activeElement;
   elements.history.hidden = !isOpen;
   elements.historyBackdrop.hidden = !isOpen;
   elements.historyOpen.setAttribute("aria-expanded", String(isOpen));
   document.body.classList.toggle("has-assistant-history-open", isOpen);
-  if (isOpen) renderHistory();
+  const inertTargets = [
+    ...Array.from(elements.history.parentElement.children).filter((element) => element !== elements.history && element !== elements.historyBackdrop),
+    document.querySelector(".topbar"),
+    document.querySelector(".sidebar"),
+    document.querySelector(".mobile-tabbar"),
+  ].filter(Boolean);
+  inertTargets.forEach((target) => { target.inert = isOpen; });
+  if (isOpen) {
+    renderHistory();
+    requestAnimationFrame(() => elements.historyClose.focus());
+  } else if (historyOpener?.isConnected) {
+    const opener = historyOpener;
+    requestAnimationFrame(() => opener.focus());
+    historyOpener = null;
+  }
 }
+
+document.addEventListener("keydown", (event) => {
+  if (elements.history.hidden) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    setHistoryOpen(false);
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = Array.from(elements.history.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'))
+    .filter((element) => !element.hidden && element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 function openConversation(conversationId) {
   const conversation = conversations.find((item) => item.id === conversationId);
   if (!conversation || isSending) return;
-  activeConversationId = conversation.id;
+  setActiveConversationId(conversation.id);
   messages = conversation.messages.map((message) => ({ ...message }));
   transientError = "";
-  localStorage.setItem(activeConversationKey, activeConversationId);
   renderConversation();
   renderHistory();
   setHistoryOpen(false);
@@ -304,11 +363,9 @@ function deleteConversation(conversationId) {
   localStorage.setItem(conversationsKey, JSON.stringify(conversations));
 
   if (wasActive) {
-    activeConversationId = conversations[0]?.id || null;
-    messages = activeConversation()?.messages.map((message) => ({ ...message })) || [];
+    setActiveConversationId(null);
+    messages = [];
     transientError = "";
-    if (activeConversationId) localStorage.setItem(activeConversationKey, activeConversationId);
-    else localStorage.removeItem(activeConversationKey);
     renderConversation();
   }
   renderHistory();
@@ -318,7 +375,7 @@ function deleteAllConversations() {
   if (!conversations.length || isSending) return;
   if (!window.confirm("Delete all AI assistant conversations from this device?")) return;
   conversations = [];
-  activeConversationId = null;
+  setActiveConversationId(null);
   messages = [];
   transientError = "";
   localStorage.removeItem(conversationsKey);
@@ -420,6 +477,7 @@ function buildAppContext() {
 
 function updateContextNote() {
   elements.range.disabled = !elements.diaryToggle.checked;
+  elements.diaryState.textContent = elements.diaryToggle.checked ? "On" : "Off";
   if (!elements.diaryToggle.checked) {
     elements.contextNote.textContent = "Diary access is off. The assistant will only use what you write in the chat.";
     return;
@@ -428,16 +486,15 @@ function updateContextNote() {
   const context = buildAppContext();
   const foodCount = context.days.reduce((sum, day) => sum + day.foods.length, 0);
   elements.contextNote.textContent = foodCount
-    ? `${foodCount} logged ${foodCount === 1 ? "food" : "foods"} from the last ${context.rangeDays} days can be included.`
+    ? `${foodCount} logged ${foodCount === 1 ? "food" : "foods"} from the last ${context.rangeDays} days will be included.`
     : `No foods are logged in the last ${context.rangeDays} days yet.`;
 }
 
 function startNewConversation() {
   if (isSending) return;
-  activeConversationId = null;
+  setActiveConversationId(null);
   messages = [];
   transientError = "";
-  localStorage.removeItem(activeConversationKey);
   renderConversation();
   renderHistory();
   setHistoryOpen(false);
@@ -450,12 +507,16 @@ function resetForContextChange() {
 
 function setSending(sending) {
   isSending = sending;
-  elements.send.disabled = sending;
   elements.input.disabled = sending;
   elements.clear.disabled = sending || messages.length === 0;
   elements.historyOpen.disabled = sending;
   elements.typing.hidden = !sending;
   elements.form.classList.toggle("is-sending", sending);
+  updateComposerState();
+}
+
+function updateComposerState() {
+  elements.send.disabled = isSending || !elements.input.value.trim();
 }
 
 function resizeComposer() {
@@ -498,7 +559,10 @@ elements.form.addEventListener("submit", (event) => {
   sendMessage(elements.input.value);
 });
 
-elements.input.addEventListener("input", resizeComposer);
+elements.input.addEventListener("input", () => {
+  resizeComposer();
+  updateComposerState();
+});
 elements.input.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   event.preventDefault();
@@ -553,6 +617,7 @@ elements.logoutButton.addEventListener("click", () => {
   localStorage.setItem(storageKey, JSON.stringify(state));
   localStorage.removeItem(conversationsKey);
   localStorage.removeItem(activeConversationKey);
+  setActiveConversationId(null);
   localStorage.removeItem(legacyConversationKey);
   window.location.href = "profile.html";
 });

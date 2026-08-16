@@ -6,8 +6,10 @@ const elements = {
   progressForm: document.querySelector("#progressForm"),
   progressDate: document.querySelector("#progressDate"),
   progressWeight: document.querySelector("#progressWeight"),
+  weightLogJump: document.querySelector("#weightLogJump"),
   currentWeightValue: document.querySelector("#currentWeightValue"),
   weightTrendText: document.querySelector("#weightTrendText"),
+  weightTargetStatus: document.querySelector("#weightTargetStatus"),
   progressChart: document.querySelector("#progressChart"),
   weightChartAxis: document.querySelector(".weight-chart-axis"),
   progressList: document.querySelector("#progressList"),
@@ -17,10 +19,15 @@ const elements = {
   nutritionRangeButtons: Array.from(document.querySelectorAll("[data-nutrition-range]")),
   nutritionChart: document.querySelector("#nutritionChart"),
   nutritionChartAxis: document.querySelector("#nutritionChartAxis"),
+  nutritionChartDetailDate: document.querySelector("#nutritionChartDetailDate"),
+  nutritionChartDetail: document.querySelector("#nutritionChartDetail"),
+  nutritionPreviousRange: document.querySelector("#nutritionPreviousRange"),
+  nutritionNextRange: document.querySelector("#nutritionNextRange"),
   nutritionAverageCalories: document.querySelector("#nutritionAverageCalories"),
   nutritionGoalDays: document.querySelector("#nutritionGoalDays"),
   nutritionMacroHit: document.querySelector("#nutritionMacroHit"),
   nutritionLoggedDays: document.querySelector("#nutritionLoggedDays"),
+  nutritionInsightTitle: document.querySelector("#nutritionInsightTitle"),
   nutritionInsightText: document.querySelector("#nutritionInsightText"),
   appShell: document.querySelector(".app-shell"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
@@ -34,6 +41,8 @@ const elements = {
 let activeProgressView = window.location.hash === "#nutrition" ? "nutrition" : "weight";
 let nutritionMetric = localStorage.getItem("daily-fuel-nutrition-metric") || "calories";
 let nutritionRange = Number(localStorage.getItem("daily-fuel-nutrition-range") || 7);
+let nutritionRangeOffset = 0;
+let selectedNutritionDate = localDateKey(new Date());
 
 const nutritionMetrics = {
   calories: { label: "Calories", unit: "kcal", goalKey: "calories", valueKey: "calories" },
@@ -120,8 +129,20 @@ function summarizeDay(day = { foods: [], exercises: [] }) {
 }
 
 function currentWeight() {
-  const latest = [...state.progress].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+  const latest = dailyWeightEntries(state.progress).at(-1);
   return Number(latest?.weightKg || state.user?.weightKg || 0);
+}
+
+function dailyWeightEntries(entries) {
+  const byDate = new Map();
+  [...entries]
+    .filter((entry) => /^\d{4}-\d{2}-\d{2}$/.test(String(entry?.date || "")) && Number.isFinite(Number(entry?.weightKg)))
+    .sort((left, right) => (
+      left.date.localeCompare(right.date)
+      || String(left.updatedAt || left.createdAt || "").localeCompare(String(right.updatedAt || right.createdAt || ""))
+    ))
+    .forEach((entry) => byDate.set(entry.date, entry));
+  return [...byDate.values()].sort((left, right) => left.date.localeCompare(right.date));
 }
 
 function formatWeight(value) {
@@ -137,18 +158,22 @@ function trendForEntries(entries) {
   const baseline = [...entries].reverse().find((entry) => dateFromKey(entry.date) <= fourteenDaysAgo) || entries[0];
   const days = Math.max(1, Math.round((latestDate - dateFromKey(baseline.date)) / 86400000));
   const delta = Number(latest.weightKg) - Number(baseline.weightKg);
-  const arrow = delta < -0.05 ? "↓" : delta > 0.05 ? "↑" : "→";
   const goalType = state.user?.goalType || "maintain";
-  const tone = Math.abs(delta) <= 0.05
-    ? "neutral"
-    : goalType === "gain"
-      ? delta > 0 ? "good" : "bad"
-      : goalType === "lose"
-        ? delta < 0 ? "good" : "bad"
-        : Math.abs(delta) <= 0.5 ? "good" : "bad";
-  const target = Number(state.user?.targetWeightKg || state.user?.startWeightKg || latest.weightKg);
-  const label = `${arrow} ${Math.abs(delta).toFixed(1)} kg in ${days} ${days === 1 ? "day" : "days"} · target ${formatWeight(target)} kg`;
+  const isMovingAgainstGoal = (goalType === "lose" && delta > 0.05)
+    || (goalType === "gain" && delta < -0.05);
+  const tone = isMovingAgainstGoal ? "bad" : "neutral";
+  const change = Math.abs(delta) <= 0.05 ? "No change" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`;
+  const label = `${change} in ${days} ${days === 1 ? "day" : "days"}`;
   return { delta, days, label, tone };
+}
+
+function targetStatus(currentWeight) {
+  const targetWeight = Number(state.user?.targetWeightKg);
+  if (!Number.isFinite(targetWeight) || targetWeight <= 0) return "Target not set";
+
+  const difference = Number(currentWeight) - targetWeight;
+  if (Math.abs(difference) <= 0.05) return "At target";
+  return `${formatWeight(Math.abs(difference))} kg ${difference > 0 ? "above" : "below"} target`;
 }
 
 function ensureInitialProgress() {
@@ -170,7 +195,7 @@ function render() {
     return;
   }
 
-  const entries = [...state.progress].sort((a, b) => a.date.localeCompare(b.date));
+  const entries = dailyWeightEntries(state.progress);
   const current = currentWeight();
   const trend = trendForEntries(entries);
   elements.profileSummary.textContent = state.user.name;
@@ -178,6 +203,7 @@ function render() {
   elements.currentWeightValue.textContent = formatWeight(current);
   elements.weightTrendText.textContent = trend.label;
   elements.weightTrendText.className = `weight-trend is-${trend.tone}`;
+  elements.weightTargetStatus.textContent = targetStatus(current);
   const today = localDateKey(new Date());
   elements.progressDate.max = today;
   elements.progressDate.value = elements.progressDate.value || today;
@@ -190,20 +216,27 @@ function render() {
 }
 
 function renderChart(entries) {
-  const todayKey = localDateKey(new Date());
-  const chartEntries = entries.length ? entries : [{ date: todayKey, weightKg: state.user.weightKg }];
+  const chartEntries = entries;
+  if (!chartEntries.length) {
+    elements.progressChart.innerHTML = "";
+    elements.weightChartAxis?.replaceChildren();
+    elements.weightChartAxis?.classList.remove("is-single-entry");
+    return;
+  }
+
   const latestEntry = chartEntries.at(-1);
-  const todayProjection = latestEntry.date === todayKey
-    ? null
-    : { date: todayKey, weightKg: latestEntry.weightKg, isProjection: true };
-  const lineEntries = todayProjection ? [...chartEntries, todayProjection] : chartEntries;
-  const weights = lineEntries.map((entry) => Number(entry.weightKg));
-  const min = Math.floor((Math.min(...weights) - 0.7) / 5) * 5;
+  const todayKey = localDateKey(new Date());
+  const weights = chartEntries.map((entry) => Number(entry.weightKg));
+  const targetWeight = Number(state.user?.targetWeightKg || 0);
+  const scaleWeights = targetWeight > 0 ? [...weights, targetWeight] : weights;
+  const min = Math.floor((Math.min(...scaleWeights) - 0.7) / 5) * 5;
   const max = Math.ceil((Math.max(...weights) + 0.7) / 5) * 5;
   const rect = elements.progressChart.getBoundingClientRect();
   const width = Math.max(320, Math.round(rect.width || elements.progressChart.clientWidth || 320));
   const height = Math.max(210, Math.round(rect.height || elements.progressChart.clientHeight || 240));
-  const xInset = width >= 700 ? 56 : 10;
+  // Reserve a real left gutter on phones so grid and target lines never run
+  // through the weight-scale labels.
+  const xInset = width >= 700 ? 56 : 44;
   const chart = {
     left: xInset,
     right: width - xInset,
@@ -212,39 +245,47 @@ function renderChart(entries) {
   };
   const range = max - min || 1;
   const firstDate = dateFromKey(chartEntries[0].date);
-  const todayDate = dateFromKey(todayKey);
-  const dateSpan = Math.max(1, Math.round((todayDate - firstDate) / 86400000));
+  const lastDate = dateFromKey(latestEntry.date);
+  const dateSpan = Math.max(1, Math.round((lastDate - firstDate) / 86400000));
   const yForWeight = (weight) => chart.bottom - ((weight - min) / range) * (chart.bottom - chart.top);
   const xForDate = (dateKey) => {
     const daysFromStart = Math.max(0, Math.round((dateFromKey(dateKey) - firstDate) / 86400000));
     return chart.left + (Math.min(daysFromStart, dateSpan) / dateSpan) * (chart.right - chart.left);
   };
-  const points = lineEntries.map((entry) => {
-    const x = chartEntries.length === 1 && !todayProjection ? chart.right : xForDate(entry.date);
+  const xForEntry = (entry) => chartEntries.length === 1
+    ? chart.right
+    : xForDate(entry.date);
+  const points = chartEntries.map((entry) => {
+    const x = xForEntry(entry);
     const y = yForWeight(Number(entry.weightKg));
     return `${x},${y}`;
   });
-  const entryDots = chartEntries.map((entry) => ({
-    x: chartEntries.length === 1 && entry.date === todayKey ? chart.right : xForDate(entry.date),
+  const entryDots = chartEntries.map((entry, index) => ({
+    x: xForEntry(entry),
     y: yForWeight(Number(entry.weightKg)),
     isToday: entry.date === todayKey,
+    isLatest: index === chartEntries.length - 1,
   }));
-  const todayDot = {
-    x: chart.right,
-    y: yForWeight(Number(latestEntry.weightKg)),
-  };
   const gridLines = [];
   for (let weight = max; weight >= min; weight -= 5) {
     gridLines.push({ y: yForWeight(weight), label: `${weight} kg` });
   }
-  const axisLabels = chartEntries.length < 2
-    ? ["Start", "", "Now"]
-    : [shortAxisDate(chartEntries[0].date), `${dateSpan} ${dateSpan === 1 ? "day" : "days"}`, "Now"];
-  const currentAxisLabel = `${formatWeight(latestEntry.weightKg)} kg`;
+  const middleEntry = chartEntries[Math.floor((chartEntries.length - 1) / 2)];
+  const axisTicks = chartEntries.length === 1
+    ? [latestEntry]
+    : chartEntries.length === 2
+      ? [chartEntries[0], latestEntry]
+      : [chartEntries[0], middleEntry, latestEntry];
+  const targetY = targetWeight > 0 ? yForWeight(targetWeight) : null;
 
   if (elements.weightChartAxis) {
-    elements.weightChartAxis.querySelectorAll("span").forEach((span, index) => {
-      span.textContent = index === 2 ? `${axisLabels[index]} · ${currentAxisLabel}` : axisLabels[index] || "";
+    elements.weightChartAxis.replaceChildren();
+    elements.weightChartAxis.classList.toggle("is-single-entry", chartEntries.length === 1);
+    axisTicks.forEach((tick) => {
+      const span = document.createElement("span");
+      span.textContent = shortAxisDate(tick.date);
+      span.style.setProperty("--axis-x", `${(xForEntry(tick) / width) * 100}%`);
+      elements.weightChartAxis.appendChild(span);
     });
   }
 
@@ -252,9 +293,9 @@ function renderChart(entries) {
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
       ${gridLines.map((line) => `<path class="chart-grid" d="M${chart.left} ${line.y} H${chart.right}"></path>`).join("")}
       ${gridLines.map((line) => `<text class="weight-y-label" x="${Math.max(2, chart.left - 48)}" y="${line.y + 3}">${line.label}</text>`).join("")}
-      <polyline class="chart-line" points="${points.join(" ")}"></polyline>
-      ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isToday ? 4.2 : 3}"></circle>`).join("")}
-      ${todayProjection ? `<circle class="chart-today-dot" cx="${todayDot.x}" cy="${todayDot.y}" r="4.2"></circle>` : ""}
+      ${targetY === null ? "" : `<path class="weight-target-line" d="M${chart.left} ${targetY} H${chart.right}"></path><text class="weight-target-label" x="${chart.right}" y="${Math.max(12, targetY - 10)}" text-anchor="end">TARGET ${formatWeight(targetWeight)} KG</text>`}
+      ${chartEntries.length > 1 ? `<polyline class="chart-line" points="${points.join(" ")}"></polyline>` : ""}
+      ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}${dot.isLatest ? " is-latest" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isLatest ? 3.75 : 3}"></circle>`).join("")}
     </svg>
   `;
 }
@@ -275,15 +316,18 @@ function renderList(entries) {
     const card = document.querySelector("#entryTemplate").content.firstElementChild.cloneNode(true);
     const previousEntry = [...entries].filter((item) => item.date < entry.date).at(-1);
     const delta = previousEntry ? Number(entry.weightKg) - Number(previousEntry.weightKg) : 0;
+    const hasChanged = Math.abs(delta) > 0.05;
     const deltaText = previousEntry
-      ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`
+      ? hasChanged ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg` : "No change"
       : "Start";
-    const deltaClass = !previousEntry ? "neutral" : delta > 0 ? "up" : delta < 0 ? "down" : "neutral";
+    const deltaClass = !previousEntry || !hasChanged ? "neutral" : delta > 0 ? "up" : "down";
 
     card.classList.add("progress-entry-card", `is-${deltaClass}`);
     card.querySelector("strong").textContent = shortEntryDate(entry.date);
     card.querySelector("p").innerHTML = `<span>${formatWeight(entry.weightKg)}</span><small>${deltaText}</small>`;
+    card.querySelector("button").setAttribute("aria-label", `Remove weight entry for ${shortEntryDate(entry.date)}`);
     card.querySelector("button").addEventListener("click", () => {
+      if (!window.confirm(`Remove the weight entry for ${shortEntryDate(entry.date)}?`)) return;
       state.progress = state.progress.filter((item) => item.id !== entry.id);
       saveState();
       render();
@@ -317,7 +361,7 @@ function setProgressView(view) {
 function nutritionRows(range) {
   const today = dateFromKey(localDateKey(new Date()));
   return Array.from({ length: range }, (_, index) => {
-    const date = addDays(today, index - range + 1);
+    const date = addDays(today, index - range + 1 + nutritionRangeOffset);
     const dateKey = localDateKey(date);
     const day = state.days?.[dateKey] || { foods: [], exercises: [] };
     const summary = summarizeDay(day);
@@ -352,7 +396,13 @@ function renderNutrition() {
   elements.nutritionGoalDays.textContent = `${goalDays}/${nutritionRange}`;
   elements.nutritionMacroHit.textContent = `${macroHitDays}/${nutritionRange}`;
   elements.nutritionLoggedDays.textContent = `${loggedCount}/${nutritionRange}`;
-  elements.nutritionInsightText.textContent = nutritionInsight(rows, loggedRows, goalDays);
+  const insight = nutritionInsight(rows, loggedRows, goalDays);
+  elements.nutritionInsightTitle.textContent = insight.title;
+  elements.nutritionInsightText.textContent = insight.text;
+  if (!rows.some((row) => row.dateKey === selectedNutritionDate)) {
+    selectedNutritionDate = rows.at(-1)?.dateKey || localDateKey(new Date());
+  }
+  elements.nutritionNextRange.disabled = nutritionRangeOffset >= 0;
 
   elements.nutritionMetricButtons.forEach((button) => {
     const isActive = button.dataset.nutritionMetric === nutritionMetric;
@@ -378,16 +428,9 @@ function renderNutritionChart(rows, metric, goal) {
   const minValue = Math.min(0, ...values);
   const maxValue = Math.max(goal || 0, ...values, 1);
   const padding = Math.max(10, (maxValue - minValue) * 0.12);
-  const min = Math.min(0, Math.floor(minValue - padding));
+  const min = minValue < 0 ? Math.floor(minValue - padding) : 0;
   const max = Math.ceil(maxValue + padding);
-  const { width, height, plotWidth } = nutritionChartSize();
-  const xInset = Math.round((width - plotWidth) / 2);
-  const chart = {
-    left: xInset,
-    right: xInset + plotWidth,
-    top: 28,
-    bottom: height - 56,
-  };
+  const { width, height, chart } = nutritionChartFrame();
   const range = max - min || 1;
   const yFor = (value) => chart.bottom - ((value - min) / range) * (chart.bottom - chart.top);
   const zeroY = yFor(0);
@@ -395,30 +438,57 @@ function renderNutritionChart(rows, metric, goal) {
   const slot = (chart.right - chart.left) / rows.length;
   const barWidth = Math.max(5, Math.min(nutritionRange === 7 ? 28 : 12, slot * 0.48));
   const bars = rows.map((row, index) => {
+    if (!row.hasEntries) return "";
     const value = Number(row[metric.valueKey] || 0);
     const x = chart.left + index * slot + (slot - barWidth) / 2;
     const y = Math.min(yFor(value), zeroY);
     const heightValue = Math.max(2, Math.abs(zeroY - yFor(value)));
     const tone = row.netCalories > Number(state.goals?.calories || 2300) ? "is-over" : "is-good";
-    return `<rect class="nutrition-bar ${tone}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"></rect>`;
+    const selectionClass = row.dateKey === selectedNutritionDate ? " is-selected" : "";
+    const label = `${formatNutritionDate(row.dateKey)}: ${Math.round(value)} ${metric.unit}`;
+    return `<rect class="nutrition-bar ${tone}${selectionClass}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"><title>${label}</title></rect>`;
   });
+  const dayControls = rows.map((row, index) => {
+    const x = chart.left + index * slot;
+    const label = nutritionDayDetail(row, metric, goal);
+    const marker = row.dateKey === selectedNutritionDate
+      ? `<path class="nutrition-selection-marker" d="M${x + slot / 2 - 8} ${chart.bottom + 34} H${x + slot / 2 + 8}"></path>`
+      : "";
+    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedNutritionDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
+  });
+  const valueLabels = nutritionRange === 7
+    ? rows.map((row, index) => {
+        if (!row.hasEntries) return "";
+        const value = Number(row[metric.valueKey] || 0);
+        const x = chart.left + index * slot + slot / 2;
+        const y = Math.max(chart.top + 10, yFor(value) - 8);
+        return `<text class="nutrition-value-label" x="${x}" y="${y}">${Math.round(value)}</text>`;
+      })
+    : [];
   const goalLabel = `${Math.round(goal)} ${metric.unit}`;
   const axisLabels = nutritionAxisLabels(rows, chart, slot);
   const axisTicks = nutritionAxisTicks(rows, chart, slot);
   const axisLabelY = chart.bottom + 27;
 
   elements.nutritionChart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${metric.label} trend chart">
-      <path class="nutrition-grid" d="M${chart.left} ${zeroY} H${chart.right}"></path>
-      ${goalY === null ? "" : `<path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>`}
-      ${goalY === null ? "" : `<text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">${goalLabel}</text>`}
-      ${bars.join("")}
-      ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
-      ${axisLabels.map((label) => `<text class="nutrition-axis-label" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
-    </svg>
+    <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true"></div>
+    <div class="nutrition-chart-plot">
+      <svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${metric.label} trend chart">
+        <path class="nutrition-grid" d="M${chart.left} ${chart.bottom} H${chart.right}"></path>
+        ${Math.abs(zeroY - chart.bottom) < 0.5 ? "" : `<path class="nutrition-zero-line" d="M${chart.left} ${zeroY} H${chart.right}"></path>`}
+        ${goalY === null ? "" : `<path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>`}
+        ${goalY === null ? "" : `<text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">${goalLabel}</text>`}
+        ${bars.join("")}
+        ${dayControls.join("")}
+        ${valueLabels.join("")}
+        ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
+        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+      </svg>
+    </div>
   `;
 
-  elements.nutritionChartAxis.innerHTML = "";
+  elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
+  bindNutritionDayControls(rows, metric, goal);
 }
 
 function renderMacroNutritionChart(rows) {
@@ -427,14 +497,7 @@ function renderMacroNutritionChart(rows) {
     carbs: Number(state.goals?.carbs || 260),
     fat: Number(state.goals?.fat || 75),
   };
-  const { width, height, plotWidth } = nutritionChartSize();
-  const xInset = Math.round((width - plotWidth) / 2);
-  const chart = {
-    left: xInset,
-    right: xInset + plotWidth,
-    top: 30,
-    bottom: height - 56,
-  };
+  const { width, height, chart } = nutritionChartFrame();
   const maxPercent = Math.max(
     130,
     ...rows.flatMap((row) => macroKeys().map((key) => macroPercent(row, key, goals[key]))),
@@ -447,45 +510,152 @@ function renderMacroNutritionChart(rows) {
   const barWidth = (groupWidth - gap * 2) / 3;
   const goalY = yFor(100);
   const bars = rows.flatMap((row, index) => {
+    if (!row.hasEntries) return [];
     const groupX = chart.left + index * slot + (slot - groupWidth) / 2;
     return macroKeys().map((key, macroIndex) => {
       const percent = macroPercent(row, key, goals[key]);
       const x = groupX + macroIndex * (barWidth + gap);
       const y = yFor(percent);
       const heightValue = Math.max(2, chart.bottom - y);
-      return `<rect class="nutrition-bar nutrition-macro-bar is-${key}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"></rect>`;
+      const label = `${formatNutritionDate(row.dateKey)}: ${key} ${Math.round(percent)}% of goal`;
+      return `<rect class="nutrition-bar nutrition-macro-bar is-${key}${row.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0" role="img" aria-label="${label}"><title>${label}</title></rect>`;
     });
   });
   const axisLabels = nutritionAxisLabels(rows, chart, slot);
   const axisTicks = nutritionAxisTicks(rows, chart, slot);
   const axisLabelY = chart.bottom + 27;
+  const dayControls = rows.map((row, index) => {
+    const x = chart.left + index * slot;
+    const label = nutritionDayDetail(row, nutritionMetrics.macros, 100);
+    const marker = row.dateKey === selectedNutritionDate
+      ? `<path class="nutrition-selection-marker" d="M${x + slot / 2 - 8} ${chart.bottom + 34} H${x + slot / 2 + 8}"></path>`
+      : "";
+    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedNutritionDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
+  });
 
   elements.nutritionChart.innerHTML = `
-    <div class="nutrition-macro-legend" aria-hidden="true">
-      <span class="is-protein">P</span>
-      <span class="is-carbs">C</span>
-      <span class="is-fat">F</span>
+    <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true">
+      <div class="nutrition-macro-legend">
+        <span class="is-protein">Protein</span>
+        <span class="is-carbs">Carbs</span>
+        <span class="is-fat">Fat</span>
+      </div>
     </div>
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Macro percent of goal chart">
-      <path class="nutrition-grid" d="M${chart.left} ${chart.bottom} H${chart.right}"></path>
-      <path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>
-      <text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">100% goal</text>
-      ${bars.join("")}
-      ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
-      ${axisLabels.map((label) => `<text class="nutrition-axis-label" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
-    </svg>
+    <div class="nutrition-chart-plot">
+      <svg viewBox="0 0 ${width} ${height}" role="group" aria-label="Macro percent of goal chart">
+        <path class="nutrition-grid" d="M${chart.left} ${chart.bottom} H${chart.right}"></path>
+        <path class="nutrition-goal-line" d="M${chart.left} ${goalY} H${chart.right}"></path>
+        <text class="nutrition-goal-label" x="${chart.left}" y="${Math.max(12, goalY - 8)}">100% goal</text>
+        ${bars.join("")}
+        ${dayControls.join("")}
+        ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
+        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+      </svg>
+    </div>
   `;
-  elements.nutritionChartAxis.innerHTML = "";
+  elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
+  bindNutritionDayControls(rows, nutritionMetrics.macros, 100);
+}
+
+function bindNutritionDayControls(rows, metric, goal) {
+  elements.nutritionChart.querySelectorAll("[data-nutrition-date]").forEach((control) => {
+    const select = (restoreFocus = false) => {
+      const dateKey = control.dataset.nutritionDate;
+      selectedNutritionDate = dateKey;
+      renderNutrition();
+      if (restoreFocus) {
+        requestAnimationFrame(() => {
+          elements.nutritionChart.querySelector(`[data-nutrition-date="${dateKey}"]`)?.focus({ preventScroll: true });
+        });
+      }
+    };
+    control.addEventListener("click", () => select(false));
+    control.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      select(true);
+    });
+  });
+  const selected = rows.find((row) => row.dateKey === selectedNutritionDate) || rows.at(-1);
+  const summary = nutritionDaySummary(selected, metric, goal);
+  elements.nutritionChartDetailDate.textContent = summary.date;
+  elements.nutritionChartDetail.textContent = summary.value;
+}
+
+function nutritionDaySummary(row, metric, goal) {
+  if (!row) return { date: "", value: "" };
+
+  const date = formatNutritionDate(row.dateKey).toUpperCase();
+  if (!row.hasEntries) return { date, value: "No food logged" };
+
+  if (metric.isMacro) {
+    const protein = Math.round(macroPercent(row, "protein", Number(state.goals?.protein || 150)));
+    const carbs = Math.round(macroPercent(row, "carbs", Number(state.goals?.carbs || 260)));
+    const fat = Math.round(macroPercent(row, "fat", Number(state.goals?.fat || 75)));
+    return { date, value: `Protein ${protein}% · Carbs ${carbs}% · Fat ${fat}%` };
+  }
+
+  const value = Math.round(Number(row[metric.valueKey] || 0));
+  if (!goal) return { date, value: `${value} ${metric.unit}` };
+
+  const delta = Math.round(value - Number(goal));
+  const comparison = delta === 0
+    ? "At goal"
+    : `${Math.abs(delta).toLocaleString()} ${metric.unit} ${delta > 0 ? "over" : "under"} goal`;
+  return { date, value: `${value.toLocaleString()} ${metric.unit} · ${comparison}` };
+}
+
+function nutritionDayDetail(row, metric, goal) {
+  if (!row) return "";
+  const date = formatNutritionDate(row.dateKey);
+  if (!row.hasEntries) return `${date}: no food logged`;
+  if (metric.isMacro) {
+    const protein = Math.round(macroPercent(row, "protein", Number(state.goals?.protein || 150)));
+    const carbs = Math.round(macroPercent(row, "carbs", Number(state.goals?.carbs || 260)));
+    const fat = Math.round(macroPercent(row, "fat", Number(state.goals?.fat || 75)));
+    return `${date}: protein ${protein}%, carbs ${carbs}%, fat ${fat}% of goal`;
+  }
+  const value = Math.round(Number(row[metric.valueKey] || 0));
+  const delta = Math.round(value - Number(goal || 0));
+  const comparison = goal ? `, ${Math.abs(delta)} ${metric.unit} ${delta > 0 ? "over" : "under"} goal` : "";
+  return `${date}: ${value} ${metric.unit}${comparison}`;
+}
+
+function formatNutritionDate(dateKey) {
+  return dateFromKey(dateKey).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function nutritionDateRange(rows) {
+  if (!rows.length) return "";
+  return `${formatNutritionDate(rows[0].dateKey)} – ${formatNutritionDate(rows.at(-1).dateKey)}`;
 }
 
 function nutritionChartSize() {
   const rect = elements.nutritionChart.getBoundingClientRect();
   const width = Math.max(320, Math.round(rect.width || elements.nutritionChart.clientWidth || 320));
-  const height = width >= 700 ? 340 : 280;
+  const frameHeight = Math.round(rect.height || (width >= 700 ? 340 : 280));
+  const headerHeight = 28;
+  const height = Math.max(224, frameHeight - headerHeight);
   const sidePadding = width >= 700 ? 50 : 18;
   const maxPlotWidth = nutritionRange <= 7 && width >= 900 ? 560 : width - sidePadding * 2;
   const plotWidth = Math.max(260, Math.min(width - sidePadding * 2, maxPlotWidth));
-  return { width, height, plotWidth };
+  return { width, height, plotWidth, headerHeight };
+}
+
+function nutritionChartFrame() {
+  const { width, height, plotWidth, headerHeight } = nutritionChartSize();
+  const xInset = Math.round((width - plotWidth) / 2);
+  return {
+    width,
+    height,
+    headerHeight,
+    chart: {
+      left: xInset,
+      right: xInset + plotWidth,
+      top: 0,
+      bottom: height - 56,
+    },
+  };
 }
 
 function nutritionAxisLabels(rows, chart, slot) {
@@ -493,6 +663,7 @@ function nutritionAxisLabels(rows, chart, slot) {
   return rows
     .map((row, index) => ({
       index,
+      dateKey: row.dateKey,
       x: chart.left + index * slot + slot / 2,
       text: rows.length <= 7 ? shortWeekday(row.dateKey) : shortDateLabel(row.dateKey),
     }))
@@ -534,42 +705,61 @@ function nutritionInsight(rows, loggedRows, goalDays) {
   const loggedCount = loggedRows.length;
   const calorieGoal = Number(state.goals?.calories || 2300);
   const proteinGoal = Number(state.goals?.protein || 150);
+  const carbsGoal = Number(state.goals?.carbs || 260);
+  const fatGoal = Number(state.goals?.fat || 75);
+  const minimumUsefulDays = Math.min(4, rows.length);
 
-  if (!loggedCount) {
-    return "Start logging meals and this note will turn into a weekly read of calories, protein, and consistency.";
+  if (loggedCount < minimumUsefulDays) {
+    return {
+      title: "Not enough data yet",
+      text: `You logged ${loggedCount} of ${rows.length} days. Log at least ${minimumUsefulDays} days in a 7-day stretch so your weekly trend becomes more reliable.`,
+    };
   }
 
   const overGoalDays = loggedRows.filter((row) => row.netCalories > calorieGoal).length;
-  const avgProtein = average(loggedRows.map((row) => row.protein));
-  const avgCarbsPercent = average(loggedRows.map((row) => macroPercent(row, "carbs", Number(state.goals?.carbs || 260))));
-  const avgFatPercent = average(loggedRows.map((row) => macroPercent(row, "fat", Number(state.goals?.fat || 75))));
-  const consistency = loggedCount / rows.length;
+  const proteinGapDays = loggedRows.filter((row) => macroPercent(row, "protein", proteinGoal) < 80).length;
+  const carbsGapDays = loggedRows.filter((row) => macroPercent(row, "carbs", carbsGoal) < 70).length;
+  const fatOverDays = loggedRows.filter((row) => macroPercent(row, "fat", fatGoal) > 130).length;
+  const calorieCloseDays = loggedRows.filter((row) => Math.abs(row.netCalories - calorieGoal) <= calorieGoal * 0.12).length;
+  const mainGapThreshold = Math.ceil(loggedCount / 2);
 
-  if (consistency < 0.5) {
-    return `You logged ${loggedCount} of ${rows.length} days. Next week, the biggest win is simply filling more days so the pattern becomes easier to trust.`;
+  if (overGoalDays >= mainGapThreshold) {
+    return {
+      title: "Calories are your main gap",
+      text: `${overGoalDays} of ${loggedCount} logged days went over your calorie target. Next week, start with the meal or snack that contributes the most calories.`,
+    };
   }
 
-  if (overGoalDays === 0 && avgProtein >= proteinGoal * 0.8) {
-    return `Strong stretch: ${goalDays} goal days and protein is close to target. Keep the same structure next week.`;
+  if (proteinGapDays >= mainGapThreshold) {
+    const calorieContext = calorieCloseDays >= mainGapThreshold
+      ? "You were close to your calorie target on most logged days, but"
+      : "";
+    return {
+      title: "Protein is your main gap",
+      text: calorieContext
+        ? `${calorieContext} protein was below target on ${proteinGapDays} of ${loggedCount} logged days. Add one reliable protein choice earlier in the day.`
+        : `Protein was below target on ${proteinGapDays} of ${loggedCount} logged days. Add one reliable protein choice earlier in the day.`,
+    };
   }
 
-  if (overGoalDays >= Math.max(2, Math.ceil(loggedCount * 0.35))) {
-    return `${overGoalDays} logged days went over your calorie goal. Next week, watch the highest-calorie meal window first instead of trying to change everything.`;
+  if (fatOverDays >= mainGapThreshold) {
+    return {
+      title: "Fat is running high",
+      text: `Fat went above its target range on ${fatOverDays} of ${loggedCount} logged days. Review oils, sauces, and snack portions before changing the rest of your plan.`,
+    };
   }
 
-  if (avgProtein < proteinGoal * 0.7) {
-    return `Calories are fairly controlled, but protein is averaging ${Math.round(avgProtein)}g. Add one reliable protein anchor earlier in the day next week.`;
+  if (carbsGapDays >= mainGapThreshold) {
+    return {
+      title: "Carbs need more consistency",
+      text: `Carbs were below target on ${carbsGapDays} of ${loggedCount} logged days. Plan one dependable carb source around your busiest part of the day.`,
+    };
   }
 
-  if (avgFatPercent > 120) {
-    return `Calories are close, but fat is averaging ${Math.round(avgFatPercent)}% of target. Watch oils, sauces, and snack portions first.`;
-  }
-
-  if (avgCarbsPercent < 70) {
-    return `Protein is in a decent place, but carbs are averaging ${Math.round(avgCarbsPercent)}% of target. Add steady carbs around training or busy days if energy dips.`;
-  }
-
-  return `Good baseline: ${goalDays} of ${loggedCount} logged days landed within goal. Keep logging and look for the meal that most often pushes net calories up.`;
+  return {
+    title: "A steady weekly baseline",
+    text: `${goalDays} of ${loggedCount} logged days stayed within your calorie target, with no single macro standing out as the main gap. Keep the same structure next week and continue logging consistently.`,
+  };
 }
 
 function shortEntryDate(dateKey) {
@@ -600,6 +790,11 @@ elements.progressForm.addEventListener("submit", (event) => {
   render();
 });
 
+elements.weightLogJump?.addEventListener("click", () => {
+  elements.progressForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => elements.progressWeight.focus({ preventScroll: true }), 350);
+});
+
 elements.progressViewButtons.forEach((button) => {
   button.addEventListener("click", () => setProgressView(button.dataset.progressView));
 });
@@ -613,11 +808,25 @@ elements.nutritionMetricButtons.forEach((button) => {
 });
 
 elements.nutritionRangeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    nutritionRange = Number(button.dataset.nutritionRange || 7);
-    localStorage.setItem("daily-fuel-nutrition-range", String(nutritionRange));
-    renderNutrition();
+    button.addEventListener("click", () => {
+      nutritionRange = Number(button.dataset.nutritionRange || 7);
+      nutritionRangeOffset = 0;
+      selectedNutritionDate = localDateKey(new Date());
+      localStorage.setItem("daily-fuel-nutrition-range", String(nutritionRange));
+      renderNutrition();
+    });
   });
+
+elements.nutritionPreviousRange?.addEventListener("click", () => {
+  nutritionRangeOffset -= nutritionRange;
+  selectedNutritionDate = localDateKey(addDays(new Date(), nutritionRangeOffset));
+  renderNutrition();
+});
+
+elements.nutritionNextRange?.addEventListener("click", () => {
+  nutritionRangeOffset = Math.min(0, nutritionRangeOffset + nutritionRange);
+  selectedNutritionDate = localDateKey(addDays(new Date(), nutritionRangeOffset));
+  renderNutrition();
 });
 
 elements.sidebarToggle.addEventListener("click", () => {
@@ -642,6 +851,28 @@ window.addEventListener("resize", () => {
   clearTimeout(resizeRenderTimer);
   resizeRenderTimer = setTimeout(() => render(), 120);
 });
+
+// Charts size themselves from their panels, not from the viewport. This also
+// catches app-shell column transitions when the desktop sidebar is toggled.
+if ("ResizeObserver" in window) {
+  let observedChartSize = "";
+  const chartResizeObserver = new ResizeObserver((entries) => {
+    const nextSize = entries
+      .map(({ target, contentRect }) => `${target.id}:${Math.round(contentRect.width)}x${Math.round(contentRect.height)}`)
+      .sort()
+      .join("|");
+    if (!nextSize || nextSize === observedChartSize) return;
+    observedChartSize = nextSize;
+    clearTimeout(resizeRenderTimer);
+    resizeRenderTimer = setTimeout(() => {
+      if (!state.user) return;
+      renderChart(dailyWeightEntries(state.progress));
+      renderNutrition();
+    }, 80);
+  });
+  chartResizeObserver.observe(elements.progressChart);
+  chartResizeObserver.observe(elements.nutritionChart);
+}
 
 elements.logoutButton.addEventListener("click", () => {
   if (!window.confirm("Are you sure you want to log out?")) return;

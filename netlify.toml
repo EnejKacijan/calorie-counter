@@ -13,6 +13,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/foods/barcode"
+  to = "/.netlify/functions/foods-barcode"
+  status = 200
+
+[[redirects]]
+  from = "/api/foods/estimate-text"
+  to = "/.netlify/functions/foods-estimate-text"
+  status = 200
+
+[[redirects]]
   from = "/api/foods/correct-image-item"
   to = "/.netlify/functions/foods-correct-image-item"
   status = 200

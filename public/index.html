@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f5ee" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
@@ -12,7 +12,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="favicon.svg" />
   <link rel="manifest" href="manifest.webmanifest?v=6" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 
 <body>
@@ -58,7 +58,7 @@
           </svg>
         </div>
         <div>
-          <strong id="profileSummary">Your plan</strong>
+          <strong id="profileSummary">Your Plan</strong>
           <small id="profileMeta">Goal</small>
         </div>
       </div>
@@ -115,7 +115,7 @@
           <div class="panel-header">
             <div>
               <strong class="calorie-left-value" id="remainingCalories"><span>0</span><small>kcal</small></strong>
-              <p class="calorie-left-label">left</p>
+              <p class="calorie-left-label"><span class="desktop-balance-label">Daily balance</span><span class="mobile-balance-label">left</span></p>
               <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
               <small class="mobile-streak-pill" id="mobileClearDayStreak">0 days streak</small>
             </div>
@@ -174,10 +174,12 @@
           <article>
             <span>Streak</span>
             <strong><b id="mobileStreakValue">0</b> <small id="mobileStreakUnit">days</small></strong>
+            <small class="mobile-stat-detail" id="mobileStreakBest" hidden></small>
           </article>
           <article>
             <span>Weight</span>
-            <strong><b id="mobileWeightValue">--</b> <small>kg</small> <em id="mobileWeightDelta"></em></strong>
+            <strong><b id="mobileWeightValue">--</b> <small>kg</small></strong>
+            <small class="mobile-stat-detail" id="mobileWeightDelta" hidden></small>
           </article>
         </div>
       </section>
@@ -194,6 +196,7 @@
             <button class="quick-add-button" id="addFoodToggle" type="button" aria-label="Add food">+</button>
             <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from
               yesterday</button>
+            <span class="entry-mobile-title" id="foodMobileHeaderTitle" aria-hidden="true">Add</span>
           </div>
           <div class="entry-mode-header food-mode-header" id="foodModeHeader">
             <div>
@@ -219,12 +222,13 @@
           </div>
           <form class="compact-form" id="manualFoodForm">
             <div class="food-search-row">
-              <label class="food-form-field food-name-field" for="manualFoodName"><span>Food</span><input
-                  id="manualFoodName" type="text" placeholder="Search food" autocomplete="off" required /></label>
-              <button class="scan-food-button" id="foodScanButton" type="button"><span
-                  aria-hidden="true">▣</span><b>Scan</b></button>
-              <button class="scan-food-button gallery-food-button" id="foodGalleryShortcut" type="button"><span
-                  aria-hidden="true">▧</span><b>Gallery</b></button>
+              <label class="food-form-field food-name-field" for="manualFoodName"><span>Food name (required)</span><input
+                  id="manualFoodName" type="search" placeholder="Search food" autocomplete="off" enterkeyhint="search"
+                  aria-describedby="searchNote" required /></label>
+              <button class="scan-food-button" id="foodScanButton" type="button" style="height:48px!important;min-height:48px!important"><svg
+                  viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5a1 1 0 0 0-1 1v3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M4 16v3a1 1 0 0 0 1 1h3M7 12h10" /></svg><b>Scan food</b></button>
+              <button class="scan-food-button gallery-food-button" id="foodGalleryShortcut" type="button" style="height:48px!important;min-height:48px!important"><svg
+                  viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1" /><circle cx="8.5" cy="9" r="1.25" /><path d="m5 17 4.5-4 3.25 2.75 2.25-2 4.25 3.3" /></svg><b>Gallery</b></button>
               <div class="scan-choice-menu" id="foodScanMenu" aria-hidden="true">
                 <button id="foodPhotoButton" type="button">Camera</button>
                 <button id="foodGalleryButton" type="button">Gallery</button>
@@ -232,10 +236,9 @@
             </div>
             <div class="food-filter-tabs" aria-label="Food source filters">
               <button class="is-active" type="button" data-food-filter="all">All</button>
-              <button type="button" data-food-filter="my">My foods</button>
+              <button type="button" data-food-filter="my">Saved</button>
               <button type="button" data-food-filter="recent">Recent</button>
               <button type="button" data-food-filter="usda">USDA</button>
-              <button type="button" data-food-filter="off">OFF</button>
             </div>
             <div class="food-edit-summary" id="foodEditSummary" aria-live="polite">
               <span>Food entry</span>
@@ -243,8 +246,9 @@
               <small>Adjust serving, meal, or nutrition values.</small>
               <button class="scan-review-option" id="openScanReview" type="button" hidden>Review your plate</button>
             </div>
-            <p class="search-note" id="searchNote">Search saved foods, USDA, or Open Food Facts.</p>
+            <p class="search-note" id="searchNote" aria-live="polite">Search, scan, choose a source, or enter food manually.</p>
             <div class="suggestions" id="foodSuggestions"></div>
+            <button class="manual-food-shortcut" id="manualFoodShortcut" type="button">Enter food manually</button>
             <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle" hidden>
               <div class="scan-review-heading">
                 <div>
@@ -273,7 +277,7 @@
               </div>
             </section>
             <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number"
-                min="0" step="0.1" value="1" aria-label="Amount" /></label>
+                min="0.1" step="0.1" value="1" aria-label="Amount" required /></label>
             <label class="food-form-field" for="foodUnit"><span>Unit</span><select id="foodUnit" aria-label="Unit">
                 <option value="serving">serving</option>
                 <option value="piece">piece</option>
@@ -284,22 +288,32 @@
                 <option value="lunch">Lunch</option>
                 <option value="dinner">Dinner</option>
               </select></label>
-            <label class="food-form-field" for="manualFoodCalories"><span>Calories</span><input id="manualFoodCalories"
+            <section class="food-nutrition-summary" id="foodNutritionSummary" aria-label="Nutrition" hidden>
+              <div class="food-nutrition-summary-heading">
+                <span>Nutrition</span>
+                <button id="editFoodNutrition" type="button">Edit nutrition</button>
+              </div>
+              <div class="food-nutrition-grid" id="foodNutritionGrid">
+                <div><span>Calories</span><strong id="foodNutritionCalories">0 kcal</strong></div>
+                <div><span>Protein</span><strong id="foodNutritionProtein">0 g</strong></div>
+                <div><span>Carbs</span><strong id="foodNutritionCarbs">0 g</strong></div>
+                <div><span>Fat</span><strong id="foodNutritionFat">0 g</strong></div>
+              </div>
+            </section>
+            <label class="food-form-field" for="manualFoodCalories"><span>Calories (kcal)</span><input id="manualFoodCalories"
                 type="number" min="0" step="0.1" aria-label="Calories" required /></label>
-            <label class="food-form-field" for="manualFoodProtein"><span>Protein</span><input id="manualFoodProtein"
+            <label class="food-form-field" for="manualFoodProtein"><span>Protein (g)</span><input id="manualFoodProtein"
                 type="number" min="0" step="0.1" aria-label="Protein grams" /></label>
-            <label class="food-form-field" for="manualFoodCarbs"><span>Carbs</span><input id="manualFoodCarbs"
+            <label class="food-form-field" for="manualFoodCarbs"><span>Carbs (g)</span><input id="manualFoodCarbs"
                 type="number" min="0" step="0.1" aria-label="Carbs grams" /></label>
-            <label class="food-form-field" for="manualFoodFat"><span>Fat</span><input id="manualFoodFat" type="number"
+            <label class="food-form-field" for="manualFoodFat"><span>Fat (g)</span><input id="manualFoodFat" type="number"
                 min="0" step="0.1" aria-label="Fat grams" /></label>
-            <button id="manualFoodSubmit" type="submit">+ Add</button>
-            <div class="edit-modal-actions" id="foodEditActions">
-              <button class="edit-favorite-button" id="favoriteFoodEdit" type="button"
-                aria-label="Save food">♡</button>
-              <button class="edit-delete-button" id="deleteFoodEdit" type="button"
-                aria-label="Delete food">Delete</button>
-            </div>
+            <button id="manualFoodSubmit" type="submit">Add food</button>
           </form>
+          <div class="edit-modal-actions" id="foodEditActions">
+            <button class="edit-delete-button" id="deleteFoodEdit" type="button"
+              aria-label="Delete food entry">Delete entry</button>
+          </div>
           <div class="photo-food-tools">
             <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
               capture="environment" hidden />
@@ -317,8 +331,15 @@
           </div>
           <div class="logged-list-heading">
             <p class="label">Today's log</p>
-            <span id="foodEntryCount">0 entries</span>
+            <div class="log-heading-actions">
+              <span id="foodEntryCount">0 entries</span>
+              <div class="floating-action-stack">
+                <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
+                  aria-expanded="false"><span class="floating-add-glyph" aria-hidden="true">+</span></button>
+              </div>
+            </div>
           </div>
+          <p class="entry-swipe-hint" id="foodSwipeHint" hidden>Swipe to save or delete</p>
           <div class="entry-list" id="foodList"></div>
           <section class="saved-foods-panel" aria-label="Saved foods">
             <div class="foods-library-header">
@@ -329,7 +350,7 @@
             </div>
             <section class="foods-library-section" aria-labelledby="myFoodsTitle">
               <div class="foods-section-heading">
-                <p class="label" id="myFoodsTitle">My foods</p>
+                <p class="label" id="myFoodsTitle">Saved</p>
               </div>
               <div class="saved-foods" id="savedFoods"></div>
             </section>
@@ -351,6 +372,7 @@
             <button class="modal-close-button" id="closeExerciseModal" type="button"
               aria-label="Close exercise form">×</button>
             <button class="quick-add-button" id="addExerciseToggle" type="button" aria-label="Add exercise">+</button>
+            <span class="entry-mobile-title" id="exerciseMobileHeaderTitle" aria-hidden="true">Add</span>
           </div>
           <div class="entry-mode-header exercise-mode-header" id="exerciseModeHeader">
             <div>
@@ -379,13 +401,28 @@
               </select></label>
             <label class="exercise-form-field" for="exerciseMinutes"><span>Minutes</span><input id="exerciseMinutes"
                 type="number" min="1" value="60" aria-label="Minutes" required /></label>
-            <label class="exercise-form-field" for="exerciseCalories"><span>Calories</span><input id="exerciseCalories"
-                type="number" min="0" aria-label="Calories burned" required /></label>
-            <button id="exerciseSubmit" type="submit">+</button>
+            <div class="exercise-estimate" id="exerciseEstimate">
+              <div class="exercise-estimate-copy" id="exerciseEstimateCopy">
+                <span>Estimated calories</span>
+                <strong><b id="exerciseCaloriesEstimate">0</b> kcal</strong>
+                <small id="exerciseCaloriesNote">Based on your profile</small>
+              </div>
+              <button class="exercise-calories-edit" id="exerciseCaloriesEdit" type="button" aria-expanded="false">Edit</button>
+              <label class="exercise-form-field exercise-calories-field" for="exerciseCalories" hidden><span>Calories burned</span><input id="exerciseCalories"
+                  type="number" min="0" aria-label="Calories burned" required /></label>
+              <small class="exercise-manual-estimate-note" id="exerciseManualEstimateNote" hidden></small>
+            </div>
+            <button id="exerciseSubmit" type="submit">Add exercise</button>
           </form>
           <div class="edit-modal-actions" id="exerciseEditActions">
             <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete exercise"
-              aria-label="Delete exercise">Delete</button>
+              aria-label="Delete exercise">Delete exercise</button>
+          </div>
+          <div class="logged-list-heading exercise-list-heading">
+            <p class="label">Exercise log</p>
+            <div class="log-heading-actions">
+              <span id="exerciseEntryCount">0 entries</span>
+            </div>
           </div>
           <div class="entry-list" id="exerciseList"></div>
         </div>
@@ -393,40 +430,26 @@
     </section>
   </main>
 
+  <section class="desktop-edit-modal" id="desktopEditModal" aria-hidden="true" hidden>
+    <div class="desktop-edit-dialog" id="desktopEditDialog" role="dialog" aria-modal="true">
+      <button class="desktop-edit-modal-close" id="desktopEditModalClose" type="button" aria-label="Close editor">×</button>
+      <div class="desktop-edit-modal-body" id="desktopEditModalBody"></div>
+    </div>
+  </section>
+
   <nav class="mobile-tabbar has-fab" aria-label="Mobile navigation">
-    <a class="is-active" href="index.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
-          <path d="M4 10.5 12 4l8 6.5" />
-          <path d="M6.5 9.5V20h11V9.5" />
-          <path d="M10 20v-6h4v6" />
-        </svg></span><b>Today</b></a>
-    <a href="assistant.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.8 13.6 9l5.2 1.6-5.2 1.6-1.6 5.2-1.6-5.2-5.2-1.6L10.4 9 12 3.8Z" /><path d="m18.5 15 .7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7.7-2.3Z" /></svg></span><b>Assistant</b></a>
-    <a href="progress.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
-          <path d="M4 19h16" />
-          <path d="M6.5 16.5 10 13l3 2.5 4.5-7" />
-          <path d="M17.5 8.5h-4" />
-          <path d="M17.5 8.5v4" />
-        </svg></span><b>Progress</b></a>
-    <a href="profile.html"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24">
-          <circle cx="12" cy="7.5" r="4.2" />
-          <path d="M4.5 21a7.5 7.5 0 0 1 15 0Z" />
-        </svg></span><b>Profile</b></a>
+    <a class="is-active" href="index.html"><b>Today</b></a>
+    <a href="assistant.html"><b>Assistant</b></a>
+    <a href="progress.html"><b>Progress</b></a>
+    <a href="profile.html"><b>Profile</b></a>
   </nav>
-  <div class="floating-action-stack">
-    <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add food"
-      aria-expanded="false">+</button>
-    <button class="floating-scan-button" id="floatingScanButton" type="button" aria-label="Scan food">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7.5 8.25h1.9l1.15-1.45h2.9l1.15 1.45h1.9a2.25 2.25 0 0 1 2.25 2.25v5.75a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25V10.5a2.25 2.25 0 0 1 2.25-2.25Z" />
-        <circle cx="12" cy="13.35" r="2.65" />
-      </svg>
-    </button>
-  </div>
   <button class="fab-overlay" id="fabOverlay" type="button" aria-label="Close add menu"></button>
   <div class="fab-actions" id="fabActions" aria-hidden="true">
     <span aria-hidden="true"></span>
     <button class="fab-sheet-close" id="fabSheetClose" type="button" aria-label="Close add menu">×</button>
     <strong>Add entry</strong>
     <button class="fab-primary-action" id="fabAddFood" type="button"><i aria-hidden="true">+</i><b>Add Food</b></button>
+    <button class="fab-secondary-action" id="fabScanFood" type="button"><i aria-hidden="true">▣</i><b>Scan Food</b></button>
     <button class="fab-secondary-action" id="fabAddExercise" type="button"><i aria-hidden="true">+</i><b>Add Exercise</b></button>
     <button class="fab-saved-link" id="fabSavedFoods" type="button"><i aria-hidden="true">♥</i><b>Browse saved foods</b></button>
   </div>
@@ -446,7 +469,7 @@
   </template>
 
   <script src="pwa.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=16"></script>
 </body>
 
 </html>

@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { searchFoods } from "./food-search.js";
-import { analyzeFoodImage, correctFoodImageItem } from "./food-image-analysis.js";
+import { lookupFoodBarcode, searchFoods } from "./food-search.js";
+import { analyzeFoodDescription, analyzeFoodImage, correctFoodImageItem } from "./food-image-analysis.js";
 import { askNutritionAssistant } from "./nutrition-assistant.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -51,6 +51,11 @@ const server = createServer(async (request, response) => {
       return sendJson(response, 200, { foods: await searchFoods(url.searchParams.get("q") || "", { usdaApiKey }) });
     }
 
+    if (url.pathname === "/api/foods/barcode" && request.method === "GET") {
+      const food = await lookupFoodBarcode(url.searchParams.get("code") || "");
+      return sendJson(response, food ? 200 : 404, food ? { food } : { error: "Product not found in Open Food Facts." });
+    }
+
     if (url.pathname === "/api/foods/analyze-image" && request.method === "POST") {
       const rateLimit = consumeAiScanRateLimit(request);
       if (!rateLimit.allowed) {
@@ -65,6 +70,12 @@ const server = createServer(async (request, response) => {
       const body = await readJsonBody(request);
       const analysis = await analyzeFoodImage(body.imageDataUrl, { openAiApiKey, model: openAiModel });
       return sendJson(response, 200, { analysis }, rateLimit.headers);
+    }
+
+    if (url.pathname === "/api/foods/estimate-text" && request.method === "POST") {
+      const body = await readJsonBody(request);
+      const analysis = await analyzeFoodDescription(body.description, { openAiApiKey, model: openAiModel });
+      return sendJson(response, 200, { analysis });
     }
 
     if (url.pathname === "/api/foods/correct-image-item" && request.method === "POST") {

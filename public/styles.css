@@ -22933,6 +22933,25 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   }
 }
 
+/* The system viewport already ends above the phone navigation area. Keep the
+   mobile tab row compact instead of reserving a second blank strip below it. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .mobile-tabbar,
+  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
+    height: 56px !important;
+    padding-bottom: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a::after,
+  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link::after {
+    bottom: 2px !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar b {
+    padding-bottom: 2px !important;
+  }
+}
+
 @container app-content (max-width: 1050px) {
   .dashboard,
   .workspace,

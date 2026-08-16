@@ -403,6 +403,9 @@ async function sendMessage(rawMessage) {
   if (!message || isSending) return;
 
   const history = messages.slice(-16).map(({ role, content }) => ({ role, content }));
+  // Capture diary access for this request. Preference changes made while the
+  // assistant is replying intentionally apply to the next message instead.
+  const requestAppContext = buildAppContext();
   ensureActiveConversation(message);
   messages.push({ role: "user", content: message, createdAt: new Date().toISOString() });
   transientError = "";
@@ -419,7 +422,7 @@ async function sendMessage(rawMessage) {
       body: JSON.stringify({
         message,
         history,
-        appContext: buildAppContext(),
+        appContext: requestAppContext,
         safetyIdentifier: getSafetyIdentifier(),
       }),
     });
@@ -500,8 +503,7 @@ function startNewConversation() {
   setHistoryOpen(false);
 }
 
-function resetForContextChange() {
-  if (messages.length) startNewConversation();
+function applyContextPreferenceChange() {
   updateContextNote();
 }
 
@@ -589,11 +591,11 @@ elements.historyList.addEventListener("click", (event) => {
 elements.historyDeleteAll.addEventListener("click", deleteAllConversations);
 elements.diaryToggle.addEventListener("change", () => {
   localStorage.setItem(diaryPreferenceKey, String(elements.diaryToggle.checked));
-  resetForContextChange();
+  applyContextPreferenceChange();
 });
 elements.range.addEventListener("change", () => {
   localStorage.setItem(rangePreferenceKey, elements.range.value);
-  resetForContextChange();
+  applyContextPreferenceChange();
 });
 
 elements.sidebarToggle.addEventListener("click", () => {

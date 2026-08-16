@@ -142,6 +142,313 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 }
 
+/* Text descriptions are a second input path into the existing AI review
+   model. The entry stays secondary to search/scan and becomes focused only
+   after the user chooses it. */
+.food-ai-description[hidden],
+.food-ai-clarification[hidden],
+.food-ai-description-error[hidden] {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0 12px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger span {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:hover,
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:focus-visible {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  outline: none;
+}
+
+body:not(.profile-landing-active) .food-ai-description {
+  display: grid;
+  width: 100%;
+  gap: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: clamp(16px, 3vw, 24px);
+  box-sizing: border-box;
+}
+
+body:not(.profile-landing-active) .food-ai-description-heading .label,
+body:not(.profile-landing-active) .food-ai-description-heading h3,
+body:not(.profile-landing-active) .food-ai-description-heading p {
+  margin: 0;
+}
+
+body:not(.profile-landing-active) .food-ai-description-heading h3 {
+  margin-top: 7px;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+  font-weight: 540;
+  line-height: 1.1;
+}
+
+body:not(.profile-landing-active) .food-ai-description-heading p:not(.label) {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-field {
+  display: grid !important;
+  gap: 7px;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+body:not(.profile-landing-active) #manualFoodForm .food-ai-description-field > span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput {
+  width: 100% !important;
+  min-height: 116px !important;
+  resize: vertical;
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 1rem !important;
+  line-height: 1.45 !important;
+  padding: 13px 14px !important;
+  box-sizing: border-box;
+}
+
+body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput:focus {
+  border-color: var(--ink) !important;
+  box-shadow: inset 0 0 0 1px var(--ink) !important;
+  outline: none !important;
+}
+
+body:not(.profile-landing-active) .food-ai-description-status {
+  min-height: 1.2em;
+  margin: -8px 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+body:not(.profile-landing-active) .food-ai-clarification {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 3%, var(--panel));
+  padding: 14px;
+}
+
+body:not(.profile-landing-active) .food-ai-clarification > strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 560;
+  line-height: 1.35;
+}
+
+body:not(.profile-landing-active) .food-ai-clarification > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body:not(.profile-landing-active) .food-ai-clarification button {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 550;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+body:not(.profile-landing-active) .food-ai-clarification button:hover,
+body:not(.profile-landing-active) .food-ai-clarification button:focus-visible {
+  border-color: var(--ink);
+  outline: none;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warn) 5%, transparent);
+  padding: 13px 14px;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error strong,
+body:not(.profile-landing-active) .food-ai-description-error p {
+  margin: 0;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error > div,
+body:not(.profile-landing-active) .food-ai-description-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error button,
+body:not(.profile-landing-active) .food-ai-description-back,
+body:not(.profile-landing-active) .food-ai-description-submit {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0 13px;
+  text-transform: uppercase;
+}
+
+body:not(.profile-landing-active) .food-ai-description-actions {
+  justify-content: space-between;
+}
+
+body:not(.profile-landing-active) .food-ai-description-submit {
+  min-width: 190px;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+}
+
+body:not(.profile-landing-active) .food-ai-description-submit:disabled,
+body:not(.profile-landing-active) .food-ai-description-error button:disabled,
+body:not(.profile-landing-active) .food-ai-description-back:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):hover,
+body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):focus-visible,
+body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):hover,
+body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):focus-visible {
+  border-color: var(--ink);
+  outline: none;
+}
+
+body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm > :is(
+  .food-search-row,
+  .food-ai-description-trigger,
+  .food-filter-tabs,
+  .food-edit-summary,
+  .search-note,
+  .suggestions,
+  .manual-food-shortcut,
+  .food-form-field,
+  .food-nutrition-summary,
+  #manualFoodSubmit,
+  .scan-review
+) {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) .food-log:is(.is-detailing, .is-editing, .is-reviewing-scan) .food-ai-description-trigger {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm .food-ai-description {
+  display: grid !important;
+}
+
+@media (min-width: 921px) {
+  #desktopEditModal .desktop-add-food-content.is-browsing #manualFoodForm .food-ai-description-trigger {
+    display: flex !important;
+    grid-column: 1 / -1 !important;
+    order: 2 !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-browsing .food-filter-tabs {
+    order: 3 !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-browsing :is(.search-note, .suggestions) {
+    order: 4 !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-browsing .manual-food-shortcut {
+    order: 5 !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm > :not(.food-ai-description) {
+    display: none !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm .food-ai-description {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+    order: 1 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger {
+    min-height: 46px;
+  }
+
+  body:not(.profile-landing-active) .food-ai-description {
+    gap: 16px;
+    border-right: 0;
+    border-left: 0;
+    padding: 18px max(16px, env(safe-area-inset-right)) 22px max(16px, env(safe-area-inset-left));
+  }
+
+  body:not(.profile-landing-active) .food-ai-description-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  body:not(.profile-landing-active) .food-ai-description-submit,
+  body:not(.profile-landing-active) .food-ai-description-back {
+    width: 100%;
+  }
+
+  body:not(.profile-landing-active) .food-ai-description-submit {
+    grid-row: 1;
+    min-width: 0;
+    min-height: 48px;
+  }
+}
+
 /* Final axis alignment: these labels use --axis-x generated from the same
    date-to-x calculation as the SVG points, including uneven date gaps. */
 body.progress-page:not(.profile-landing-active) #progressChart + .weight-chart-axis {
@@ -22024,6 +22331,47 @@ body.progress-page:not(.profile-landing-active) .nutrition-chart-header {
   box-sizing: border-box;
 }
 
+body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-header {
+    justify-content: flex-end;
+    gap: 14px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
+    display: inline-block;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key::before {
+    content: "";
+    width: 22px;
+    flex: 0 0 22px;
+    border-top: 1px dashed currentColor;
+    opacity: 0.78;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-plot .nutrition-goal-label {
+    display: none;
+  }
+}
+
 body.progress-page:not(.profile-landing-active) .nutrition-chart-plot {
   min-width: 0;
   min-height: 0;
@@ -22070,6 +22418,10 @@ body:not(.profile-landing-active) #foodSection.is-detailing .food-filter-tabs {
 body:not(.profile-landing-active) #foodNutritionSummary[hidden],
 body:not(.profile-landing-active) #foodNutritionGrid[hidden],
 body:not(.profile-landing-active) #manualFoodForm .food-form-field[hidden] {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) .food-log.is-reviewing-text-estimate #foodNutritionSummary {
   display: none !important;
 }
 
@@ -22933,22 +23285,53 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   }
 }
 
-/* The system viewport already ends above the phone navigation area. Keep the
-   mobile tab row compact instead of reserving a second blank strip below it. */
+/* One shared phone footer geometry: controls stay above the iOS gesture area,
+   while every route ends exactly at the tab bar instead of adding its own gap. */
 @media (max-width: 700px) {
+  body:not(.profile-landing-active) {
+    padding-bottom: 0 !important;
+  }
+
+  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .profile-page-logout {
+    margin-bottom: 16px !important;
+  }
+
   body:not(.profile-landing-active) .mobile-tabbar,
   body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    height: 56px !important;
-    padding-bottom: 0 !important;
+    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-tabbar > a,
+  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+    height: 60px !important;
+    min-height: 60px !important;
   }
 
   body:not(.profile-landing-active) .mobile-tabbar > a::after,
   body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link::after {
-    bottom: 2px !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 2px !important;
+    transform: none !important;
   }
 
   body:not(.profile-landing-active) .mobile-tabbar b {
-    padding-bottom: 2px !important;
+    padding-bottom: 0 !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.modal-open) .main-content,
+  body.progress-page:not(.profile-landing-active) .main-content,
+  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .main-content {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+  }
+
+  body.assistant-page .app-shell {
+    height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
   }
 }
 
@@ -23988,5 +24371,517 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
       grid-row: 3;
       justify-self: end;
     }
+  }
+}
+
+/* Mobile macro values read as one actual / target unit. The delta remains a
+   smaller status on the same baseline without changing the card geometry. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .macro-card-header > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    row-gap: 4px !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .label {
+    position: static !important;
+    display: block !important;
+    grid-row: 1 !important;
+    margin: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-amount {
+    position: relative !important;
+    display: flex !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: baseline !important;
+    color: var(--ink) !important;
+    font-size: clamp(0.58rem, 2.35vw, 0.66rem) !important;
+    font-weight: 650 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-eaten,
+  body:not(.profile-landing-active) .macro-card .macro-goal,
+  body:not(.profile-landing-active) .macro-card .macro-goal-mobile {
+    color: inherit !important;
+    font: inherit !important;
+    letter-spacing: inherit !important;
+    line-height: inherit !important;
+    vertical-align: baseline !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-goal-mobile,
+  body:not(.profile-landing-active) .macro-card .macro-overage > span,
+  body:not(.profile-landing-active) .macro-card .macro-overage-unit {
+    display: inline !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-goal-desktop {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-overage {
+    display: inline-flex !important;
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    flex: 0 0 auto !important;
+    align-items: baseline !important;
+    float: none !important;
+    justify-self: end !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    font-size: clamp(0.48rem, 1.85vw, 0.54rem) !important;
+    font-style: normal !important;
+    font-weight: 650 !important;
+    letter-spacing: 0 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-overage-unit {
+    margin-left: 2px !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card.is-over.is-protein .macro-overage,
+  body:not(.profile-landing-active) .macro-card.is-over.is-carbs .macro-overage,
+  body:not(.profile-landing-active) .macro-card.is-over.is-fat .macro-overage {
+    color: var(--warn) !important;
+  }
+}
+
+/* Mobile scan review: preserve the compact card language while making every
+   action read as a control rather than passive copy. */
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan .scan-review,
+  body:not(.profile-landing-active) .scan-food-card,
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle {
+    box-sizing: border-box !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view {
+    display: inline-flex !important;
+    width: fit-content !important;
+    min-height: 44px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    border: 1px solid var(--line) !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+    padding: 0 12px !important;
+    text-decoration: none !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view::before {
+    content: "←";
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal {
+    position: relative !important;
+    display: grid !important;
+    gap: 3px !important;
+    border: 1px solid var(--line) !important;
+    background: color-mix(in srgb, var(--ink) 3%, transparent) !important;
+    padding: 9px 12px 7px !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal > span {
+    margin: 0 !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal select {
+    min-height: 32px !important;
+    appearance: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 34px 0 0 !important;
+    cursor: pointer;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal::after {
+    content: "";
+    position: absolute;
+    right: 13px;
+    bottom: 17px;
+    z-index: 1;
+    display: block;
+    box-sizing: border-box;
+    width: 7px;
+    height: 7px;
+    border-right: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+
+  body:not(.profile-landing-active) .scan-food-card-actions {
+    gap: 8px !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct {
+    display: inline-flex !important;
+    min-height: 44px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid var(--line) !important;
+    background: transparent !important;
+    padding: 0 12px !important;
+    text-decoration: none !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct {
+    border-color: color-mix(in srgb, var(--ink) 42%, var(--line)) !important;
+    color: var(--ink) !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove {
+    color: var(--muted) !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle {
+    display: flex !important;
+    width: calc(100% - 30px) !important;
+    min-height: 46px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin: 0 0 0 30px !important;
+    border: 1px solid var(--line) !important;
+    background: color-mix(in srgb, var(--ink) 3%, transparent) !important;
+    color: var(--ink) !important;
+    padding: 0 12px !important;
+    text-decoration: none !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle::after {
+    content: "";
+    display: block;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    margin-left: 12px;
+    border-right: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+    transform: rotate(45deg);
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle[aria-expanded="true"]::after {
+    transform: rotate(225deg);
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:hover,
+  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:focus-visible,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:hover,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:focus-visible,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:hover,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:focus-visible {
+    border-color: var(--ink) !important;
+    background: color-mix(in srgb, var(--ink) 8%, transparent) !important;
+    color: var(--ink) !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:hover,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:focus-visible {
+    border-color: var(--warn) !important;
+    color: var(--warn) !important;
+    outline: none !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:active,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:active,
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:active {
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:active {
+    background: var(--warn) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal:focus-within {
+    border-color: var(--ink) !important;
+    box-shadow: inset 0 0 0 1px var(--ink) !important;
+  }
+}
+
+/* Keep the text-to-AI entry path isolated from browse/detail states. */
+.food-ai-description[hidden],
+.food-ai-clarification[hidden],
+.food-ai-description-error[hidden] {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm > :not(.food-ai-description) {
+  display: none !important;
+}
+
+body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm .food-ai-description {
+  display: grid !important;
+}
+
+/* Macro names must retain the same hierarchy in dark mode as in light mode. */
+body[data-theme="dark"]:not(.profile-landing-active) .macro-card-header .label {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: var(--muted) !important;
+  -webkit-text-fill-color: var(--muted) !important;
+}
+
+@media (min-width: 769px) {
+  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm > :not(.food-ai-description) {
+    display: none !important;
+  }
+
+  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm .food-ai-description {
+    display: grid !important;
+    order: 1;
+  }
+}
+
+/* Weight history uses discrete mobile periods; desktop keeps its current chart. */
+body.progress-page:not(.profile-landing-active) .weight-mobile-chart-controls,
+body.progress-page:not(.profile-landing-active) .weight-period-navigation {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  body.progress-page:not(.profile-landing-active) .weight-mobile-chart-controls {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-mobile-chart-controls .label {
+    margin: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-range-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(48px, 1fr));
+    min-width: 104px;
+    border: 1px solid var(--line);
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-range-toggle button {
+    min-width: 48px;
+    min-height: 44px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-range-toggle button:last-child {
+    border-right: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-range-toggle button.is-active {
+    background: var(--ink);
+    color: var(--panel);
+  }
+
+  body.progress-page:not(.profile-landing-active) #progressChart {
+    position: relative;
+    touch-action: pan-y;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-chart-empty {
+    position: absolute;
+    top: 32%;
+    left: 50%;
+    width: min(240px, 72%);
+    margin: 0;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    padding: 3px 6px;
+    text-align: center;
+    transform: translate(-50%, -50%);
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-period-navigation {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-period-navigation button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    place-items: center;
+    font-size: 1rem;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-period-navigation button:disabled {
+    color: var(--muted);
+    opacity: 0.3;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-period-navigation span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+/* On mobile scan review, item editors are authoritative. Plate totals below
+   remain a read-only sum of the currently included items. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #editFoodNutrition {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan .food-nutrition-summary-heading {
+    justify-content: flex-start !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm > :is(
+    label[for="manualFoodCalories"],
+    label[for="manualFoodProtein"],
+    label[for="manualFoodCarbs"],
+    label[for="manualFoodFat"]
+  ) {
+    display: none !important;
+  }
+}
+
+/* Compact mobile review controls: Meal is a setting, Simple view is navigation. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan .scan-review-heading-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 12px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-review-meal {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view {
+    width: auto !important;
+    min-width: max-content !important;
+    min-height: 44px !important;
+    align-self: end !important;
+    justify-content: flex-start !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 8px !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view::after {
+    content: attr(data-short-label);
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:hover,
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:focus-visible,
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:active {
+    border: 0 !important;
+    background: color-mix(in srgb, var(--ink) 7%, transparent) !important;
+    color: var(--ink) !important;
+    outline: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan .scan-review-heading-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view {
+    justify-self: start !important;
+  }
+}
+
+body.progress-page:not(.profile-landing-active) .weight-chart-plot {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: 700px) {
+  body.progress-page:not(.profile-landing-active) .weight-chart-panel .progress-chart.has-target-legend {
+    display: grid !important;
+    grid-template-rows: 24px minmax(0, 1fr) !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-target-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    min-width: 0;
+    min-height: 24px;
+    box-sizing: border-box;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-target-legend span {
+    width: 22px;
+    flex: 0 0 22px;
+    border-top: 1px dashed currentColor;
+    opacity: 0.78;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-target-legend b {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 }

@@ -77,6 +77,8 @@ let latestFoodSuggestions = [];
 let foodSuggestionVisibleCount = 5;
 let scannedFoodItems = [];
 let scannedFoodAnalysis = null;
+let aiDescriptionPending = false;
+let aiDescriptionClarification = null;
 let undoToastTimer = null;
 let renderSnapshot = null;
 let recentSuccess = null;
@@ -172,9 +174,24 @@ const elements = {
   foodPhotoButton: document.querySelector("#foodPhotoButton"),
   foodGalleryButton: document.querySelector("#foodGalleryButton"),
   foodGalleryShortcut: document.querySelector("#foodGalleryShortcut"),
+  foodAiDescriptionTrigger: document.querySelector("#foodAiDescriptionTrigger"),
+  foodAiDescription: document.querySelector("#foodAiDescription"),
+  foodAiDescriptionInput: document.querySelector("#foodAiDescriptionInput"),
+  foodAiDescriptionStatus: document.querySelector("#foodAiDescriptionStatus"),
+  foodAiClarification: document.querySelector("#foodAiClarification"),
+  foodAiClarificationQuestion: document.querySelector("#foodAiClarificationQuestion"),
+  foodAiClarificationOptions: document.querySelector("#foodAiClarificationOptions"),
+  foodAiDescriptionError: document.querySelector("#foodAiDescriptionError"),
+  foodAiDescriptionRetry: document.querySelector("#foodAiDescriptionRetry"),
+  foodAiDescriptionManual: document.querySelector("#foodAiDescriptionManual"),
+  foodAiDescriptionBack: document.querySelector("#foodAiDescriptionBack"),
+  foodAiDescriptionSubmit: document.querySelector("#foodAiDescriptionSubmit"),
   foodPhotoStatus: document.querySelector("#foodPhotoStatus"),
   foodScanLoading: document.querySelector("#foodScanLoading"),
   scanReview: document.querySelector("#scanReview"),
+  scanReviewEyebrow: document.querySelector("#scanReviewEyebrow"),
+  scanReviewTitle: document.querySelector("#scanReviewTitle"),
+  scanReviewDescription: document.querySelector("#scanReviewDescription"),
   scanFoodList: document.querySelector("#scanFoodList"),
   scanReviewMeal: document.querySelector("#scanReviewMeal"),
   closeScanReview: document.querySelector("#closeScanReview"),
@@ -300,6 +317,8 @@ function normalizeFoodForLibrary(food) {
     name: food.name,
     brand: food.brand || "",
     source: originalSource,
+    nutritionSource: String(food.nutritionSource || ""),
+    resolvedFoodName: String(food.resolvedFoodName || food.name || ""),
     serving: food.serving || (food.amount && food.unit ? `${food.amount} ${food.unit}` : "1 serving"),
     servingGrams: Number(food.servingGrams || 0) || null,
     calories: Math.round(Number(food.calories || 0)),
@@ -644,9 +663,11 @@ function syncDesktopFoodAddContentState() {
   const { content } = desktopEditSession;
   const isDetailing = elements.foodSection.classList.contains("is-detailing");
   const isManualEntry = elements.foodSection.classList.contains("is-manual-entry");
+  const isDescribingAi = elements.foodSection.classList.contains("is-describing-ai");
   content.classList.toggle("is-browsing", !isDetailing);
   content.classList.toggle("is-detailing", isDetailing);
   content.classList.toggle("is-manual-entry", isManualEntry);
+  content.classList.toggle("is-describing-ai", isDescribingAi);
   content.classList.toggle("is-searching", elements.foodSection.classList.contains("is-searching"));
   const backButton = content.querySelector(".desktop-add-food-back");
   if (backButton) backButton.hidden = !isDetailing;
@@ -1271,7 +1292,7 @@ function renderMacros(daily) {
     const progressLabel = `${Math.round(progress)}%`;
     const previousConsumed = renderSnapshot?.macroValues?.[macro.key];
     const initialConsumed = previousConsumed === undefined ? roundedConsumed : previousConsumed;
-    const macroAmountLabel = `<span class="macro-eaten">${initialConsumed}</span><span class="macro-goal"><span class="macro-goal-desktop"> / ${Math.round(Number(goal || 0))} ${macro.unit}</span><span class="macro-goal-mobile">/${Math.round(Number(goal || 0))}${macro.unit}</span></span>${macroOverageLabel}`;
+    const macroAmountLabel = `<span class="macro-eaten">${initialConsumed}</span><span class="macro-goal"><span class="macro-goal-desktop"> / ${Math.round(Number(goal || 0))} ${macro.unit}</span><span class="macro-goal-mobile">/${Math.round(Number(goal || 0))}&nbsp;${macro.unit}</span></span>${macroOverageLabel}`;
     const macroConsumedLabel = `${initialConsumed}${macro.unit}`;
     const macroGoalLabel = `of ${Math.round(Number(goal || 0))}${macro.unit}`;
     const previousProgress = renderSnapshot?.macros?.[macro.key];
@@ -1874,6 +1895,7 @@ function attachRecentFoodSwipe(card, food) {
 function sourceLabel(food) {
   const originalSource = foodSource(food);
   const source = String(originalSource || food.brand || "").toLowerCase();
+  if (source.includes("ai estimate")) return "AI ESTIMATE";
   if (source.includes("openai photo") || source.includes("photo estimate")) return "PHOTO ESTIMATE";
   if (source.includes("open food facts") || source === "off") return "OPEN FOOD FACTS";
   if (source.includes("usda")) return "USDA";
@@ -1987,6 +2009,8 @@ function addSuggestedFood(food) {
     name: food.name,
     brand: food.brand || "",
     source: food.source || "Recent",
+    nutritionSource: food.nutritionSource || "",
+    resolvedFoodName: food.resolvedFoodName || food.name,
     serving: food.serving || "",
     amount: 1,
     unit: "serving",
@@ -2102,25 +2126,141 @@ function renderFoodSearchFallbacks() {
   elements.foodSuggestions.appendChild(actions);
 }
 
-async function estimateTypedFood(event) {
-  const button = event.currentTarget;
-  const description = elements.manualFoodName.value.trim();
-  button.disabled = true;
-  button.textContent = "Estimating...";
-  elements.searchNote.textContent = "Estimating nutrition. You'll review it before adding.";
+function usefulFoodDescription() {
+  const description = elements.foodAiDescriptionInput?.value.trim() || "";
+  return description.length >= 3 && /[\p{L}\p{N}]/u.test(description);
+}
+
+function syncFoodAiDescriptionState() {
+  if (!elements.foodAiDescriptionSubmit) return;
+  elements.foodAiDescriptionSubmit.disabled = aiDescriptionPending || !usefulFoodDescription();
+  elements.foodAiDescriptionInput.disabled = aiDescriptionPending;
+  elements.foodAiDescriptionBack.disabled = aiDescriptionPending;
+  elements.foodAiDescriptionRetry.disabled = aiDescriptionPending;
+  elements.foodAiDescriptionManual.disabled = aiDescriptionPending;
+  elements.foodAiClarificationOptions?.querySelectorAll("button").forEach((button) => {
+    button.disabled = aiDescriptionPending;
+  });
+  elements.foodAiDescription.setAttribute("aria-busy", String(aiDescriptionPending));
+}
+
+function clearFoodAiClarification() {
+  aiDescriptionClarification = null;
+  if (elements.foodAiClarification) elements.foodAiClarification.hidden = true;
+  elements.foodAiClarificationOptions?.replaceChildren();
+}
+
+function showFoodAiClarification(clarification) {
+  const question = String(clarification?.question || "").trim();
+  const options = Array.isArray(clarification?.options)
+    ? clarification.options.map((option) => String(option || "").trim()).filter(Boolean)
+    : [];
+  if (!question || options.length < 2) return false;
+
+  aiDescriptionClarification = { question, options };
+  elements.foodAiClarificationQuestion.textContent = question;
+  elements.foodAiClarificationOptions.replaceChildren();
+  options.forEach((option) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = option;
+    button.addEventListener("click", () => {
+      if (/other|describe/i.test(option)) {
+        clearFoodAiClarification();
+        elements.foodAiDescriptionStatus.textContent = "Add the missing detail to your description, then estimate again.";
+        elements.foodAiDescriptionInput.focus();
+        return;
+      }
+      estimateDescribedFood({ clarificationAnswer: option });
+    });
+    elements.foodAiClarificationOptions.append(button);
+  });
+  elements.foodAiClarification.hidden = false;
+  elements.foodAiDescriptionStatus.textContent = "";
+  syncFoodAiDescriptionState();
+  return true;
+}
+
+function openFoodAiDescription() {
+  elements.foodSection.classList.add("is-describing-ai");
+  elements.foodAiDescription.hidden = false;
+  elements.foodAiDescriptionTrigger.setAttribute("aria-expanded", "true");
+  elements.foodAiDescriptionError.hidden = true;
+  elements.foodAiDescriptionStatus.textContent = "";
+  syncDesktopFoodAddContentState();
+  syncFoodAiDescriptionState();
+  requestAnimationFrame(() => elements.foodAiDescriptionInput.focus());
+}
+
+function closeFoodAiDescription({ clear = false } = {}) {
+  elements.foodSection.classList.remove("is-describing-ai");
+  elements.foodAiDescription.hidden = true;
+  elements.foodAiDescriptionTrigger.setAttribute("aria-expanded", "false");
+  elements.foodAiDescriptionError.hidden = true;
+  elements.foodAiDescriptionStatus.textContent = "";
+  clearFoodAiClarification();
+  if (clear) elements.foodAiDescriptionInput.value = "";
+  syncDesktopFoodAddContentState();
+  syncFoodAiDescriptionState();
+}
+
+function enterAiDescriptionManually() {
+  const description = elements.foodAiDescriptionInput.value.trim();
+  closeFoodAiDescription();
+  fillManualFood({
+    name: description.slice(0, 100),
+    source: "Manual",
+    serving: "1 serving",
+    servingGrams: 100,
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  }, { editableName: true });
+  elements.foodEditName.textContent = "Manual food";
+  elements.manualFoodName.focus();
+}
+
+async function estimateDescribedFood({ clarificationAnswer = "" } = {}) {
+  const description = elements.foodAiDescriptionInput.value.trim();
+  if (!usefulFoodDescription() || aiDescriptionPending) {
+    elements.foodAiDescriptionStatus.textContent = "Describe at least one food before estimating.";
+    return;
+  }
+
+  aiDescriptionPending = true;
+  elements.foodAiDescriptionError.hidden = true;
+  clearFoodAiClarification();
+  elements.foodAiDescriptionStatus.textContent = "Estimating foods, portions, and nutrition…";
+  elements.foodAiDescriptionSubmit.textContent = "Estimating…";
+  syncFoodAiDescriptionState();
+
   try {
     const response = await fetch("/api/foods/estimate-text", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description }),
+      body: JSON.stringify({ description, clarificationAnswer }),
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "AI food estimate failed.");
-    showSimpleScannedPlate(data.analysis);
-  } catch (error) {
-    elements.searchNote.textContent = error.message || "AI estimate failed. Add the food manually instead.";
-    button.disabled = false;
-    button.textContent = "Estimate with AI";
+    if (response.ok && showFoodAiClarification(data.analysis?.clarification)) return;
+    if (!response.ok || !Array.isArray(data.analysis?.foods) || !data.analysis.foods.length) {
+      throw new Error("AI estimate unavailable");
+    }
+
+    const analysis = {
+      ...data.analysis,
+      foods: data.analysis.foods.map((food) => ({ ...food, source: "AI ESTIMATE" })),
+    };
+    closeFoodAiDescription();
+    showSimpleScannedPlate(analysis, "", { inputMode: "text", description });
+    showScannedFoodsReview();
+  } catch {
+    elements.foodAiDescriptionStatus.textContent = "";
+    elements.foodAiDescriptionError.hidden = false;
+  } finally {
+    aiDescriptionPending = false;
+    elements.foodAiDescriptionSubmit.textContent = "Estimate nutrition";
+    syncFoodAiDescriptionState();
   }
 }
 
@@ -2223,10 +2363,18 @@ function resetFoodForm() {
   foodSuggestionVisibleCount = 5;
   scannedFoodItems = [];
   scannedFoodAnalysis = null;
+  aiDescriptionPending = false;
+  clearFoodAiClarification();
+  elements.foodAiDescriptionInput.value = "";
+  elements.foodAiDescriptionStatus.textContent = "";
+  elements.foodAiDescriptionError.hidden = true;
+  elements.foodAiDescription.hidden = true;
+  elements.foodAiDescriptionTrigger.setAttribute("aria-expanded", "false");
+  elements.foodAiDescriptionSubmit.textContent = "Estimate nutrition";
   elements.scanReview.hidden = true;
   elements.openScanReview.hidden = true;
   elements.scanFoodList.replaceChildren();
-  elements.foodSection.classList.remove("is-editing", "is-detailing", "is-reviewing-scan", "is-manual-entry", "has-food-suggestions");
+  elements.foodSection.classList.remove("is-editing", "is-detailing", "is-reviewing-scan", "is-reviewing-text-estimate", "is-manual-entry", "is-describing-ai", "has-food-suggestions");
   syncFoodNutritionMode();
   elements.manualFoodName.placeholder = "Search food";
   elements.foodNameLabel.textContent = "Food name (required)";
@@ -2237,15 +2385,17 @@ function resetFoodForm() {
   elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
   setFoodSearchActive(false);
   clearEntryTransientState();
+  syncFoodAiDescriptionState();
   syncFoodModeHeader();
 }
 
 function syncFoodModeHeader() {
   const isEditing = Boolean(editingFoodId);
   const isReviewingScan = elements.foodSection.classList.contains("is-reviewing-scan");
+  const isTextEstimate = isReviewingScan && scannedFoodAnalysis?.inputMode === "text";
   const isDesktopAdd = isDesktopFoodAddModal();
-  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : isReviewingScan ? "Photo estimate" : isDesktopAdd ? "Add food" : "Add";
-  elements.foodModeTitle.textContent = isEditing ? "Edit food" : isReviewingScan ? "Review scan" : isDesktopAdd ? "Add food" : "Add";
+  elements.foodModeEyebrow.textContent = isEditing ? "Editing entry" : isTextEstimate ? "AI estimate" : isReviewingScan ? "Photo estimate" : isDesktopAdd ? "Add food" : "Add";
+  elements.foodModeTitle.textContent = isEditing ? "Edit food" : isTextEstimate ? "Review estimate" : isReviewingScan ? "Review scan" : isDesktopAdd ? "Add food" : "Add";
   elements.foodMobileHeaderTitle.textContent = elements.foodModeTitle.textContent;
 }
 
@@ -2472,16 +2622,21 @@ async function analyzeFoodPhoto(file) {
   }
 }
 
-function showSimpleScannedPlate(analysis = null, imageDataUrl = "") {
+function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}) {
   const foods = Array.isArray(analysis?.foods) ? analysis.foods : [];
-  if (!scannedFoodItems.length && !foods.length) throw new Error("No food was detected in this photo.");
+  const inputMode = options.inputMode || scannedFoodAnalysis?.inputMode || "photo";
+  if (!scannedFoodItems.length && !foods.length) {
+    throw new Error(inputMode === "text" ? "No food could be estimated from this description." : "No food was detected in this photo.");
+  }
 
   if (foods.length) {
-    scannedFoodItems = foods.map((food) => createScannedFoodItem(food));
+    scannedFoodItems = foods.map((food) => createScannedFoodItem(food, { inputMode }));
     scannedFoodAnalysis = {
       confidence: analysis.confidence || "low",
       notes: String(analysis.notes || "").trim(),
       imageDataUrl,
+      inputMode,
+      description: inputMode === "text" ? String(options.description || "").trim() : "",
     };
   }
 
@@ -2498,7 +2653,7 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "") {
 
   selectedFoodBase = {
     name: plateName,
-    source: "OpenAI photo estimate",
+    source: inputMode === "text" ? "AI ESTIMATE" : "OpenAI photo estimate",
     serving: "1 serving",
     servingGrams: servingGrams || 100,
     calories: total("calories"),
@@ -2511,12 +2666,15 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "") {
   foodNutritionOverridden = false;
   elements.foodSection.classList.remove("is-editing");
   elements.foodSection.classList.remove("is-reviewing-scan");
+  elements.foodSection.classList.remove("is-reviewing-text-estimate");
   elements.foodSection.classList.add("is-detailing");
   elements.scanReview.hidden = true;
   elements.openScanReview.hidden = scannedFoodItems.length === 0;
-  elements.openScanReview.textContent = scannedFoodItems.length === 1
-    ? "Review estimate"
-    : `Review your plate · ${scannedFoodItems.length} items`;
+  elements.openScanReview.textContent = inputMode === "text"
+    ? `Review estimate${scannedFoodItems.length > 1 ? ` · ${scannedFoodItems.length} items` : ""}`
+    : scannedFoodItems.length === 1
+      ? "Review estimate"
+      : `Review your plate · ${scannedFoodItems.length} items`;
   elements.manualFoodSubmit.textContent = includedFoods.length === 1
     ? "+ Add 1 food"
     : `+ Add ${includedFoods.length} foods`;
@@ -2531,8 +2689,10 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "") {
   updateNutritionForPortion(true);
   syncFoodNutritionMode();
   elements.foodSuggestions.innerHTML = "";
-  elements.searchNote.textContent = scannedFoodAnalysis?.notes || "The detected foods will be added separately. Review the plate only if something needs changing.";
-  elements.foodPhotoStatus.textContent = `${scannedFoodItems.length} ${scannedFoodItems.length === 1 ? "food" : "foods"} detected · ${scannedFoodAnalysis?.confidence || "low"} confidence.`;
+  elements.searchNote.textContent = scannedFoodAnalysis?.notes || (inputMode === "text"
+    ? "Review the estimated foods and portions before adding them."
+    : "The detected foods will be added separately. Review the plate only if something needs changing.");
+  elements.foodPhotoStatus.textContent = `${scannedFoodItems.length} ${scannedFoodItems.length === 1 ? "food" : "foods"} ${inputMode === "text" ? "estimated" : "detected"} · ${scannedFoodAnalysis?.confidence || "low"} confidence.`;
   setFoodSearchActive(false);
   syncFoodModeHeader();
 }
@@ -2579,40 +2739,65 @@ function selectedLogEmptySuffix() {
 
 function showScannedFoodsReview() {
   if (!scannedFoodItems.length) return;
+  const isTextEstimate = scannedFoodAnalysis?.inputMode === "text";
   elements.foodSection.classList.add("is-detailing", "is-reviewing-scan");
+  elements.foodSection.classList.toggle("is-reviewing-text-estimate", isTextEstimate);
   elements.scanReview.hidden = false;
   elements.scanReviewMeal.value = elements.foodMeal.value || defaultMealForNow();
+  elements.scanReviewEyebrow.textContent = isTextEstimate ? "AI estimated foods" : "Detected foods";
+  elements.scanReviewTitle.textContent = isTextEstimate ? "Review your estimate" : "Review your plate";
+  elements.scanReviewDescription.textContent = isTextEstimate
+    ? "Check the estimated foods and portions before adding them."
+    : "Check the detected foods and portions before adding them.";
+  elements.closeScanReview.textContent = isTextEstimate ? "Edit description" : "Back to simple view";
+  elements.closeScanReview.dataset.shortLabel = isTextEstimate ? "Edit description" : "Simple view";
   selectedFoodBase = null;
   syncFoodModeHeader();
   renderScanReview();
 }
 
-function createScannedFoodItem(food) {
+function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
   const servingGrams = Math.max(0, Number(food.servingGrams || (food.unit === "g" ? food.amount : 0)) || 0);
+  const estimatedUnit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
+  const estimatedAmount = Math.max(0.1, Number(food.amount || (estimatedUnit === "g" ? servingGrams : 1)) || 1);
   const nutrients = {
     calories: Math.max(0, Number(food.calories || 0)),
     protein: Math.max(0, Number(food.protein || 0)),
     carbs: Math.max(0, Number(food.carbs || 0)),
     fat: Math.max(0, Number(food.fat || 0)),
   };
+  const baseDivisor = inputMode === "text" && estimatedUnit !== "g" ? estimatedAmount : 1;
+  const baseNutrition = Object.fromEntries(Object.entries(nutrients).map(([key, value]) => [
+    key,
+    Math.round((value / Math.max(0.1, baseDivisor)) * 10) / 10,
+  ]));
+  // Text estimates should expose the structured resolver's interpretation in
+  // review. Keep photo naming untouched because its label describes what was
+  // visually detected, while resolvedFoodName is source metadata there.
+  const reviewName = inputMode === "text"
+    ? String(food.resolvedFoodName || food.name || "Unknown food").trim()
+    : String(food.name || "Unknown food").trim();
 
   return {
     id: crypto.randomUUID(),
     included: true,
-    name: String(food.name || "Unknown food").trim() || "Unknown food",
-    amount: 1,
-    unit: "serving",
+    name: reviewName || "Unknown food",
+    amount: inputMode === "text" ? estimatedAmount : 1,
+    unit: inputMode === "text" ? estimatedUnit : "serving",
     servingGrams,
     confidence: food.confidence || "low",
     notes: String(food.notes || "").trim(),
     source: food.source || "OpenAI photo estimate",
+    sourceId: String(food.sourceId || ""),
+    nutritionSource: String(food.nutritionSource || ""),
+    resolvedFoodName: String(food.resolvedFoodName || food.name || "").trim(),
     correctionOpen: false,
     correctionText: "",
     correctionStatus: "",
     isCorrecting: false,
     detailsOpen: false,
     ...nutrients,
-    baseNutrition: { ...nutrients },
+    baseNutrition,
   };
 }
 
@@ -2698,7 +2883,7 @@ function renderScanReview() {
     detailsButton.className = "scan-food-details-toggle";
     detailsButton.dataset.scanAction = "details";
     detailsButton.setAttribute("aria-expanded", String(food.detailsOpen));
-    detailsButton.textContent = food.detailsOpen ? "Hide nutrition details ↑" : "Edit portion & nutrition ↓";
+    detailsButton.textContent = food.detailsOpen ? "Hide portion & nutrition" : "Edit portion & nutrition";
 
     card.append(top);
     if (correction) card.append(correction);
@@ -2785,11 +2970,25 @@ function updateScanFoodPortion(food) {
 function updateScanReviewTotals() {
   const selected = scannedFoodItems.filter((food) => food.included);
   const total = (key) => Math.round(selected.reduce((sum, food) => sum + Number(food[key] || 0), 0) * 10) / 10;
+  const totals = {
+    calories: total("calories"),
+    protein: total("protein"),
+    carbs: total("carbs"),
+    fat: total("fat"),
+  };
   elements.scanSelectedCount.textContent = `${selected.length} ${selected.length === 1 ? "food" : "foods"}`;
-  elements.scanTotalCalories.textContent = total("calories");
-  elements.scanTotalProtein.textContent = total("protein");
-  elements.scanTotalCarbs.textContent = total("carbs");
-  elements.scanTotalFat.textContent = total("fat");
+  elements.scanTotalCalories.textContent = totals.calories;
+  elements.scanTotalProtein.textContent = totals.protein;
+  elements.scanTotalCarbs.textContent = totals.carbs;
+  elements.scanTotalFat.textContent = totals.fat;
+  syncFoodNutritionSummary(totals);
+  if (elements.foodSection.classList.contains("is-reviewing-scan")) {
+    foodNutritionEditing = false;
+    elements.foodSection.classList.remove("is-nutrition-editing");
+    desktopEditSession?.content.classList.remove("is-nutrition-editing");
+    elements.foodNutritionSummary.hidden = false;
+    elements.foodNutritionGrid.hidden = false;
+  }
   elements.scanAddSelectedFoods.disabled = selected.length === 0;
   elements.scanAddSelectedFoods.textContent = selected.length === 1 ? "Add food" : `Add ${selected.length} foods`;
 }
@@ -2806,7 +3005,8 @@ async function correctScannedFood(foodId) {
   const correction = food?.correctionText.trim();
   if (!food || correction.length < 2 || food.isCorrecting) return;
 
-  if (!scannedFoodAnalysis?.imageDataUrl) {
+  const isTextEstimate = scannedFoodAnalysis?.inputMode === "text";
+  if (!isTextEstimate && !scannedFoodAnalysis?.imageDataUrl) {
     food.correctionStatus = "The original photo is no longer available. Scan the plate again.";
     renderScanReview();
     return;
@@ -2817,22 +3017,32 @@ async function correctScannedFood(foodId) {
   renderScanReview();
 
   try {
-    const response = await fetch("/api/foods/correct-image-item", {
+    const response = await fetch(isTextEstimate ? "/api/foods/estimate-text" : "/api/foods/correct-image-item", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageDataUrl: scannedFoodAnalysis.imageDataUrl,
-        currentFood: {
-          name: food.name,
-          servingGrams: food.servingGrams,
-        },
-        correction,
-      }),
+      body: JSON.stringify(isTextEstimate
+        ? {
+            description: `${correction}. Estimate one portion${food.servingGrams ? ` of about ${food.servingGrams} g` : ""}.`,
+            allowClarification: false,
+          }
+        : {
+            imageDataUrl: scannedFoodAnalysis.imageDataUrl,
+            currentFood: {
+              name: food.name,
+              servingGrams: food.servingGrams,
+            },
+            correction,
+          }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Food correction failed.");
 
-    const corrected = createScannedFoodItem(data.food || {});
+    const correctedFood = isTextEstimate ? data.analysis?.foods?.[0] : data.food;
+    if (!correctedFood) throw new Error("Food correction failed.");
+    const corrected = createScannedFoodItem(
+      { ...correctedFood, source: isTextEstimate ? "AI ESTIMATE" : correctedFood.source },
+      { inputMode: isTextEstimate ? "text" : "photo" },
+    );
     Object.assign(food, corrected, {
       id: food.id,
       included: food.included,
@@ -2843,7 +3053,9 @@ async function correctScannedFood(foodId) {
     });
   } catch (error) {
     food.isCorrecting = false;
-    food.correctionStatus = error.message || "Food correction failed. Try again.";
+    food.correctionStatus = isTextEstimate
+      ? "We couldn't update this estimate. Try again."
+      : error.message || "Food correction failed. Try again.";
   }
 
   renderScanReview();
@@ -2894,6 +3106,10 @@ function logScannedFoods(foods, meal) {
       name: food.name.trim(),
       brand: "",
       source: food.source,
+      catalogId: food.sourceId || "",
+      sourceId: food.sourceId || "",
+      nutritionSource: food.nutritionSource || "",
+      resolvedFoodName: food.resolvedFoodName || food.name.trim(),
       serving: food.unit === "serving" ? "1 serving" : `${food.amount} ${food.unit}`,
       servingGrams: food.servingGrams || null,
       amount: food.amount,
@@ -3196,6 +3412,12 @@ elements.scanFoodList.addEventListener("keydown", (event) => {
 elements.openScanReview.addEventListener("click", showScannedFoodsReview);
 elements.closeScanReview.addEventListener("click", () => {
   elements.foodMeal.value = elements.scanReviewMeal.value;
+  if (scannedFoodAnalysis?.inputMode === "text") {
+    elements.scanReview.hidden = true;
+    elements.foodSection.classList.remove("is-detailing", "is-reviewing-scan", "is-reviewing-text-estimate");
+    openFoodAiDescription();
+    return;
+  }
   showSimpleScannedPlate();
 });
 elements.scanAddSelectedFoods.addEventListener("click", addSelectedScannedFoods);
@@ -3277,6 +3499,24 @@ elements.manualFoodShortcut?.addEventListener("click", () => {
 elements.foodGalleryShortcut?.addEventListener("click", () => {
   elements.foodGalleryInput.click();
 });
+elements.foodAiDescriptionTrigger?.addEventListener("click", openFoodAiDescription);
+elements.foodAiDescriptionBack?.addEventListener("click", () => {
+  closeFoodAiDescription();
+  requestAnimationFrame(() => elements.foodAiDescriptionTrigger.focus());
+});
+elements.foodAiDescriptionInput?.addEventListener("input", () => {
+  elements.foodAiDescriptionError.hidden = true;
+  elements.foodAiDescriptionStatus.textContent = "";
+  syncFoodAiDescriptionState();
+});
+elements.foodAiDescriptionInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !(event.ctrlKey || event.metaKey)) return;
+  event.preventDefault();
+  estimateDescribedFood();
+});
+elements.foodAiDescriptionSubmit?.addEventListener("click", estimateDescribedFood);
+elements.foodAiDescriptionRetry?.addEventListener("click", estimateDescribedFood);
+elements.foodAiDescriptionManual?.addEventListener("click", enterAiDescriptionManually);
 elements.foodPhotoInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodPhotoInput.files?.[0]));
 elements.foodGalleryInput.addEventListener("change", () => analyzeFoodPhoto(elements.foodGalleryInput.files?.[0]));
 document.addEventListener("click", (event) => {

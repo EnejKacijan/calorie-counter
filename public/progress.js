@@ -12,6 +12,10 @@ const elements = {
   weightTargetStatus: document.querySelector("#weightTargetStatus"),
   progressChart: document.querySelector("#progressChart"),
   weightChartAxis: document.querySelector(".weight-chart-axis"),
+  weightRangeButtons: Array.from(document.querySelectorAll("[data-weight-range]")),
+  weightPreviousPeriod: document.querySelector("#weightPreviousPeriod"),
+  weightNextPeriod: document.querySelector("#weightNextPeriod"),
+  weightPeriodLabel: document.querySelector("#weightPeriodLabel"),
   progressList: document.querySelector("#progressList"),
   progressViewButtons: Array.from(document.querySelectorAll("[data-progress-view]")),
   progressViews: Array.from(document.querySelectorAll("[data-progress-panel]")),
@@ -43,6 +47,8 @@ let nutritionMetric = localStorage.getItem("daily-fuel-nutrition-metric") || "ca
 let nutritionRange = Number(localStorage.getItem("daily-fuel-nutrition-range") || 7);
 let nutritionRangeOffset = 0;
 let selectedNutritionDate = localDateKey(new Date());
+let weightRange = Number(localStorage.getItem("daily-fuel-weight-range") || 30);
+let weightRangeOffset = 0;
 
 const nutritionMetrics = {
   calories: { label: "Calories", unit: "kcal", goalKey: "calories", valueKey: "calories" },
@@ -52,6 +58,7 @@ const nutritionMetrics = {
 
 if (!nutritionMetrics[nutritionMetric]) nutritionMetric = "calories";
 if (![7, 30].includes(nutritionRange)) nutritionRange = 7;
+if (![7, 30].includes(weightRange)) weightRange = 30;
 
 function loadState() {
   const saved = localStorage.getItem(storageKey);
@@ -215,68 +222,162 @@ function render() {
   renderNutrition();
 }
 
+function isMobileWeightChart() {
+  return window.matchMedia("(max-width: 700px)").matches;
+}
+
+function selectedWeightPeriod() {
+  const today = dateFromKey(localDateKey(new Date()));
+  const end = addDays(today, weightRangeOffset);
+  const start = addDays(end, -(weightRange - 1));
+  return {
+    start,
+    end,
+    startKey: localDateKey(start),
+    endKey: localDateKey(end),
+  };
+}
+
+function formatWeightPeriodDate(date) {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+}
+
+function syncWeightPeriodControls(period) {
+  elements.weightRangeButtons.forEach((button) => {
+    const isActive = Number(button.dataset.weightRange) === weightRange;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  });
+  if (elements.weightPeriodLabel) {
+    elements.weightPeriodLabel.textContent = `${formatWeightPeriodDate(period.start)} \u2013 ${formatWeightPeriodDate(period.end)}`;
+  }
+  if (elements.weightNextPeriod) elements.weightNextPeriod.disabled = weightRangeOffset >= 0;
+}
+
+function clippedWeightLinePoints(entries, period, xForDate, yForWeight) {
+  if (entries.length < 2) return [];
+  const windowStart = period.start.getTime();
+  const windowEnd = period.end.getTime();
+  const points = [];
+
+  const appendPoint = (time, weight) => {
+    const point = `${xForDate(localDateKey(new Date(time)))},${yForWeight(weight)}`;
+    if (points.at(-1) !== point) points.push(point);
+  };
+
+  for (let index = 1; index < entries.length; index += 1) {
+    const previous = entries[index - 1];
+    const next = entries[index];
+    const previousTime = dateFromKey(previous.date).getTime();
+    const nextTime = dateFromKey(next.date).getTime();
+    if (nextTime < windowStart || previousTime > windowEnd) continue;
+
+    const visibleStart = Math.max(previousTime, windowStart);
+    const visibleEnd = Math.min(nextTime, windowEnd);
+    if (visibleStart > visibleEnd) continue;
+
+    const duration = Math.max(1, nextTime - previousTime);
+    const previousWeight = Number(previous.weightKg);
+    const weightDelta = Number(next.weightKg) - previousWeight;
+    const weightAt = (time) => previousWeight + weightDelta * ((time - previousTime) / duration);
+    appendPoint(visibleStart, weightAt(visibleStart));
+    appendPoint(visibleEnd, weightAt(visibleEnd));
+  }
+
+  return points;
+}
+
 function renderChart(entries) {
-  const chartEntries = entries;
-  if (!chartEntries.length) {
+  const usePeriodWindow = isMobileWeightChart();
+  const period = selectedWeightPeriod();
+  const chartEntries = usePeriodWindow
+    ? entries.filter((entry) => entry.date >= period.startKey && entry.date <= period.endKey)
+    : entries;
+  syncWeightPeriodControls(period);
+
+  if (!chartEntries.length && !usePeriodWindow) {
     elements.progressChart.innerHTML = "";
     elements.weightChartAxis?.replaceChildren();
     elements.weightChartAxis?.classList.remove("is-single-entry");
     return;
   }
 
-  const latestEntry = chartEntries.at(-1);
+  const latestEntry = chartEntries.at(-1) || null;
   const todayKey = localDateKey(new Date());
   const weights = chartEntries.map((entry) => Number(entry.weightKg));
   const targetWeight = Number(state.user?.targetWeightKg || 0);
   const scaleWeights = targetWeight > 0 ? [...weights, targetWeight] : weights;
-  const min = Math.floor((Math.min(...scaleWeights) - 0.7) / 5) * 5;
-  const max = Math.ceil((Math.max(...weights) + 0.7) / 5) * 5;
+  const fallbackWeight = targetWeight > 0 ? targetWeight : Number(currentWeight() || 80);
+  const scaleMinimum = scaleWeights.length ? Math.min(...scaleWeights) : fallbackWeight;
+  const scaleMaximum = scaleWeights.length ? Math.max(...scaleWeights) : fallbackWeight;
+  const min = Math.floor((scaleMinimum - (chartEntries.length ? 0.7 : 2.5)) / 5) * 5;
+  const mobileOrEmptyMax = Math.max(min + 5, Math.ceil((scaleMaximum + (chartEntries.length ? 0.7 : 2.5)) / 5) * 5);
+  const max = usePeriodWindow
+    ? mobileOrEmptyMax
+    : Math.ceil((Math.max(...weights) + 0.7) / 5) * 5;
   const rect = elements.progressChart.getBoundingClientRect();
   const width = Math.max(320, Math.round(rect.width || elements.progressChart.clientWidth || 320));
-  const height = Math.max(210, Math.round(rect.height || elements.progressChart.clientHeight || 240));
+  const frameHeight = Math.round(rect.height || elements.progressChart.clientHeight || 240);
+  const targetLegendHeight = usePeriodWindow && targetWeight > 0 ? 24 : 0;
+  const height = Math.max(usePeriodWindow ? 186 : 210, frameHeight - targetLegendHeight);
   // Reserve a real left gutter on phones so grid and target lines never run
   // through the weight-scale labels.
   const xInset = width >= 700 ? 56 : 44;
+  const chartOuterRight = width - xInset;
+  const targetLabel = targetWeight > 0 ? `TARGET ${formatWeight(targetWeight)} KG` : "";
   const chart = {
     left: xInset,
-    right: width - xInset,
+    right: chartOuterRight,
     top: Math.round(height * 0.18),
     bottom: height - (width >= 700 ? 26 : 18),
   };
   const range = max - min || 1;
-  const firstDate = dateFromKey(chartEntries[0].date);
-  const lastDate = dateFromKey(latestEntry.date);
+  const firstDate = usePeriodWindow ? period.start : dateFromKey(chartEntries[0].date);
+  const lastDate = usePeriodWindow ? period.end : dateFromKey(latestEntry.date);
   const dateSpan = Math.max(1, Math.round((lastDate - firstDate) / 86400000));
   const yForWeight = (weight) => chart.bottom - ((weight - min) / range) * (chart.bottom - chart.top);
   const xForDate = (dateKey) => {
     const daysFromStart = Math.max(0, Math.round((dateFromKey(dateKey) - firstDate) / 86400000));
     return chart.left + (Math.min(daysFromStart, dateSpan) / dateSpan) * (chart.right - chart.left);
   };
-  const xForEntry = (entry) => chartEntries.length === 1
+  const xForEntry = (entry) => !usePeriodWindow && chartEntries.length === 1
     ? chart.right
     : xForDate(entry.date);
-  const points = chartEntries.map((entry) => {
-    const x = xForEntry(entry);
-    const y = yForWeight(Number(entry.weightKg));
-    return `${x},${y}`;
-  });
-  const entryDots = chartEntries.map((entry, index) => ({
+  const points = usePeriodWindow
+    ? chartEntries.length >= 1
+      ? clippedWeightLinePoints(entries, period, xForDate, yForWeight)
+      : []
+    : chartEntries.map((entry) => {
+      const x = xForEntry(entry);
+      const y = yForWeight(Number(entry.weightKg));
+      return `${x},${y}`;
+    });
+  const markerStep = usePeriodWindow && chartEntries.length > 14 ? Math.ceil(chartEntries.length / 12) : 1;
+  const markerEntries = chartEntries.filter((_, index) => (
+    markerStep === 1 || index === 0 || index === chartEntries.length - 1 || index % markerStep === 0
+  ));
+  const entryDots = markerEntries.map((entry) => ({
     x: xForEntry(entry),
     y: yForWeight(Number(entry.weightKg)),
     isToday: entry.date === todayKey,
-    isLatest: index === chartEntries.length - 1,
+    isLatest: entry === latestEntry,
   }));
   const gridLines = [];
   for (let weight = max; weight >= min; weight -= 5) {
     gridLines.push({ y: yForWeight(weight), label: `${weight} kg` });
   }
   const middleEntry = chartEntries[Math.floor((chartEntries.length - 1) / 2)];
-  const axisTicks = chartEntries.length === 1
-    ? [latestEntry]
-    : chartEntries.length === 2
-      ? [chartEntries[0], latestEntry]
-      : [chartEntries[0], middleEntry, latestEntry];
+  const mobileAxisOffsets = weightRange === 7 ? [0, 2, 4, 6] : [0, 14, 29];
+  const axisTicks = usePeriodWindow
+    ? mobileAxisOffsets.map((offset) => ({ date: localDateKey(addDays(period.start, offset)) }))
+    : chartEntries.length === 1
+      ? [latestEntry]
+      : chartEntries.length === 2
+        ? [chartEntries[0], latestEntry]
+        : [chartEntries[0], middleEntry, latestEntry];
   const targetY = targetWeight > 0 ? yForWeight(targetWeight) : null;
+  const targetLabelY = targetY === null ? 0 : Math.max(12, targetY - 10);
+  const targetLabelX = chart.right;
 
   if (elements.weightChartAxis) {
     elements.weightChartAxis.replaceChildren();
@@ -284,19 +385,25 @@ function renderChart(entries) {
     axisTicks.forEach((tick) => {
       const span = document.createElement("span");
       span.textContent = shortAxisDate(tick.date);
-      span.style.setProperty("--axis-x", `${(xForEntry(tick) / width) * 100}%`);
+      span.style.setProperty("--axis-x", `${((usePeriodWindow ? xForDate(tick.date) : xForEntry(tick)) / width) * 100}%`);
       elements.weightChartAxis.appendChild(span);
     });
   }
 
+  elements.progressChart.classList.toggle("has-target-legend", usePeriodWindow && targetY !== null);
   elements.progressChart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
-      ${gridLines.map((line) => `<path class="chart-grid" d="M${chart.left} ${line.y} H${chart.right}"></path>`).join("")}
-      ${gridLines.map((line) => `<text class="weight-y-label" x="${Math.max(2, chart.left - 48)}" y="${line.y + 3}">${line.label}</text>`).join("")}
-      ${targetY === null ? "" : `<path class="weight-target-line" d="M${chart.left} ${targetY} H${chart.right}"></path><text class="weight-target-label" x="${chart.right}" y="${Math.max(12, targetY - 10)}" text-anchor="end">TARGET ${formatWeight(targetWeight)} KG</text>`}
-      ${chartEntries.length > 1 ? `<polyline class="chart-line" points="${points.join(" ")}"></polyline>` : ""}
-      ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}${dot.isLatest ? " is-latest" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isLatest ? 3.75 : 3}"></circle>`).join("")}
-    </svg>
+    ${usePeriodWindow && targetY !== null ? `<div class="weight-target-legend" style="padding-inline:${chart.left}px" aria-label="Dashed line: ${targetLabel}"><span aria-hidden="true"></span><b>${targetLabel}</b></div>` : ""}
+    <div class="weight-chart-plot">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
+        ${gridLines.map((line) => `<path class="chart-grid" d="M${chart.left} ${line.y} H${chart.right}"></path>`).join("")}
+        ${gridLines.map((line) => `<text class="weight-y-label" x="${Math.max(2, chart.left - 48)}" y="${line.y + 3}">${line.label}</text>`).join("")}
+        ${targetY === null ? "" : `<path class="weight-target-line" d="M${chart.left} ${targetY} H${chart.right}"></path>`}
+        ${targetY === null || usePeriodWindow ? "" : `<text class="weight-target-label" x="${targetLabelX}" y="${targetLabelY}" text-anchor="end">${targetLabel}</text>`}
+        ${points.length > 1 ? `<polyline class="chart-line" points="${points.join(" ")}"></polyline>` : ""}
+        ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}${dot.isLatest ? " is-latest" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isLatest ? 3.75 : 3}"></circle>`).join("")}
+      </svg>
+    </div>
+    ${chartEntries.length ? "" : '<p class="weight-chart-empty">No weight entries in this period.</p>'}
   `;
 }
 
@@ -471,7 +578,9 @@ function renderNutritionChart(rows, metric, goal) {
   const axisLabelY = chart.bottom + 27;
 
   elements.nutritionChart.innerHTML = `
-    <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true"></div>
+    <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true">
+      <span class="nutrition-goal-header-label has-line-key">${goalLabel}</span>
+    </div>
     <div class="nutrition-chart-plot">
       <svg viewBox="0 0 ${width} ${height}" role="group" aria-label="${metric.label} trend chart">
         <path class="nutrition-grid" d="M${chart.left} ${chart.bottom} H${chart.right}"></path>
@@ -535,6 +644,7 @@ function renderMacroNutritionChart(rows) {
 
   elements.nutritionChart.innerHTML = `
     <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true">
+      <span class="nutrition-goal-header-label has-line-key">100% goal</span>
       <div class="nutrition-macro-legend">
         <span class="is-protein">Protein</span>
         <span class="is-carbs">Carbs</span>
@@ -798,6 +908,43 @@ elements.weightLogJump?.addEventListener("click", () => {
 elements.progressViewButtons.forEach((button) => {
   button.addEventListener("click", () => setProgressView(button.dataset.progressView));
 });
+
+function changeWeightPeriod(direction) {
+  if (direction > 0 && weightRangeOffset >= 0) return;
+  weightRangeOffset = Math.min(0, weightRangeOffset + direction * weightRange);
+  renderChart(dailyWeightEntries(state.progress));
+}
+
+elements.weightRangeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    weightRange = Number(button.dataset.weightRange || 30);
+    weightRangeOffset = 0;
+    localStorage.setItem("daily-fuel-weight-range", String(weightRange));
+    renderChart(dailyWeightEntries(state.progress));
+  });
+});
+
+elements.weightPreviousPeriod?.addEventListener("click", () => changeWeightPeriod(-1));
+elements.weightNextPeriod?.addEventListener("click", () => changeWeightPeriod(1));
+
+let weightChartTouchStart = null;
+elements.progressChart?.addEventListener("touchstart", (event) => {
+  if (!isMobileWeightChart() || event.touches.length !== 1) return;
+  const touch = event.touches[0];
+  weightChartTouchStart = { x: touch.clientX, y: touch.clientY };
+}, { passive: true });
+elements.progressChart?.addEventListener("touchend", (event) => {
+  if (!weightChartTouchStart || !isMobileWeightChart() || event.changedTouches.length !== 1) {
+    weightChartTouchStart = null;
+    return;
+  }
+  const touch = event.changedTouches[0];
+  const deltaX = touch.clientX - weightChartTouchStart.x;
+  const deltaY = touch.clientY - weightChartTouchStart.y;
+  weightChartTouchStart = null;
+  if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
+  changeWeightPeriod(deltaX < 0 ? 1 : -1);
+}, { passive: true });
 
 elements.nutritionMetricButtons.forEach((button) => {
   button.addEventListener("click", () => {

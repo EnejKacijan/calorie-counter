@@ -234,6 +234,36 @@
                 <button id="foodGalleryButton" type="button">Gallery</button>
               </div>
             </div>
+            <button class="food-ai-description-trigger" id="foodAiDescriptionTrigger" type="button"
+              aria-controls="foodAiDescription" aria-expanded="false">Describe food to AI <span aria-hidden="true">→</span></button>
+            <section class="food-ai-description" id="foodAiDescription" aria-labelledby="foodAiDescriptionTitle" hidden>
+              <div class="food-ai-description-heading">
+                <p class="label">AI estimate</p>
+                <h3 id="foodAiDescriptionTitle">Describe food</h3>
+                <p>Describe what you ate and include portions if you know them.</p>
+              </div>
+              <label class="food-ai-description-field" for="foodAiDescriptionInput"><span>Food description</span>
+                <textarea id="foodAiDescriptionInput" maxlength="500" rows="4"
+                  placeholder="e.g. two slices of pepperoni pizza and a small Coke"
+                  aria-describedby="foodAiDescriptionStatus"></textarea></label>
+              <p class="food-ai-description-status" id="foodAiDescriptionStatus" aria-live="polite"></p>
+              <div class="food-ai-clarification" id="foodAiClarification" hidden>
+                <strong id="foodAiClarificationQuestion">A little more detail will improve this estimate.</strong>
+                <div id="foodAiClarificationOptions"></div>
+              </div>
+              <div class="food-ai-description-error" id="foodAiDescriptionError" role="alert" hidden>
+                <strong>We couldn't estimate this food.</strong>
+                <p>Try again, add a little more detail, or enter the nutrition manually.</p>
+                <div>
+                  <button id="foodAiDescriptionRetry" type="button">Try again</button>
+                  <button id="foodAiDescriptionManual" type="button">Enter manually</button>
+                </div>
+              </div>
+              <div class="food-ai-description-actions">
+                <button class="food-ai-description-back" id="foodAiDescriptionBack" type="button">Back to search</button>
+                <button class="food-ai-description-submit" id="foodAiDescriptionSubmit" type="button" disabled>Estimate nutrition</button>
+              </div>
+            </section>
             <div class="food-filter-tabs" aria-label="Food source filters">
               <button class="is-active" type="button" data-food-filter="all">All</button>
               <button type="button" data-food-filter="my">Saved</button>
@@ -252,9 +282,9 @@
             <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle" hidden>
               <div class="scan-review-heading">
                 <div>
-                  <p class="label">Detected foods</p>
+                  <p class="label" id="scanReviewEyebrow">Detected foods</p>
                   <h3 id="scanReviewTitle">Review your plate</h3>
-                  <p>Check the detected foods and portions before adding them.</p>
+                  <p id="scanReviewDescription">Check the detected foods and portions before adding them.</p>
                 </div>
                 <div class="scan-review-heading-actions">
                   <label class="scan-review-meal" for="scanReviewMeal"><span>Meal</span><select id="scanReviewMeal">

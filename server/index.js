@@ -74,7 +74,13 @@ const server = createServer(async (request, response) => {
 
     if (url.pathname === "/api/foods/estimate-text" && request.method === "POST") {
       const body = await readJsonBody(request);
-      const analysis = await analyzeFoodDescription(body.description, { openAiApiKey, model: openAiModel });
+      const analysis = await analyzeFoodDescription(body.description, {
+        openAiApiKey,
+        model: openAiModel,
+        usdaApiKey,
+        clarificationAnswer: body.clarificationAnswer,
+        allowClarification: body.allowClarification !== false,
+      });
       return sendJson(response, 200, { analysis });
     }
 

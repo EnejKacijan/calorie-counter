@@ -139,7 +139,13 @@ function localDateKey(date) {
 }
 
 function applyTheme(theme) {
-  document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+  const isDark = theme === "dark";
+  const chromeColor = isDark ? "#1b1a16" : "#fbfaf6";
+  document.body.dataset.theme = isDark ? "dark" : "light";
+  document.documentElement.style.backgroundColor = chromeColor;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", chromeColor);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    ?.setAttribute("content", isDark ? "black-translucent" : "default");
 }
 
 function isMobileSidebar() {

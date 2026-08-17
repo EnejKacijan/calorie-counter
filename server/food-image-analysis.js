@@ -200,6 +200,7 @@ export async function analyzeFoodDescription(description, options = {}) {
   const resolvedFoods = await Promise.all(rawFoods.map((food) => resolveDescribedFood(food, {
     usdaApiKey: options.usdaApiKey,
     searchFoodsFn: options.searchFoodsFn || searchFoods,
+    genericRequested: genericClarificationAppliesToFood(food, clarificationAnswer),
   })));
   resolvedFoods.forEach(validateEstimatedFood);
 
@@ -339,12 +340,15 @@ async function resolveDescribedFood(food, options = {}) {
     matches = [];
   }
 
-  const credibleMatches = matches.filter((candidate) => (
+  const credibleMatches = options.genericRequested ? [] : matches.filter((candidate) => (
     Number(candidate.servingGrams) > 0
     && isCredibleStructuredMatch(candidate, food.searchQuery)
   ));
-  const match = credibleMatches.find((candidate) => candidate.source === "USDA")
-    || credibleMatches[0]
+  const rankedMatches = [...credibleMatches].sort((left, right) => (
+    structuredMatchScore(right, food.searchQuery) - structuredMatchScore(left, food.searchQuery)
+  ));
+  const match = rankedMatches.find((candidate) => candidate.source === "USDA")
+    || rankedMatches[0]
     || null;
   const amount = food.unit === "g" ? roundNumber(portionGrams) : roundNumber(food.amount);
   const unit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
@@ -391,15 +395,69 @@ async function resolveDescribedFood(food, options = {}) {
 }
 
 function isCredibleStructuredMatch(candidate, query) {
-  const ignoredWords = new Set(["and", "with", "the", "a", "an", "of", "style"]);
-  const words = String(query || "")
+  /* "Generic" is an explicit request not to assume a cut/fat class. USDA
+     results are necessarily more specific, so retain the parser's editable
+     generic estimate instead of silently substituting one of them. */
+  if (/\bgeneric\b/i.test(String(query || ""))) return false;
+  const words = structuredQueryWords(query);
+  if (!words.length) return false;
+  const candidateName = String(candidate?.name || "").toLowerCase();
+  if (hasUnsupportedStructuredQualifiers(candidateName, query)) return false;
+  const candidateText = `${candidateName} ${candidate?.brand || ""}`.toLowerCase();
+  /* A brand may strengthen a match, but it cannot establish the identity of
+     the food by itself (for example, "Coca-Cola" must not resolve to a
+     different drink merely because its manufacturer contains those words). */
+  const nameHits = words.filter((word) => candidateName.includes(word)).length;
+  if (!nameHits) return false;
+  const hits = words.filter((word) => candidateText.includes(word)).length;
+  return hits >= Math.max(1, Math.ceil(words.length * 0.5));
+}
+
+function hasUnsupportedStructuredQualifiers(candidateName, query) {
+  const materialQualifiers = new Set([
+    "brisket", "chuck", "corned", "cured", "deli", "diet", "energy", "ground",
+    "jerky", "lean", "lemonade", "liver", "loin", "minced", "punch", "regular",
+    "rib", "ribs", "sauce", "sausage", "sirloin", "skin", "skinless", "smoked",
+    "steak", "sugarfree", "tenderloin", "thigh", "water", "wing", "zero",
+  ]);
+  const queryWords = new Set(String(query || "").toLowerCase().match(/[a-z0-9]+/g) || []);
+  const candidateWords = String(candidateName || "").toLowerCase().match(/[a-z0-9]+/g) || [];
+  return candidateWords.some((word) => materialQualifiers.has(word) && !queryWords.has(word));
+}
+
+function genericClarificationAppliesToFood(food, clarificationAnswer) {
+  const answer = String(clarificationAnswer || "").toLowerCase();
+  if (!/\bgeneric\b/.test(answer)) return false;
+  const identityWords = (answer.match(/[a-z0-9]+/g) || []).filter((word) => (
+    word.length > 2 && !["generic", "raw", "cooked", "weight", "other", "describe"].includes(word)
+  ));
+  if (!identityWords.length) return true;
+  const foodText = `${food?.name || ""} ${food?.searchQuery || ""}`.toLowerCase();
+  return identityWords.some((word) => foodText.includes(word));
+}
+
+function structuredMatchScore(candidate, query) {
+  const words = structuredQueryWords(query);
+  const nameWords = String(candidate?.name || "").toLowerCase().match(/[a-z0-9]+/g) || [];
+  const brandWords = String(candidate?.brand || "").toLowerCase().match(/[a-z0-9]+/g) || [];
+  const nameOccurrences = nameWords.filter((word) => words.includes(word)).length;
+  const uniqueNameHits = new Set(nameWords.filter((word) => words.includes(word))).size;
+  const brandHits = new Set(brandWords.filter((word) => words.includes(word))).size;
+  /* Repeated identity tokens and compact names are useful tie-breakers for
+     branded USDA results: "Coca-Cola, Cola" must rank above a long product
+     from the same manufacturer whose actual identity is lemonade or water. */
+  return (uniqueNameHits * 6) + (nameOccurrences * 2) + brandHits - (nameWords.length * 0.03);
+}
+
+function structuredQueryWords(query) {
+  const ignoredWords = new Set([
+    "and", "with", "the", "a", "an", "of", "style",
+    "food", "foods", "beverage", "beverages", "drink", "drinks", "product", "generic",
+  ]);
+  return String(query || "")
     .toLowerCase()
     .match(/[a-z0-9]+/g)
     ?.filter((word) => word.length > 1 && !ignoredWords.has(word)) || [];
-  if (!words.length) return false;
-  const candidateText = `${candidate?.name || ""} ${candidate?.brand || ""}`.toLowerCase();
-  const hits = words.filter((word) => candidateText.includes(word)).length;
-  return hits >= Math.max(1, Math.ceil(words.length * 0.5));
 }
 
 function describedPortionGrams(food) {

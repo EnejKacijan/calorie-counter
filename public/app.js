@@ -753,7 +753,11 @@ function openDesktopAddFoodModal(input) {
 
 function closeDesktopEditModal(section) {
   if (!desktopEditSession || desktopEditSession.section !== section) return false;
-  const { placements, kind } = desktopEditSession;
+  const { placements, kind, content } = desktopEditSession;
+  /* This control is injected only for an active desktop Food edit. The mode
+     header itself is shared with Add Food, so do not restore the temporary
+     control with that header after the dialog closes. */
+  content.querySelector(".desktop-saved-food-toggle")?.remove();
   placements.forEach(({ node, marker }) => {
     if (marker.isConnected) marker.replaceWith(node);
   });
@@ -1155,7 +1159,13 @@ function render() {
 }
 
 function applyTheme(theme) {
-  document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+  const isDark = theme === "dark";
+  const chromeColor = isDark ? "#1b1a16" : "#fbfaf6";
+  document.body.dataset.theme = isDark ? "dark" : "light";
+  document.documentElement.style.backgroundColor = chromeColor;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", chromeColor);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    ?.setAttribute("content", isDark ? "black-translucent" : "default");
 }
 
 function renderProfileState() {

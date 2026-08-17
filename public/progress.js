@@ -91,7 +91,13 @@ function saveState() {
 }
 
 function applyTheme(theme) {
-  document.body.dataset.theme = theme === "dark" ? "dark" : "light";
+  const isDark = theme === "dark";
+  const chromeColor = isDark ? "#1b1a16" : "#fbfaf6";
+  document.body.dataset.theme = isDark ? "dark" : "light";
+  document.documentElement.style.backgroundColor = chromeColor;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", chromeColor);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    ?.setAttribute("content", isDark ? "black-translucent" : "default");
 }
 
 function isMobileSidebar() {
@@ -157,7 +163,8 @@ function formatWeight(value) {
 }
 
 function trendForEntries(entries) {
-  if (entries.length < 2) return { delta: 0, days: 0, label: "Add another entry to see trend.", tone: "neutral" };
+  if (!entries.length) return { delta: 0, days: 0, label: "Log your first weight to see a trend.", tone: "neutral" };
+  if (entries.length === 1) return { delta: 0, days: 0, label: "Add another entry to see trend.", tone: "neutral" };
 
   const latest = entries.at(-1);
   const latestDate = dateFromKey(latest.date);
@@ -183,19 +190,8 @@ function targetStatus(currentWeight) {
   return `${formatWeight(Math.abs(difference))} kg ${difference > 0 ? "above" : "below"} target`;
 }
 
-function ensureInitialProgress() {
-  if (!state.user || state.progress.length) return;
-  state.progress.push({
-    id: crypto.randomUUID(),
-    date: localDateKey(new Date()),
-    weightKg: Number(state.user.weightKg),
-  });
-  saveState();
-}
-
 function render() {
   applyTheme(state.user?.theme || state.theme || "light");
-  ensureInitialProgress();
 
   if (!state.user) {
     window.location.href = "profile.html";

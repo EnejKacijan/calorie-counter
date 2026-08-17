@@ -18445,6 +18445,22 @@ body[data-theme="dark"] .assistant-history {
   padding: 13px clamp(20px, 3vw, 34px);
 }
 
+.assistant-context-summary {
+  display: none;
+}
+
+.assistant-context-controls {
+  display: contents;
+}
+
+.assistant-conversation-backdrop {
+  display: none;
+}
+
+.assistant-mobile-conversation-actions {
+  display: none;
+}
+
 .assistant-context-toggle {
   display: flex;
   align-items: center;
@@ -19699,6 +19715,10 @@ body:not(.profile-landing-active) .goal-editor.is-editing-custom .recommended-su
     overflow: visible !important;
   }
 
+}
+
+.assistant-chat-footer {
+  display: contents;
 }
 
 @media (max-width: 700px) {
@@ -23298,14 +23318,14 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
   body:not(.profile-landing-active) .mobile-tabbar,
   body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    height: calc(58px + env(safe-area-inset-bottom)) !important;
     padding-bottom: env(safe-area-inset-bottom) !important;
   }
 
   body:not(.profile-landing-active) .mobile-tabbar > a,
   body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    height: 60px !important;
-    min-height: 60px !important;
+    height: 58px !important;
+    min-height: 58px !important;
   }
 
   body:not(.profile-landing-active) .mobile-tabbar > a::after,
@@ -23326,12 +23346,12 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.modal-open) .main-content,
   body.progress-page:not(.profile-landing-active) .main-content,
   body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .main-content {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom)) !important;
   }
 
   body.assistant-page .app-shell {
-    height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
-    max-height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
+    height: calc(100dvh - 58px - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 58px - env(safe-area-inset-bottom)) !important;
   }
 }
 
@@ -24883,5 +24903,284 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
     line-height: 1;
     text-transform: uppercase;
     white-space: nowrap;
+  }
+}
+
+/* Let the app surface continue through the mobile safe-area/status-bar region
+   instead of exposing the page's contrasting decorative background above it. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) {
+    background: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .app-shell {
+    background: var(--panel) !important;
+  }
+}
+
+/* Mobile Assistant prioritizes the conversation. Secondary context settings
+   stay available through one compact disclosure row; desktop keeps its
+   existing always-visible context grid. */
+@media (max-width: 700px) {
+  body.assistant-page .assistant-header,
+  body.assistant-page.assistant-has-messages .assistant-header {
+    display: none !important;
+  }
+
+  body.assistant-page .assistant-header-actions,
+  body.assistant-page.assistant-has-messages .assistant-header-actions {
+    display: flex !important;
+    width: 100% !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+  }
+
+  body.assistant-page .assistant-header-actions > button,
+  body.assistant-page.assistant-has-messages .assistant-header-actions > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-height: 36px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 4px !important;
+    color: var(--ink) !important;
+    font-size: 0.61rem !important;
+  }
+
+  body.assistant-page .assistant-header-actions .assistant-clear {
+    margin-left: auto !important;
+  }
+
+  body.assistant-page .assistant-context-bar,
+  body.assistant-page.assistant-has-messages .assistant-context-bar {
+    display: block !important;
+    position: relative !important;
+    z-index: 12;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.assistant-page .assistant-context-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    width: 100%;
+    min-height: 46px;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    padding: 0 18px;
+    color: var(--ink);
+    text-align: left;
+    position: relative;
+    z-index: 2;
+    background: var(--panel);
+  }
+
+  body.assistant-page .assistant-context-summary > span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  body.assistant-page .assistant-context-summary > b {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body.assistant-page .assistant-context-summary > i {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-style: normal;
+    line-height: 1;
+    transition: transform 160ms ease;
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-summary > i {
+    transform: rotate(180deg);
+  }
+
+  body.assistant-page .assistant-context-controls {
+    display: none !important;
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-controls {
+    display: grid !important;
+    position: absolute !important;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 3;
+    grid-template-columns: minmax(0, 1fr) !important;
+    row-gap: 7px !important;
+    align-items: center !important;
+    max-height: min(330px, calc(100dvh - 156px - 58px - env(safe-area-inset-bottom)));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 12px 24px rgba(17, 17, 15, 0.08);
+    padding: 11px 18px 12px;
+  }
+
+  body.assistant-page .assistant-conversation-backdrop[hidden] {
+    display: none !important;
+  }
+
+  body.assistant-page .assistant-conversation-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0 0 calc(58px + env(safe-area-inset-bottom));
+    z-index: 10;
+    width: 100%;
+    border: 0;
+    background: rgba(17, 17, 15, 0.04);
+  }
+
+  body[data-theme="dark"].assistant-page .assistant-conversation-backdrop {
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  body[data-theme="dark"].assistant-page .assistant-context-bar.is-expanded .assistant-context-controls {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-mobile-conversation-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-bottom: 0;
+  }
+
+  body.assistant-page .assistant-mobile-conversation-actions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    border: 1px solid var(--line) !important;
+    background: transparent !important;
+    padding: 0 8px !important;
+    color: var(--ink) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.61rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  body.assistant-page .assistant-mobile-conversation-actions > button:last-child {
+    font-weight: 750 !important;
+  }
+
+  body.assistant-page .assistant-mobile-conversation-actions > button:hover,
+  body.assistant-page .assistant-mobile-conversation-actions > button:focus-visible {
+    border-color: var(--ink) !important;
+    background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
+    outline: none;
+  }
+
+  body.assistant-page .assistant-mobile-conversation-actions > button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  body.assistant-page .assistant-mobile-conversation-actions > button:active {
+    background: color-mix(in srgb, var(--ink) 10%, transparent) !important;
+    transform: translateY(1px);
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-note,
+  body.assistant-page.assistant-has-messages .assistant-context-bar.is-expanded .assistant-context-note {
+    display: block !important;
+    margin: 0 !important;
+    font-size: 0.68rem !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-toggle {
+    display: grid;
+    grid-template-columns: 35px minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 38px;
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-toggle > em {
+    justify-self: end;
+  }
+
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-range {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.assistant-page .assistant-shell {
+    grid-template-rows: auto minmax(0, 1fr) auto !important;
+  }
+
+  body.assistant-page .assistant-chat-footer {
+    position: relative;
+    z-index: 8;
+    display: grid;
+    grid-template-rows: auto auto;
+    min-width: 0;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  body.assistant-page .assistant-chat-footer .assistant-composer,
+  body.assistant-page.assistant-has-messages .assistant-chat-footer .assistant-composer {
+    position: static !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    padding: 10px 18px 6px !important;
+  }
+
+  body.assistant-page .assistant-chat-footer .assistant-footnote,
+  body.assistant-page.assistant-has-messages .assistant-chat-footer .assistant-footnote {
+    position: static !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    padding: 0 18px 8px !important;
+  }
+
+  body.assistant-page:not(.assistant-has-messages) .assistant-empty {
+    min-height: 100% !important;
+    align-content: safe center !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  body.assistant-page .assistant-conversation {
+    scroll-padding-bottom: 16px;
+  }
+
+}
+
+/* The fixed add action crosses the right edge of diary rows on narrow
+   phones. This late, mobile-only override reserves its hit-area so kcal
+   values cannot render beneath the button while the diary scrolls. */
+@media (max-width: 460px) {
+  body:not(.profile-landing-active) :is(
+    #foodSection.food-log,
+    #exerciseSection.exercise-log
+  ):not(.is-adding) .entry-surface {
+    padding-right: 72px !important;
   }
 }

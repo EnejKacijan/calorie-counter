@@ -76,19 +76,35 @@
               conversations</button>
           </aside>
 
-          <div class="assistant-context-bar">
-            <label class="assistant-context-toggle">
-              <input id="assistantDiaryToggle" type="checkbox" checked />
-              <span aria-hidden="true"></span>
-              <b>Use my food diary</b>
-              <em id="assistantDiaryState">On</em>
-            </label>
-            <label class="assistant-range" for="assistantRange"><span>Context</span><select id="assistantRange">
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-              </select></label>
-            <p class="assistant-context-note" id="assistantContextNote">Your selected diary entries are sent only when you ask a question.</p>
+          <div class="assistant-context-bar" id="assistantContextBar">
+            <button class="assistant-context-summary" id="assistantContextDisclosure" type="button"
+              aria-expanded="false" aria-controls="assistantContextControls">
+              <span>Conversation</span>
+              <b id="assistantContextSummary">Food diary · Last 7 days</b>
+              <i aria-hidden="true">⌄</i>
+            </button>
+            <div class="assistant-context-controls" id="assistantContextControls">
+              <div class="assistant-mobile-conversation-actions">
+                <button class="assistant-history-open" id="assistantMobileHistoryOpen" type="button"
+                  aria-expanded="false" aria-controls="assistantHistory">History</button>
+                <button class="assistant-clear" id="assistantMobileClear" type="button">New conversation</button>
+              </div>
+              <label class="assistant-context-toggle">
+                <input id="assistantDiaryToggle" type="checkbox" checked />
+                <span aria-hidden="true"></span>
+                <b>Use my food diary</b>
+                <em id="assistantDiaryState">On</em>
+              </label>
+              <label class="assistant-range" for="assistantRange"><span>Context</span><select id="assistantRange">
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                </select></label>
+              <p class="assistant-context-note" id="assistantContextNote">Your selected diary entries are sent only when you ask a question.</p>
+            </div>
           </div>
+
+          <button class="assistant-conversation-backdrop" id="assistantConversationBackdrop" type="button"
+            aria-label="Close conversation settings" hidden></button>
 
           <section class="assistant-conversation">
             <div class="assistant-empty" id="assistantEmpty">
@@ -107,12 +123,14 @@
             <div class="assistant-typing" id="assistantTyping" hidden aria-label="Assistant is thinking"><i></i><i></i><i></i></div>
           </section>
 
-          <form class="assistant-composer" id="assistantForm">
-            <label class="sr-only" for="assistantInput">Message the nutrition assistant</label>
-            <textarea id="assistantInput" rows="1" maxlength="2000" placeholder="Ask about your food..." required></textarea>
-            <button id="assistantSend" type="submit" aria-label="Send message" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3.2-5.1L5 12Z" /><path d="M11.8 13.9 19 5" /></svg></button>
-          </form>
-          <p class="assistant-footnote">AI can make mistakes. For severe, worsening, or persistent symptoms, contact a healthcare professional.</p>
+          <div class="assistant-chat-footer">
+            <form class="assistant-composer" id="assistantForm">
+              <label class="sr-only" for="assistantInput">Message the nutrition assistant</label>
+              <textarea id="assistantInput" rows="1" maxlength="2000" placeholder="Ask about your food..." required></textarea>
+              <button id="assistantSend" type="submit" aria-label="Send message" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3.2-5.1L5 12Z" /><path d="M11.8 13.9 19 5" /></svg></button>
+            </form>
+            <p class="assistant-footnote">AI can make mistakes. For severe, worsening, or persistent symptoms, contact a healthcare professional.</p>
+          </div>
         </section>
       </section>
     </main>

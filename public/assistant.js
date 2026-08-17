@@ -5,6 +5,7 @@ const activeConversationKey = "calorie-counter-assistant-active-conversation-v1"
 const activeConversationSessionKey = "calorie-counter-assistant-active-conversation-session-v1";
 const diaryPreferenceKey = "calorie-counter-assistant-diary-enabled";
 const rangePreferenceKey = "calorie-counter-assistant-range";
+const contextExpandedSessionKey = "calorie-counter-assistant-context-expanded";
 const safetyIdentifierKey = "calorie-counter-assistant-safety-id";
 
 const state = loadState();
@@ -20,6 +21,8 @@ const elements = {
   logoutButton: document.querySelector("#logoutButton"),
   clear: document.querySelector("#assistantClear"),
   historyOpen: document.querySelector("#assistantHistoryOpen"),
+  mobileClear: document.querySelector("#assistantMobileClear"),
+  mobileHistoryOpen: document.querySelector("#assistantMobileHistoryOpen"),
   history: document.querySelector("#assistantHistory"),
   historyBackdrop: document.querySelector("#assistantHistoryBackdrop"),
   historyClose: document.querySelector("#assistantHistoryClose"),
@@ -29,6 +32,10 @@ const elements = {
   diaryState: document.querySelector("#assistantDiaryState"),
   range: document.querySelector("#assistantRange"),
   contextNote: document.querySelector("#assistantContextNote"),
+  contextBar: document.querySelector("#assistantContextBar"),
+  contextDisclosure: document.querySelector("#assistantContextDisclosure"),
+  contextSummary: document.querySelector("#assistantContextSummary"),
+  conversationBackdrop: document.querySelector("#assistantConversationBackdrop"),
   empty: document.querySelector("#assistantEmpty"),
   messages: document.querySelector("#assistantMessages"),
   typing: document.querySelector("#assistantTyping"),
@@ -47,6 +54,7 @@ let messages = activeConversation()?.messages.map((message) => ({ ...message }))
 let transientError = "";
 let isSending = false;
 let historyOpener = null;
+let contextExpanded = sessionStorage.getItem(contextExpandedSessionKey) === "true";
 
 applyTheme();
 hydrateProfile();
@@ -54,6 +62,7 @@ hydratePreferences();
 renderConversation();
 renderHistory();
 updateContextNote();
+syncContextDisclosure();
 
 function loadState() {
   const fallback = {
@@ -206,7 +215,13 @@ function conversationTitle(message) {
 }
 
 function applyTheme() {
-  document.body.dataset.theme = (state.user?.theme || state.theme) === "dark" ? "dark" : "light";
+  const isDark = (state.user?.theme || state.theme) === "dark";
+  const chromeColor = isDark ? "#1b1a16" : "#fbfaf6";
+  document.body.dataset.theme = isDark ? "dark" : "light";
+  document.documentElement.style.backgroundColor = chromeColor;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", chromeColor);
+  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+    ?.setAttribute("content", isDark ? "black-translucent" : "default");
 }
 
 function hydrateProfile() {
@@ -228,6 +243,10 @@ function renderConversation() {
   elements.messages.replaceChildren();
   elements.empty.hidden = messages.length > 0;
   elements.clear.disabled = isSending || (messages.length === 0 && !transientError);
+  // Keep the entry point discoverable even while the transient new-chat state
+  // is already empty. startNewConversation() does not persist a record.
+  elements.mobileClear.hidden = false;
+  elements.mobileClear.disabled = isSending;
 
   messages.forEach((message) => elements.messages.appendChild(createMessage(message)));
   if (transientError) {
@@ -242,9 +261,11 @@ function renderConversation() {
 
 function renderHistory() {
   elements.historyList.replaceChildren();
-  elements.historyOpen.textContent = conversations.length
+  const historyLabel = conversations.length
     ? `History · ${conversations.length}`
     : "History";
+  elements.historyOpen.textContent = historyLabel;
+  elements.mobileHistoryOpen.textContent = historyLabel;
   elements.historyDeleteAll.disabled = conversations.length === 0;
 
   if (!conversations.length) {
@@ -298,10 +319,16 @@ function formatConversationDate(value) {
 }
 
 function setHistoryOpen(isOpen) {
-  if (isOpen) historyOpener = document.activeElement;
+  if (isOpen) {
+    historyOpener = document.activeElement === elements.mobileHistoryOpen
+      ? elements.contextDisclosure
+      : document.activeElement;
+    if (contextExpanded) setContextDisclosure(false);
+  }
   elements.history.hidden = !isOpen;
   elements.historyBackdrop.hidden = !isOpen;
   elements.historyOpen.setAttribute("aria-expanded", String(isOpen));
+  elements.mobileHistoryOpen.setAttribute("aria-expanded", String(isOpen));
   document.body.classList.toggle("has-assistant-history-open", isOpen);
   const inertTargets = [
     ...Array.from(elements.history.parentElement.children).filter((element) => element !== elements.history && element !== elements.historyBackdrop),
@@ -321,6 +348,12 @@ function setHistoryOpen(isOpen) {
 }
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && contextExpanded && elements.history.hidden) {
+    event.preventDefault();
+    setContextDisclosure(false);
+    elements.contextDisclosure.focus();
+    return;
+  }
   if (elements.history.hidden) return;
   if (event.key === "Escape") {
     event.preventDefault();
@@ -481,6 +514,9 @@ function buildAppContext() {
 function updateContextNote() {
   elements.range.disabled = !elements.diaryToggle.checked;
   elements.diaryState.textContent = elements.diaryToggle.checked ? "On" : "Off";
+  elements.contextSummary.textContent = elements.diaryToggle.checked
+    ? `Food diary · Last ${Number(elements.range.value || 7)} days`
+    : "Food diary off";
   if (!elements.diaryToggle.checked) {
     elements.contextNote.textContent = "Diary access is off. The assistant will only use what you write in the chat.";
     return;
@@ -498,6 +534,7 @@ function startNewConversation() {
   setActiveConversationId(null);
   messages = [];
   transientError = "";
+  setContextDisclosure(false);
   renderConversation();
   renderHistory();
   setHistoryOpen(false);
@@ -507,11 +544,30 @@ function applyContextPreferenceChange() {
   updateContextNote();
 }
 
+function syncContextDisclosure() {
+  elements.contextBar.classList.toggle("is-expanded", contextExpanded);
+  elements.contextDisclosure.setAttribute("aria-expanded", String(contextExpanded));
+  elements.conversationBackdrop.hidden = !contextExpanded;
+  document.body.classList.toggle("assistant-conversation-controls-open", contextExpanded);
+}
+
+function setContextDisclosure(isExpanded) {
+  contextExpanded = Boolean(isExpanded);
+  sessionStorage.setItem(contextExpandedSessionKey, String(contextExpanded));
+  syncContextDisclosure();
+}
+
+function toggleContextDisclosure() {
+  setContextDisclosure(!contextExpanded);
+}
+
 function setSending(sending) {
   isSending = sending;
   elements.input.disabled = sending;
   elements.clear.disabled = sending || messages.length === 0;
   elements.historyOpen.disabled = sending;
+  elements.mobileClear.disabled = sending;
+  elements.mobileHistoryOpen.disabled = sending;
   elements.typing.hidden = !sending;
   elements.form.classList.toggle("is-sending", sending);
   updateComposerState();
@@ -577,8 +633,14 @@ elements.starters.forEach((button) => {
 
 elements.clear.addEventListener("click", startNewConversation);
 elements.historyOpen.addEventListener("click", () => setHistoryOpen(true));
+elements.mobileClear.addEventListener("click", startNewConversation);
+elements.mobileHistoryOpen.addEventListener("click", () => setHistoryOpen(true));
 elements.historyClose.addEventListener("click", () => setHistoryOpen(false));
 elements.historyBackdrop.addEventListener("click", () => setHistoryOpen(false));
+elements.conversationBackdrop.addEventListener("click", () => {
+  setContextDisclosure(false);
+  requestAnimationFrame(() => elements.contextDisclosure.focus());
+});
 elements.historyList.addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-delete-conversation-id]");
   if (deleteButton) {
@@ -589,6 +651,7 @@ elements.historyList.addEventListener("click", (event) => {
   if (openButton) openConversation(openButton.dataset.conversationId);
 });
 elements.historyDeleteAll.addEventListener("click", deleteAllConversations);
+elements.contextDisclosure.addEventListener("click", toggleContextDisclosure);
 elements.diaryToggle.addEventListener("change", () => {
   localStorage.setItem(diaryPreferenceKey, String(elements.diaryToggle.checked));
   applyContextPreferenceChange();

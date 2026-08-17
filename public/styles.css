@@ -25190,23 +25190,29 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
    same proportions and left-aligned value treatment as the Weight field. */
 @media (max-width: 700px) {
   body.progress-page:not(.profile-landing-active) #progressDate {
+    display: block;
+    box-sizing: border-box !important;
     width: 100% !important;
+    inline-size: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
+    max-inline-size: 100% !important;
     height: 48px !important;
     min-height: 48px !important;
     padding: 0 13px !important;
-    font-family: var(--font-ui) !important;
-    font-size: 1rem !important;
-    font-weight: 500 !important;
-    font-variant-numeric: tabular-nums;
     letter-spacing: 0 !important;
-    line-height: 1.2 !important;
     text-align: left !important;
+    overflow: hidden;
+    appearance: none;
+    -webkit-appearance: none;
     -webkit-min-logical-width: 0;
   }
 
   body.progress-page:not(.profile-landing-active) #progressDate::-webkit-date-and-time-value {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     min-height: 1.2em;
     margin: 0;
     padding: 0;
@@ -25214,6 +25220,9 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
   }
 
   body.progress-page:not(.profile-landing-active) #progressDate::-webkit-datetime-edit {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
     padding: 0;
     letter-spacing: 0;
   }

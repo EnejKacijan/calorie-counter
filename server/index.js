@@ -78,8 +78,9 @@ const server = createServer(async (request, response) => {
         openAiApiKey,
         model: openAiModel,
         usdaApiKey,
-        clarificationAnswer: body.clarificationAnswer,
-        allowClarification: body.allowClarification !== false,
+        onDiagnostic: process.env.NODE_ENV === "production"
+          ? undefined
+          : (event, details) => console.debug(`[food-estimate:${event}]`, JSON.stringify(details)),
       });
       return sendJson(response, 200, { analysis });
     }
@@ -141,7 +142,7 @@ server.on("error", (error) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`Calorie Counter running at http://${displayHost}:${port}`);
+  console.log(`Intake running at http://${displayHost}:${port}`);
 });
 
 async function serveStatic(pathname, response) {

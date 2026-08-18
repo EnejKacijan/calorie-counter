@@ -146,7 +146,6 @@ body.progress-page .weight-chart-panel .progress-chart {
    model. The entry stays secondary to search/scan and becomes focused only
    after the user chooses it. */
 .food-ai-description[hidden],
-.food-ai-clarification[hidden],
 .food-ai-description-error[hidden] {
   display: none !important;
 }
@@ -252,6 +251,9 @@ body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput:focus 
 }
 
 body:not(.profile-landing-active) .food-ai-description-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   min-height: 1.2em;
   margin: -8px 0 0;
   color: var(--muted);
@@ -259,43 +261,41 @@ body:not(.profile-landing-active) .food-ai-description-status {
   line-height: 1.4;
 }
 
-body:not(.profile-landing-active) .food-ai-clarification {
-  display: grid;
-  gap: 12px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--ink) 3%, var(--panel));
-  padding: 14px;
-}
-
-body:not(.profile-landing-active) .food-ai-clarification > strong {
+body:not(.profile-landing-active) .food-ai-description.is-estimating .food-ai-description-status {
+  min-height: 42px;
+  margin-top: -6px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   color: var(--ink);
-  font-size: 0.9rem;
   font-weight: 560;
-  line-height: 1.35;
+  padding: 9px 2px;
 }
 
-body:not(.profile-landing-active) .food-ai-clarification > div {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+body:not(.profile-landing-active) .food-ai-description.is-estimating .food-ai-description-status::before {
+  content: "";
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--ink) 24%, transparent);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: food-ai-estimate-spin 0.75s linear infinite;
 }
 
-body:not(.profile-landing-active) .food-ai-clarification button {
-  min-height: 44px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 0.76rem;
-  font-weight: 550;
-  padding: 8px 10px;
-  text-align: left;
+body:not(.profile-landing-active) .food-ai-description.is-estimating .food-ai-description-submit {
+  cursor: wait;
+  opacity: 1;
 }
 
-body:not(.profile-landing-active) .food-ai-clarification button:hover,
-body:not(.profile-landing-active) .food-ai-clarification button:focus-visible {
-  border-color: var(--ink);
-  outline: none;
+@keyframes food-ai-estimate-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:not(.profile-landing-active) .food-ai-description.is-estimating .food-ai-description-status::before {
+    animation: none;
+    border-top-color: var(--muted);
+  }
 }
 
 body:not(.profile-landing-active) .food-ai-description-error {
@@ -1492,7 +1492,7 @@ body.is-logged-out-profile .auth-shell.in-app {
 }
 
 body.is-logged-out-profile .auth-shell.in-app::before {
-  content: "Daily Fuel";
+  content: "Intake";
   display: block;
   margin-bottom: 14px;
   color: var(--mint-dark);
@@ -22352,7 +22352,29 @@ body.progress-page:not(.profile-landing-active) .nutrition-chart-header {
 }
 
 body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
-  display: none;
+  display: inline-block;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key::before {
+  content: "";
+  width: 22px;
+  flex: 0 0 22px;
+  border-top: 1px dashed currentColor;
+  opacity: 0.78;
 }
 
 @media (max-width: 700px) {
@@ -22361,35 +22383,10 @@ body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
     gap: 14px;
   }
 
-  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
-    display: inline-block;
-    color: var(--muted);
-    font-family: var(--font-ui);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    line-height: 1;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
+}
 
-  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-
-  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label.has-line-key::before {
-    content: "";
-    width: 22px;
-    flex: 0 0 22px;
-    border-top: 1px dashed currentColor;
-    opacity: 0.78;
-  }
-
-  body.progress-page:not(.profile-landing-active) .nutrition-chart-plot .nutrition-goal-label {
-    display: none;
-  }
+body.progress-page:not(.profile-landing-active) .nutrition-chart-plot .nutrition-goal-label {
+  display: none;
 }
 
 body.progress-page:not(.profile-landing-active) .nutrition-chart-plot {
@@ -22406,8 +22403,23 @@ body.progress-page:not(.profile-landing-active) .nutrition-chart-plot svg {
 body.progress-page:not(.profile-landing-active) .nutrition-chart-header .nutrition-macro-legend {
   position: static !important;
   inset: auto !important;
+  flex: 0 0 auto;
   align-self: center;
   margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* Keep the dashed goal key and the macro series key as two distinct legend
+   groups on desktop. Both remain right-aligned, with a guaranteed gutter so
+   labels cannot visually merge at narrower desktop widths. */
+@media (min-width: 701px) {
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-header {
+    column-gap: clamp(18px, 2vw, 28px);
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-goal-header-label {
+    flex: 0 0 auto;
+  }
 }
 
 body.progress-page:not(.profile-landing-active) .nutrition-zero-line {
@@ -24420,11 +24432,13 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     width: 100% !important;
     min-width: 0 !important;
     align-items: baseline !important;
+    justify-self: start !important;
     color: var(--ink) !important;
     font-size: clamp(0.58rem, 2.35vw, 0.66rem) !important;
     font-weight: 650 !important;
     letter-spacing: 0 !important;
     line-height: 1.15 !important;
+    text-align: left !important;
     white-space: nowrap !important;
   }
 
@@ -24642,7 +24656,6 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
 /* Keep the text-to-AI entry path isolated from browse/detail states. */
 .food-ai-description[hidden],
-.food-ai-clarification[hidden],
 .food-ai-description-error[hidden] {
   display: none !important;
 }
@@ -24662,6 +24675,26 @@ body[data-theme="dark"]:not(.profile-landing-active) .macro-card-header .label {
   opacity: 1 !important;
   color: var(--muted) !important;
   -webkit-text-fill-color: var(--muted) !important;
+}
+
+/* Keep mobile macro names readable in the dark Today theme. Target the
+   semantic name directly so generic label rules cannot wash it out. */
+@media (max-width: 700px) {
+  body[data-theme="dark"]:not(.profile-landing-active) #macroGrid .macro-card-header > div > .label {
+    position: relative !important;
+    z-index: 1 !important;
+    display: block !important;
+    min-height: 0.68rem !important;
+    margin: 0 0 4px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    color: #aaa398 !important;
+    -webkit-text-fill-color: #aaa398 !important;
+    font-size: 0.62rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+  }
 }
 
 @media (min-width: 769px) {
@@ -24870,40 +24903,38 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
   min-height: 0;
 }
 
-@media (max-width: 700px) {
-  body.progress-page:not(.profile-landing-active) .weight-chart-panel .progress-chart.has-target-legend {
-    display: grid !important;
-    grid-template-rows: 24px minmax(0, 1fr) !important;
-  }
+body.progress-page:not(.profile-landing-active) .weight-chart-panel .progress-chart.has-target-legend {
+  display: grid !important;
+  grid-template-rows: 24px minmax(0, 1fr) !important;
+}
 
-  body.progress-page:not(.profile-landing-active) .weight-target-legend {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 7px;
-    min-width: 0;
-    min-height: 24px;
-    box-sizing: border-box;
-    color: var(--muted);
-    pointer-events: none;
-  }
+body.progress-page:not(.profile-landing-active) .weight-target-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+  min-height: 24px;
+  box-sizing: border-box;
+  color: var(--muted);
+  pointer-events: none;
+}
 
-  body.progress-page:not(.profile-landing-active) .weight-target-legend span {
-    width: 22px;
-    flex: 0 0 22px;
-    border-top: 1px dashed currentColor;
-    opacity: 0.78;
-  }
+body.progress-page:not(.profile-landing-active) .weight-target-legend span {
+  width: 22px;
+  flex: 0 0 22px;
+  border-top: 1px dashed currentColor;
+  opacity: 0.78;
+}
 
-  body.progress-page:not(.profile-landing-active) .weight-target-legend b {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
+body.progress-page:not(.profile-landing-active) .weight-target-legend b {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* Let the app surface continue through the mobile safe-area/status-bar region
@@ -25173,18 +25204,6 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
 
 }
 
-/* The fixed add action crosses the right edge of diary rows on narrow
-   phones. This late, mobile-only override reserves its hit-area so kcal
-   values cannot render beneath the button while the diary scrolls. */
-@media (max-width: 460px) {
-  body:not(.profile-landing-active) :is(
-    #foodSection.food-log,
-    #exerciseSection.exercise-log
-  ):not(.is-adding) .entry-surface {
-    padding-right: 72px !important;
-  }
-}
-
 /* iOS renders date inputs with its own compact, centered inner control in
    standalone PWAs. Normalize only the mobile Weight form so Date has the
    same proportions and left-aligned value treatment as the Weight field. */
@@ -25232,5 +25251,312 @@ body.progress-page:not(.profile-landing-active) .weight-chart-plot {
     letter-spacing: 0;
     line-height: 24px;
     text-align: center;
+  }
+}
+
+/* Dark editorial theme cleanup: an earlier neon/mint theme used stronger
+   selectors for focused controls and CTA shadows. Keep semantic `good`
+   colors available for data states, but make interaction chrome neutral. */
+body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus,
+body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus-visible {
+  border-color: var(--ink) !important;
+  outline: none !important;
+  background: color-mix(in srgb, var(--panel) 94%, #000) !important;
+  box-shadow: inset 0 0 0 1px var(--ink) !important;
+}
+
+body[data-theme="dark"]:not(.profile-landing-active) :is(
+  .primary-action,
+  .progress-form button,
+  #profileSubmitButton,
+  #manualFoodSubmit,
+  #exerciseSubmit
+) {
+  box-shadow: none !important;
+}
+
+body[data-theme="dark"]:not(.profile-landing-active) :is(.brand-icon, .topbar-brand-icon) {
+  border-color: var(--line) !important;
+  background: var(--panel) !important;
+  box-shadow: none !important;
+}
+
+/* Keep the in-app brand mark identical to the installed Intake icon rather
+   than inheriting the old leaf icon's monochrome stroke treatment. */
+.brand-icon:has(.intake-mark) {
+  border-color: var(--line) !important;
+  background: #f7f5ee !important;
+  color: #171714 !important;
+  box-shadow: none !important;
+}
+
+.intake-mark :is(.intake-mark-ring, .intake-mark-accent) {
+  fill: none !important;
+  stroke-width: 2.6 !important;
+  stroke-linecap: butt !important;
+  transform: rotate(2deg);
+  transform-origin: 12px 12px;
+}
+
+.intake-mark .intake-mark-ring {
+  stroke: currentColor !important;
+  stroke-dasharray: 82 18;
+}
+
+.intake-mark .intake-mark-accent {
+  stroke: #a95239 !important;
+  stroke-dasharray: 10 90;
+  stroke-dashoffset: -85;
+}
+
+.intake-mark .intake-mark-spark {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Desktop dark-mode audit: remove the remaining presentation-only mint/blue
+   treatments from the legacy theme. Semantic success and warning data colors
+   intentionally continue to use `--good` and `--warn`. */
+@media (min-width: 701px) {
+  body[data-theme="dark"] :is(
+    .recommendation,
+    .intro-stats article,
+    .intro-trust span,
+    .recommended-summary article
+  ) {
+    border-color: var(--line) !important;
+    background: var(--panel) !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"] :is(.avatar, .food-name-field input) {
+    border-color: var(--line) !important;
+    background: var(--panel) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"] :is(
+    .food-mode-header,
+    .exercise-mode-header,
+    .food-log.is-editing #manualFoodForm,
+    .exercise-log.is-editing #exerciseForm
+  ) {
+    border-color: var(--line) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"].progress-page:not(.profile-landing-active) .progress-chart {
+    border-color: var(--line) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"].progress-page:not(.profile-landing-active) .progress-meter span {
+    background: var(--ink) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active) :is(
+    .primary-action,
+    .progress-form button,
+    #profileSubmitButton,
+    #manualFoodSubmit,
+    #exerciseSubmit
+  ):is(:hover, :focus-visible) {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+    box-shadow: none !important;
+  }
+
+  body[data-theme="dark"] .goal-edit-button.is-active {
+    border-color: var(--line) !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Desktop Weight history: keep the log list and entry form compact and
+   independently scannable. This final override intentionally follows the
+   legacy Progress rules above. */
+body.progress-page:not(.profile-landing-active) .weight-lower-layout {
+  min-width: 0;
+}
+
+body.progress-page:not(.profile-landing-active) .weight-log-panel {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (min-width: 701px) {
+  body.progress-page:not(.profile-landing-active) .weight-lower-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
+    width: calc(100% - 60px);
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  body.progress-page:not(.profile-landing-active) :is(.weight-recent-panel, .weight-log-panel) {
+    width: 100% !important;
+    min-width: 0;
+    max-width: none !important;
+    border-top: 1px solid var(--line) !important;
+    padding: 22px 0 0 !important;
+    box-sizing: border-box;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-section-heading {
+    min-height: 18px;
+    margin: 0 0 14px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-section-heading .label {
+    margin: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card {
+    grid-template-columns: minmax(110px, 1fr) minmax(188px, auto) 40px !important;
+    gap: 12px;
+    min-height: 48px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card p {
+    display: grid;
+    grid-template-columns: 88px 88px;
+    align-items: baseline;
+    justify-content: end;
+    gap: 12px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card p span,
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card p small {
+    justify-self: end;
+    min-width: 0;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card p span::after {
+    content: "\00a0kg";
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    place-items: center;
+    justify-self: end;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px;
+    margin: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form label {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form :is(input, button) {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    box-sizing: border-box;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form input {
+    padding-inline: 12px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form button {
+    grid-column: auto;
+    margin-top: 2px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-panel {
+    width: min(420px, 100%) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  body.progress-page:not(.profile-landing-active) .weight-lower-layout {
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+    gap: 30px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-panel {
+    width: 100% !important;
+  }
+}
+
+/* On phones the semantic wrapper collapses back into the previous visual
+   sequence: Recent Entries, then the same full-width logging form. */
+@media (max-width: 640px) {
+  body.progress-page:not(.profile-landing-active) .weight-lower-layout {
+    display: grid;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-panel {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-heading {
+    display: none;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 18px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form label {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form input {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 13px;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form button {
+    grid-column: auto;
+    width: 100%;
+    min-height: 50px;
+    margin-top: 2px;
   }
 }

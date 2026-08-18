@@ -1,6 +1,6 @@
-# Calorie Counter
+# Intake
 
-Simple calorie counter with a browser frontend, local Node server, and Netlify Function food search.
+Nutrition tracking and AI-assisted food analysis with a browser frontend and local Node server.
 
 ## Run
 

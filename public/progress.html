@@ -5,20 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f5ee" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Daily Fuel" />
+    <meta name="application-name" content="Intake" />
+    <meta name="apple-mobile-web-app-title" content="Intake" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>Progress · Daily Fuel</title>
+    <title>Progress · Intake</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="favicon.svg" />
-    <link rel="manifest" href="manifest.webmanifest?v=6" />
+    <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
+    <link rel="manifest" href="manifest.webmanifest?v=8" />
     <link rel="stylesheet" href="styles.css?v=10" />
   </head>
   <body>
     <main class="app-shell">
       <aside class="sidebar" id="sidebar">
         <div class="brand-mark">
-          <span class="brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
-          <strong>Daily Fuel</strong>
+          <span class="brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24"><circle class="intake-mark-ring" cx="12" cy="12" r="7.5" pathLength="100" /><circle class="intake-mark-accent" cx="12" cy="12" r="7.5" pathLength="100" /><path class="intake-mark-spark" d="M12 8.6c.35 2.05 1.35 3.05 3.4 3.4-2.05.35-3.05 1.35-3.4 3.4-.35-2.05-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.35 3.4-3.4Z" /></svg></span>
+          <strong>Intake</strong>
           <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg></button>
         </div>
 
@@ -52,9 +53,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
           </button>
           <div class="topbar-heading">
-            <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 12.2c2.8-6.1 8.4-8.6 14.8-6.5-.6 6.8-5.1 11.7-12 12.6 1.5-2.7 3.6-4.7 6.5-6.1" /><path d="M12 8.4v6.4" /><path d="M8.8 11.6h6.4" /></svg></span>
+            <span class="brand-icon topbar-brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24"><circle class="intake-mark-ring" cx="12" cy="12" r="7.5" pathLength="100" /><circle class="intake-mark-accent" cx="12" cy="12" r="7.5" pathLength="100" /><path class="intake-mark-spark" d="M12 8.6c.35 2.05 1.35 3.05 3.4 3.4-2.05.35-3.05 1.35-3.4 3.4-.35-2.05-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.35 3.4-3.4Z" /></svg></span>
             <div>
-              <p class="eyebrow mobile-page-eyebrow">Daily Fuel</p>
+              <p class="eyebrow mobile-page-eyebrow">Intake</p>
               <h1 class="mobile-page-title">Progress</h1>
             </div>
           </div>
@@ -103,22 +104,30 @@
               </div>
             </section>
 
-            <section class="weight-recent-panel progress-panel">
-              <div class="weight-recent-heading">
-                <p class="label">Recent entries</p>
-              </div>
-              <div class="entry-list weight-entry-list" id="progressList"></div>
-              <form class="progress-form" id="progressForm">
-                <label>
-                  Date
-                  <input id="progressDate" type="date" required />
-                </label>
-                <label>
-                  Weight
-                  <input id="progressWeight" type="number" min="35" max="250" step="0.1" required />
-                </label>
-                <button type="submit">Save weight</button>
-              </form>
+            <section class="weight-lower-layout" aria-label="Weight entries and logging">
+              <section class="weight-recent-panel progress-panel">
+                <div class="weight-recent-heading weight-section-heading">
+                  <p class="label">Recent entries</p>
+                </div>
+                <div class="entry-list weight-entry-list" id="progressList"></div>
+              </section>
+
+              <section class="weight-log-panel progress-panel">
+                <div class="weight-log-heading weight-section-heading">
+                  <p class="label">Log weight</p>
+                </div>
+                <form class="progress-form weight-log-form" id="progressForm">
+                  <label>
+                    Date
+                    <input id="progressDate" type="date" required />
+                  </label>
+                  <label>
+                    Weight
+                    <input id="progressWeight" type="number" min="35" max="250" step="0.1" required />
+                  </label>
+                  <button type="submit">Save weight</button>
+                </form>
+              </section>
             </section>
           </section>
         </section>

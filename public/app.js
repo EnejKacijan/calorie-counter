@@ -78,7 +78,6 @@ let foodSuggestionVisibleCount = 5;
 let scannedFoodItems = [];
 let scannedFoodAnalysis = null;
 let aiDescriptionPending = false;
-let aiDescriptionClarification = null;
 let undoToastTimer = null;
 let renderSnapshot = null;
 let recentSuccess = null;
@@ -178,9 +177,6 @@ const elements = {
   foodAiDescription: document.querySelector("#foodAiDescription"),
   foodAiDescriptionInput: document.querySelector("#foodAiDescriptionInput"),
   foodAiDescriptionStatus: document.querySelector("#foodAiDescriptionStatus"),
-  foodAiClarification: document.querySelector("#foodAiClarification"),
-  foodAiClarificationQuestion: document.querySelector("#foodAiClarificationQuestion"),
-  foodAiClarificationOptions: document.querySelector("#foodAiClarificationOptions"),
   foodAiDescriptionError: document.querySelector("#foodAiDescriptionError"),
   foodAiDescriptionRetry: document.querySelector("#foodAiDescriptionRetry"),
   foodAiDescriptionManual: document.querySelector("#foodAiDescriptionManual"),
@@ -1180,8 +1176,8 @@ function renderProfileState() {
 }
 
 function initialsForName(name) {
-  const parts = String(name || "Daily Fuel").trim().split(/\s+/).filter(Boolean);
-  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "DF").toUpperCase();
+  const parts = String(name || "Intake").trim().split(/\s+/).filter(Boolean);
+  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "IN").toUpperCase();
 }
 
 function renderMobileWeightStat() {
@@ -1320,7 +1316,7 @@ function renderMacros(daily) {
     card.innerHTML = `
       <div class="macro-card-header">
         <div>
-          <p class="label">${macro.label}</p>
+          <p class="label macro-name">${macro.label}</p>
           <strong class="macro-amount">${macroAmountLabel}</strong>
         </div>
         <span>${progressLabel}</span>
@@ -2148,47 +2144,8 @@ function syncFoodAiDescriptionState() {
   elements.foodAiDescriptionBack.disabled = aiDescriptionPending;
   elements.foodAiDescriptionRetry.disabled = aiDescriptionPending;
   elements.foodAiDescriptionManual.disabled = aiDescriptionPending;
-  elements.foodAiClarificationOptions?.querySelectorAll("button").forEach((button) => {
-    button.disabled = aiDescriptionPending;
-  });
+  elements.foodAiDescription.classList.toggle("is-estimating", aiDescriptionPending);
   elements.foodAiDescription.setAttribute("aria-busy", String(aiDescriptionPending));
-}
-
-function clearFoodAiClarification() {
-  aiDescriptionClarification = null;
-  if (elements.foodAiClarification) elements.foodAiClarification.hidden = true;
-  elements.foodAiClarificationOptions?.replaceChildren();
-}
-
-function showFoodAiClarification(clarification) {
-  const question = String(clarification?.question || "").trim();
-  const options = Array.isArray(clarification?.options)
-    ? clarification.options.map((option) => String(option || "").trim()).filter(Boolean)
-    : [];
-  if (!question || options.length < 2) return false;
-
-  aiDescriptionClarification = { question, options };
-  elements.foodAiClarificationQuestion.textContent = question;
-  elements.foodAiClarificationOptions.replaceChildren();
-  options.forEach((option) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = option;
-    button.addEventListener("click", () => {
-      if (/other|describe/i.test(option)) {
-        clearFoodAiClarification();
-        elements.foodAiDescriptionStatus.textContent = "Add the missing detail to your description, then estimate again.";
-        elements.foodAiDescriptionInput.focus();
-        return;
-      }
-      estimateDescribedFood({ clarificationAnswer: option });
-    });
-    elements.foodAiClarificationOptions.append(button);
-  });
-  elements.foodAiClarification.hidden = false;
-  elements.foodAiDescriptionStatus.textContent = "";
-  syncFoodAiDescriptionState();
-  return true;
 }
 
 function openFoodAiDescription() {
@@ -2208,7 +2165,6 @@ function closeFoodAiDescription({ clear = false } = {}) {
   elements.foodAiDescriptionTrigger.setAttribute("aria-expanded", "false");
   elements.foodAiDescriptionError.hidden = true;
   elements.foodAiDescriptionStatus.textContent = "";
-  clearFoodAiClarification();
   if (clear) elements.foodAiDescriptionInput.value = "";
   syncDesktopFoodAddContentState();
   syncFoodAiDescriptionState();
@@ -2231,7 +2187,7 @@ function enterAiDescriptionManually() {
   elements.manualFoodName.focus();
 }
 
-async function estimateDescribedFood({ clarificationAnswer = "" } = {}) {
+async function estimateDescribedFood() {
   const description = elements.foodAiDescriptionInput.value.trim();
   if (!usefulFoodDescription() || aiDescriptionPending) {
     elements.foodAiDescriptionStatus.textContent = "Describe at least one food before estimating.";
@@ -2240,8 +2196,7 @@ async function estimateDescribedFood({ clarificationAnswer = "" } = {}) {
 
   aiDescriptionPending = true;
   elements.foodAiDescriptionError.hidden = true;
-  clearFoodAiClarification();
-  elements.foodAiDescriptionStatus.textContent = "Estimating foods, portions, and nutrition…";
+  elements.foodAiDescriptionStatus.textContent = "AI is estimating your foods, portions, and nutrition…";
   elements.foodAiDescriptionSubmit.textContent = "Estimating…";
   syncFoodAiDescriptionState();
 
@@ -2249,10 +2204,9 @@ async function estimateDescribedFood({ clarificationAnswer = "" } = {}) {
     const response = await fetch("/api/foods/estimate-text", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description, clarificationAnswer }),
+      body: JSON.stringify({ description }),
     });
     const data = await response.json().catch(() => ({}));
-    if (response.ok && showFoodAiClarification(data.analysis?.clarification)) return;
     if (!response.ok || !Array.isArray(data.analysis?.foods) || !data.analysis.foods.length) {
       throw new Error("AI estimate unavailable");
     }
@@ -2374,7 +2328,6 @@ function resetFoodForm() {
   scannedFoodItems = [];
   scannedFoodAnalysis = null;
   aiDescriptionPending = false;
-  clearFoodAiClarification();
   elements.foodAiDescriptionInput.value = "";
   elements.foodAiDescriptionStatus.textContent = "";
   elements.foodAiDescriptionError.hidden = true;
@@ -2426,7 +2379,7 @@ function updateFoodAmountStep() {
 }
 
 function updateFoodAmountForUnit() {
-  elements.foodAmount.value = elements.foodUnit.value === "g"
+  elements.foodAmount.value = ["g", "ml"].includes(elements.foodUnit.value)
     ? Number(selectedFoodBase?.servingGrams || 100)
     : 1;
   updateFoodAmountStep();
@@ -2519,6 +2472,7 @@ function parseServing(serving = "") {
   const amount = amountMatch ? Number(amountMatch[1]) : 1;
 
   if (/(?:^|[^a-z])(?:g|gr|grm|gram|grams)\b/.test(normalized)) return { amount, unit: "g", grams: amount };
+  if (/(?:^|[^a-z])(?:ml|milliliter|milliliters|millilitre|millilitres)\b/.test(normalized)) return { amount, unit: "ml", grams: null };
   if (amountMatch && !/[a-z]/i.test(normalized.replace(amountMatch[0], ""))) return { amount, unit: "g", grams: amount };
   if (/slice|piece|egg|medium/.test(normalized)) return { amount, unit: "piece", grams: null };
   return { amount, unit: "serving", grams: null };
@@ -2526,7 +2480,7 @@ function parseServing(serving = "") {
 
 function portionMultiplier(food, amount, unit) {
   if (!amount) return 0;
-  if (unit === "g") return amount / (food.servingGrams || 100);
+  if (["g", "ml"].includes(unit)) return amount / (food.servingGrams || 100);
   return amount;
 }
 
@@ -2768,7 +2722,7 @@ function showScannedFoodsReview() {
 
 function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
   const servingGrams = Math.max(0, Number(food.servingGrams || (food.unit === "g" ? food.amount : 0)) || 0);
-  const estimatedUnit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
+  const estimatedUnit = ["serving", "piece", "g", "ml"].includes(food.unit) ? food.unit : "serving";
   const estimatedAmount = Math.max(0.1, Number(food.amount || (estimatedUnit === "g" ? servingGrams : 1)) || 1);
   const nutrients = {
     calories: Math.max(0, Number(food.calories || 0)),
@@ -2913,7 +2867,7 @@ function renderScanReview() {
 
 function formatScannedFoodPortion(food) {
   const amount = Math.round(Number(food.amount || 0) * 10) / 10;
-  if (food.unit === "g") return `${amount} g`;
+  if (["g", "ml"].includes(food.unit)) return `${amount} ${food.unit}`;
   const unit = food.unit === "piece"
     ? amount === 1 ? "piece" : "pieces"
     : amount === 1 ? "serving" : "servings";
@@ -2954,7 +2908,7 @@ function createScanUnitField(value) {
   caption.textContent = "Unit";
   const select = document.createElement("select");
   select.dataset.scanField = "unit";
-  [["serving", "serving"], ["piece", "piece"], ["g", "g"]].forEach(([optionValue, label]) => {
+  [["serving", "serving"], ["piece", "piece"], ["g", "g"], ["ml", "ml"]].forEach(([optionValue, label]) => {
     const option = document.createElement("option");
     option.value = optionValue;
     option.textContent = label;
@@ -2967,6 +2921,7 @@ function createScanUnitField(value) {
 
 function scannedFoodMultiplier(food) {
   if (food.unit === "g") return food.amount / (food.servingGrams || 100);
+  if (food.unit === "ml") return food.amount;
   return food.amount;
 }
 
@@ -3033,7 +2988,6 @@ async function correctScannedFood(foodId) {
       body: JSON.stringify(isTextEstimate
         ? {
             description: `${correction}. Estimate one portion${food.servingGrams ? ` of about ${food.servingGrams} g` : ""}.`,
-            allowClarification: false,
           }
         : {
             imageDataUrl: scannedFoodAnalysis.imageDataUrl,

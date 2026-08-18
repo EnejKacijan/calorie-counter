@@ -314,7 +314,7 @@ function renderChart(entries) {
   const rect = elements.progressChart.getBoundingClientRect();
   const width = Math.max(320, Math.round(rect.width || elements.progressChart.clientWidth || 320));
   const frameHeight = Math.round(rect.height || elements.progressChart.clientHeight || 240);
-  const targetLegendHeight = usePeriodWindow && targetWeight > 0 ? 24 : 0;
+  const targetLegendHeight = targetWeight > 0 ? 24 : 0;
   const height = Math.max(usePeriodWindow ? 186 : 210, frameHeight - targetLegendHeight);
   // Reserve a real left gutter on phones so grid and target lines never run
   // through the weight-scale labels.
@@ -372,9 +372,6 @@ function renderChart(entries) {
         ? [chartEntries[0], latestEntry]
         : [chartEntries[0], middleEntry, latestEntry];
   const targetY = targetWeight > 0 ? yForWeight(targetWeight) : null;
-  const targetLabelY = targetY === null ? 0 : Math.max(12, targetY - 10);
-  const targetLabelX = chart.right;
-
   if (elements.weightChartAxis) {
     elements.weightChartAxis.replaceChildren();
     elements.weightChartAxis.classList.toggle("is-single-entry", chartEntries.length === 1);
@@ -386,15 +383,14 @@ function renderChart(entries) {
     });
   }
 
-  elements.progressChart.classList.toggle("has-target-legend", usePeriodWindow && targetY !== null);
+  elements.progressChart.classList.toggle("has-target-legend", targetY !== null);
   elements.progressChart.innerHTML = `
-    ${usePeriodWindow && targetY !== null ? `<div class="weight-target-legend" style="padding-inline:${chart.left}px" aria-label="Dashed line: ${targetLabel}"><span aria-hidden="true"></span><b>${targetLabel}</b></div>` : ""}
+    ${targetY !== null ? `<div class="weight-target-legend" style="padding-inline:${chart.left}px" aria-label="Dashed line: ${targetLabel}"><span aria-hidden="true"></span><b>${targetLabel}</b></div>` : ""}
     <div class="weight-chart-plot">
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
         ${gridLines.map((line) => `<path class="chart-grid" d="M${chart.left} ${line.y} H${chart.right}"></path>`).join("")}
         ${gridLines.map((line) => `<text class="weight-y-label" x="${Math.max(2, chart.left - 48)}" y="${line.y + 3}">${line.label}</text>`).join("")}
         ${targetY === null ? "" : `<path class="weight-target-line" d="M${chart.left} ${targetY} H${chart.right}"></path>`}
-        ${targetY === null || usePeriodWindow ? "" : `<text class="weight-target-label" x="${targetLabelX}" y="${targetLabelY}" text-anchor="end">${targetLabel}</text>`}
         ${points.length > 1 ? `<polyline class="chart-line" points="${points.join(" ")}"></polyline>` : ""}
         ${entryDots.map((dot) => `<circle class="chart-dot${dot.isToday ? " is-today" : ""}${dot.isLatest ? " is-latest" : ""}" cx="${dot.x}" cy="${dot.y}" r="${dot.isLatest ? 3.75 : 3}"></circle>`).join("")}
       </svg>

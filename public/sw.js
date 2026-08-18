@@ -1,4 +1,4 @@
-const cacheName = "daily-fuel-v25";
+const cacheName = "intake-v9";
 const appShellFiles = [
   "/",
   "/index.html",
@@ -11,6 +11,10 @@ const appShellFiles = [
   "/profile.js",
   "/assistant.js",
   "/favicon.svg",
+  "/app-icon-180.png",
+  "/app-icon-192.png",
+  "/app-icon-512.png",
+  "/app-icon-1024.png",
   "/manifest.webmanifest",
 ];
 

@@ -2,6 +2,7 @@ import { searchFoods } from "./food-search.js";
 
 const openAiResponsesUrl = "https://api.openai.com/v1/responses";
 const maxImageDataUrlLength = 9_000_000;
+const minImageDataUrlLength = 500;
 
 const foodItemSchema = {
   type: "object",
@@ -24,8 +25,9 @@ const foodItemSchema = {
 const nutritionSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["foods", "confidence", "notes"],
+  required: ["containsFood", "foods", "confidence", "notes"],
   properties: {
+    containsFood: { type: "boolean" },
     foods: {
       type: "array",
       items: foodItemSchema,
@@ -38,7 +40,7 @@ const nutritionSchema = {
 const parsedFoodDescriptionSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["foods", "clarificationQuestion", "clarificationOptions", "confidence", "notes"],
+  required: ["foods", "confidence", "notes"],
   properties: {
     foods: {
       type: "array",
@@ -54,7 +56,7 @@ const parsedFoodDescriptionSchema = {
           name: { type: "string" },
           searchQuery: { type: "string" },
           amount: { type: "number" },
-          unit: { type: "string", enum: ["serving", "piece", "g"] },
+          unit: { type: "string", enum: ["serving", "piece", "g", "ml"] },
           servingGrams: { type: "number" },
           qualifiers: { type: "string" },
           fallbackCalories: { type: "number" },
@@ -64,16 +66,44 @@ const parsedFoodDescriptionSchema = {
         },
       },
     },
-    clarificationQuestion: { type: "string" },
-    clarificationOptions: { type: "array", maxItems: 5, items: { type: "string" } },
     confidence: { type: "string", enum: ["low", "medium", "high"] },
     notes: { type: "string" },
   },
 };
 
+const descriptionUnits = new Set(["serving", "piece", "g", "ml"]);
+const identityStopWords = new Set([
+  "a", "an", "and", "about", "approximately", "around", "food", "foods", "of", "portion",
+  "generic", "product", "serving", "servings", "some", "style", "the", "with",
+]);
+const measurementWords = new Set([
+  "g", "gram", "grams", "kg", "kilogram", "kilograms", "ml", "milliliter", "milliliters",
+  "millilitre", "millilitres", "l", "liter", "liters", "litre", "litres",
+]);
+const qualifierGroups = {
+  state: new Set(["raw", "uncooked", "cooked"]),
+  method: new Set([
+    "baked", "barbecued", "bbq", "boiled", "braised", "broiled", "deepfried", "fried", "grilled",
+    "poached", "roasted", "sauteed", "steamed", "stewed",
+  ]),
+  coating: new Set(["battered", "breaded", "coated"]),
+  processing: new Set(["candied", "corned", "cured", "dried", "jerky", "pickled", "smoked"]),
+  cut: new Set([
+    "breast", "brisket", "chop", "chuck", "drumstick", "fillet", "ground", "leg", "liver", "loin",
+    "minced", "rib", "ribs", "sirloin", "steak", "tenderloin", "thigh", "wing",
+  ]),
+  skin: new Set(["skin", "skinless"]),
+  diet: new Set(["diet", "light", "regular", "sugarfree", "sweetened", "unsweetened", "zero"]),
+  alcohol: new Set(["alcoholic"]),
+  composition: new Set(["fatcomponent", "lean"]),
+};
+const materialQualifierWords = new Set(Object.values(qualifierGroups).flatMap((group) => [...group]));
+const additiveCookingMethods = new Set(["battered", "breaded", "coated", "deepfried", "fried"]);
+
 export async function analyzeFoodImage(imageDataUrl, options = {}) {
   const openAiApiKey = options.openAiApiKey || process.env.OPENAI_API_KEY;
   const model = options.model || process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const fetchFn = options.fetchFn || fetch;
 
   if (!openAiApiKey) {
     const error = new Error("OPENAI_API_KEY is not configured.");
@@ -87,13 +117,19 @@ export async function analyzeFoodImage(imageDataUrl, options = {}) {
     throw error;
   }
 
+  if (imageDataUrl.length < minImageDataUrlLength) {
+    const error = new Error("The photo is too small or unreadable. Try another image.");
+    error.status = 400;
+    throw error;
+  }
+
   if (imageDataUrl.length > maxImageDataUrlLength) {
     const error = new Error("Image is too large. Try a smaller photo.");
     error.status = 413;
     throw error;
   }
 
-  const response = await fetch(openAiResponsesUrl, {
+  const response = await fetchFn(openAiResponsesUrl, {
     method: "POST",
     signal: AbortSignal.timeout(60_000),
     headers: {
@@ -103,7 +139,7 @@ export async function analyzeFoodImage(imageDataUrl, options = {}) {
     body: JSON.stringify({
       model,
       instructions:
-        "You estimate nutrition from food photos for a calorie tracking app. Return cautious, editable estimates only. Split the plate into visually distinct foods that a person might eat or leave behind. Do not split ingredients inside a mixed dish: pizza is one food, while a tomato or salad beside it is another. Return no more than 8 foods. Nutrition for each item must describe its entire visible portion. Prefer amount 1 and unit serving for plated food; use piece only for a clearly discrete count. Set servingGrams to your cautious estimate of the whole visible portion, or 0 when it cannot be estimated. If the photo does not contain food, return an empty foods array.",
+        "You estimate nutrition from food photos for a calorie tracking app. First decide whether clearly visible edible food or drink is present. Blank, unreadable, non-food, packaging-only, and unrelated images must set containsFood false and return an empty foods array. Never infer a meal that is not visibly present. When food is clearly visible, set containsFood true and return cautious, editable estimates only. Split the plate into visually distinct foods that a person might eat or leave behind. Keep a composed dish together while treating a separate side as another food. Return no more than 8 foods. Nutrition for each item must describe its entire visible portion. Prefer amount 1 and unit serving for plated food; use piece only for a clearly discrete count. Set servingGrams to your cautious estimate of the whole visible portion, or 0 when it cannot be estimated.",
       input: [
         {
           role: "user",
@@ -111,7 +147,7 @@ export async function analyzeFoodImage(imageDataUrl, options = {}) {
             {
               type: "input_text",
               text:
-                "Identify each visually distinct food, then estimate calories, protein, carbs, and fat for each entire visible portion. Keep names and notes short. The user will review, remove, or edit individual foods before logging them.",
+                "If and only if edible food or drink is clearly visible, identify each visually distinct food, then estimate calories, protein, carbs, and fat for each entire visible portion. Keep names and notes short. The user will review, remove, or edit individual foods before logging them.",
             },
             {
               type: "input_image",
@@ -147,8 +183,7 @@ export async function analyzeFoodDescription(description, options = {}) {
   const openAiApiKey = options.openAiApiKey || process.env.OPENAI_API_KEY;
   const model = options.model || process.env.OPENAI_MODEL || "gpt-4.1-mini";
   const cleanDescription = String(description || "").trim().slice(0, 500);
-  const clarificationAnswer = String(options.clarificationAnswer || "").trim().slice(0, 240);
-  const allowClarification = options.allowClarification !== false;
+  const emitDiagnostic = typeof options.onDiagnostic === "function" ? options.onDiagnostic : () => {};
 
   if (!openAiApiKey) {
     const error = new Error("AI estimation is unavailable. Add the food manually instead.");
@@ -161,107 +196,68 @@ export async function analyzeFoodDescription(description, options = {}) {
     throw error;
   }
 
-  const knownClarification = allowClarification && !clarificationAnswer
-    ? materialFoodClarification(cleanDescription)
-    : null;
-  if (knownClarification) {
-    return {
-      foods: [],
-      confidence: "low",
-      notes: "A material food detail is needed before nutrition can be resolved.",
-      clarification: knownClarification,
-    };
-  }
-
-  const parsed = await parseFoodDescriptionWithRepair({
-    cleanDescription,
-    clarificationAnswer,
-    allowClarification,
-    openAiApiKey,
-    model,
+  const portionHints = extractPortionHints(cleanDescription);
+  emitDiagnostic("description_parsed_locally", {
+    description: cleanDescription,
+    portionHints,
+    descriptionQualifiers: [...qualifiersForText(cleanDescription).all],
   });
 
-  const clarificationQuestion = String(parsed?.clarificationQuestion || "").trim();
-  const clarificationOptions = Array.isArray(parsed?.clarificationOptions)
-    ? parsed.clarificationOptions.map((option) => String(option || "").trim()).filter(Boolean).slice(0, 5)
-    : [];
-  if (allowClarification && !clarificationAnswer && clarificationQuestion && clarificationOptions.length >= 2) {
-    return {
-      foods: [],
-      confidence: normalizeConfidence(parsed?.confidence),
-      notes: String(parsed?.notes || "").trim(),
-      clarification: { question: clarificationQuestion, options: clarificationOptions },
-    };
+  let parsed;
+  try {
+    parsed = await parseFoodDescriptionWithRepair({
+      cleanDescription,
+      openAiApiKey,
+      model,
+      fetchFn: options.fetchFn || fetch,
+      portionHints,
+      emitDiagnostic,
+    });
+  } catch (error) {
+    emitDiagnostic("parser_failed", diagnosticError(error));
+    throw error;
   }
+
+  parsed = reconcileParsedDescription(parsed, cleanDescription, portionHints);
+  emitDiagnostic("ai_description_parsed", {
+    foods: parsed.foods.map(parsedFoodDiagnostic),
+    confidence: parsed.confidence,
+  });
 
   const rawFoods = Array.isArray(parsed?.foods) ? parsed.foods.slice(0, 8) : [];
   if (!rawFoods.length) throw invalidEstimateError();
 
-  const resolvedFoods = await Promise.all(rawFoods.map((food) => resolveDescribedFood(food, {
+  const resolvedFoods = await Promise.all(rawFoods.map((food, index) => resolveDescribedFood(food, {
     usdaApiKey: options.usdaApiKey,
     searchFoodsFn: options.searchFoodsFn || searchFoods,
-    genericRequested: genericClarificationAppliesToFood(food, clarificationAnswer),
+    emitDiagnostic,
+    itemIndex: index,
   })));
   resolvedFoods.forEach(validateEstimatedFood);
 
-  return {
+  const analysis = {
     foods: resolvedFoods,
     confidence: normalizeConfidence(parsed?.confidence),
     notes: String(parsed?.notes || "").trim(),
-    clarification: null,
   };
-}
-
-function materialFoodClarification(description) {
-  const text = String(description || "").toLocaleLowerCase("sl");
-  const mentionsChicken = /\bchicken\b|pi[sš][cč]an|piščan/u.test(text);
-  const mentionsBeef = /\bbeef\b|govedin/u.test(text);
-  const hasPreparationState = /\braw\b|\bcooked\b|\broasted\b|\bgrilled\b|\bboiled\b|surov|kuhan|pečen|pecen|na žaru/u.test(text);
-  const hasMeasuredWeight = /\d+(?:[.,]\d+)?\s*(?:g|gram|kg)\b/u.test(text);
-
-  if (mentionsBeef && hasMeasuredWeight && !hasPreparationState) {
-    return {
-      question: "What kind of beef was it, and was that weight raw or cooked?",
-      options: [
-        "Generic beef, cooked",
-        "Generic beef, raw",
-        "Lean ground beef, cooked",
-        "Regular ground beef, cooked",
-        "Other / describe",
-      ],
-    };
-  }
-
-  if (!mentionsChicken) return null;
-
-  const hasCut = /\bbreast\b|\bthigh\b|\bwing\b|\bdrumstick\b|prsi|bedr|perut|krača/u.test(text);
-
-  if (!hasCut) {
-    return {
-      question: "What kind of chicken was it, and was that weight raw or cooked?",
-      options: [
-        "Chicken breast, raw",
-        "Chicken breast, cooked",
-        "Chicken thigh, raw",
-        "Chicken thigh, cooked",
-        "Other / describe",
-      ],
-    };
-  }
-  if (hasMeasuredWeight && !hasPreparationState) {
-    return {
-      question: "Was the chicken weighed raw or cooked?",
-      options: ["Raw weight", "Cooked weight", "Other / describe"],
-    };
-  }
-  return null;
+  emitDiagnostic("estimate_complete", {
+    foods: analysis.foods.map((food) => ({
+      name: food.name,
+      amount: food.amount,
+      unit: food.unit,
+      servingGrams: food.servingGrams,
+      nutritionSource: food.nutritionSource,
+    })),
+  });
+  return analysis;
 }
 
 async function parseFoodDescriptionWithRepair(input) {
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await fetch(openAiResponsesUrl, {
+      input.emitDiagnostic("parser_attempt", { attempt: attempt + 1 });
+      const response = await input.fetchFn(openAiResponsesUrl, {
         method: "POST",
         signal: AbortSignal.timeout(45_000),
         headers: { Authorization: `Bearer ${input.openAiApiKey}`, "Content-Type": "application/json" },
@@ -271,22 +267,21 @@ async function parseFoodDescriptionWithRepair(input) {
             "Parse a natural-language meal description for a nutrition tracker. You are a food and portion parser, not the primary nutrition database.",
             "Split clearly separate foods into separate items, but keep a mixed dish as one item. Return no more than 8 items.",
             "For each item, create a concise English normalized name and a precise searchQuery suitable for USDA FoodData Central. Include material qualifiers such as cut, raw/cooked state, skin, and preparation when the user supplied them.",
-            "The normalized name must describe the interpretation actually used for fallback nutrition. Avoid vague or awkward labels such as 'beef meat'. If you must make a generic assumption, state only the assumption you actually used, for example 'Beef, cooked'; never invent a cut or fat level that is not supported by the description or resolution.",
+            "The normalized name must describe the interpretation actually used for fallback nutrition. Avoid vague names that merely repeat a category word. If you make a generic preparation assumption, state only the assumption actually used; never invent a cut, product type, or fat level that is not supported by the description or resolution.",
+            "Preserve explicit quantities exactly. Accept compact or spaced metric forms such as 200g, 200 g, 0.2 kg, and 250 ml. Convert kilograms to grams. For liquids use unit ml and set servingGrams to the best density-aware mass estimate for the full described volume.",
             "servingGrams is the total described portion in grams, not grams per serving. If grams are explicitly given, use unit g, amount equal to those grams, and servingGrams equal to the same value.",
+            "Portion details are optional. When the user gives no amount, infer one cautious common portion, set servingGrams to that estimated portion, and keep the result editable.",
             "fallback nutrition is for the entire described portion and is used only if no structured source can be resolved.",
-            input.allowClarification
-              ? "If a missing qualifier could materially change nutrition (for example chicken cut or raw versus cooked weight), return one short clarification question with 2-5 concise options instead of silently choosing. Do not ask about minor details."
-              : "Do not request clarification; use the most cautious common interpretation and make it explicit in the normalized name.",
-            "Use empty clarificationQuestion and clarificationOptions when no clarification is needed.",
+            "Do not request follow-up clarification. For an ambiguous food, use a cautious common interpretation and make the assumption explicit in the normalized name or notes.",
+            "If the description is not food or drink, return an empty foods array. Never invent a food merely to satisfy the schema.",
+            input.portionHints.length ? `Deterministic quantity parser found these hints; preserve them: ${JSON.stringify(input.portionHints)}.` : "",
             attempt ? "This is a repair attempt. Ensure every required field is finite, non-negative, and internally consistent." : "",
           ].filter(Boolean).join(" "),
           input: [{
             role: "user",
             content: [{
               type: "input_text",
-              text: input.clarificationAnswer
-                ? `Description: ${input.cleanDescription}\nClarification: ${input.clarificationAnswer}`
-                : input.cleanDescription,
+              text: input.cleanDescription,
             }],
           }],
           text: {
@@ -310,8 +305,17 @@ async function parseFoodDescriptionWithRepair(input) {
       return parsed;
     } catch (error) {
       lastError = error;
+      input.emitDiagnostic("parser_attempt_failed", { attempt: attempt + 1, ...diagnosticError(error) });
       if (error?.status && error.status < 500) break;
     }
+  }
+  const localFallback = parseDescriptionLocally(input.cleanDescription, input.portionHints);
+  if (localFallback.foods.length) {
+    input.emitDiagnostic("parser_local_fallback", {
+      reason: diagnosticError(lastError),
+      foods: localFallback.foods.map(parsedFoodDiagnostic),
+    });
+    return localFallback;
   }
   const error = invalidEstimateError();
   error.cause = lastError;
@@ -328,37 +332,56 @@ function validateParsedDescription(parsed) {
     if (!String(food.name || "").trim() || !String(food.searchQuery || "").trim()) throw invalidEstimateError();
     if (numeric.some((value) => !Number.isFinite(value) || value < 0)) throw invalidEstimateError();
     if (Number(food.amount) <= 0 || Number(food.amount) > 10_000 || Number(food.servingGrams) > 10_000) throw invalidEstimateError();
+    if (!descriptionUnits.has(food.unit)) throw invalidEstimateError();
   });
 }
 
 async function resolveDescribedFood(food, options = {}) {
   const portionGrams = describedPortionGrams(food);
+  const resolverQuery = resolverQueryForFood(food);
   let matches = [];
   try {
-    matches = await options.searchFoodsFn(String(food.searchQuery || food.name), { usdaApiKey: options.usdaApiKey });
-  } catch {
+    matches = await options.searchFoodsFn(resolverQuery, { usdaApiKey: options.usdaApiKey });
+    options.emitDiagnostic("structured_candidates", {
+      itemIndex: options.itemIndex,
+      query: resolverQuery,
+      candidates: matches.slice(0, 30).map(candidateDiagnostic),
+    });
+  } catch (error) {
+    options.emitDiagnostic("structured_search_failed", {
+      itemIndex: options.itemIndex,
+      query: resolverQuery,
+      ...diagnosticError(error),
+    });
     matches = [];
   }
 
-  const credibleMatches = options.genericRequested ? [] : matches.filter((candidate) => (
-    Number(candidate.servingGrams) > 0
-    && isCredibleStructuredMatch(candidate, food.searchQuery)
-  ));
-  const rankedMatches = [...credibleMatches].sort((left, right) => (
-    structuredMatchScore(right, food.searchQuery) - structuredMatchScore(left, food.searchQuery)
-  ));
-  const match = rankedMatches.find((candidate) => candidate.source === "USDA")
-    || rankedMatches[0]
-    || null;
+  const evaluated = matches.map((candidate) => evaluateStructuredCandidate(candidate, resolverQuery));
+  options.emitDiagnostic("structured_candidate_decisions", {
+    itemIndex: options.itemIndex,
+    decisions: evaluated.map(({ candidate, accepted, score, reasons }) => ({
+      id: candidate?.id || "",
+      name: candidate?.name || "",
+      source: candidate?.source || "",
+      accepted,
+      score,
+      reasons,
+    })),
+  });
+  const rankedMatches = evaluated
+    .filter((decision) => decision.accepted)
+    .sort((left, right) => right.score - left.score);
+  const matchDecision = rankedMatches[0] || null;
+  const match = matchDecision?.candidate || null;
   const amount = food.unit === "g" ? roundNumber(portionGrams) : roundNumber(food.amount);
-  const unit = ["serving", "piece", "g"].includes(food.unit) ? food.unit : "serving";
+  const unit = descriptionUnits.has(food.unit) ? food.unit : "serving";
 
   if (match) {
     const sourceGrams = Number(match.servingGrams);
     const multiplier = portionGrams > 0
       ? portionGrams / sourceGrams
       : unit === "g" ? amount / sourceGrams : amount;
-    return {
+    const resolved = {
       name: String(match.name || food.name).trim(),
       amount,
       unit,
@@ -374,9 +397,17 @@ async function resolveDescribedFood(food, options = {}) {
       nutritionSource: String(match.source || ""),
       resolvedFoodName: String(match.name || food.name).trim(),
     };
+    options.emitDiagnostic("resolver_decision", {
+      itemIndex: options.itemIndex,
+      decision: "structured",
+      candidate: candidateDiagnostic(match),
+      score: matchDecision.score,
+      multiplier,
+    });
+    return resolved;
   }
 
-  return {
+  const fallback = {
     name: String(food.name || "Estimated food").trim(),
     amount,
     unit,
@@ -392,72 +423,271 @@ async function resolveDescribedFood(food, options = {}) {
     nutritionSource: "AI estimate",
     resolvedFoodName: String(food.name || "Estimated food").trim(),
   };
+  if (food._hasAiFallback === false) {
+    options.emitDiagnostic("resolver_decision", {
+      itemIndex: options.itemIndex,
+      decision: "failed",
+      reason: "no_structured_match_and_no_ai_fallback",
+    });
+    throw invalidEstimateError();
+  }
+  options.emitDiagnostic("resolver_decision", {
+    itemIndex: options.itemIndex,
+    decision: "ai_fallback",
+    reason: matches.length ? "no_semantically_compatible_structured_candidate" : "structured_source_unavailable_or_empty",
+  });
+  return fallback;
 }
 
-function isCredibleStructuredMatch(candidate, query) {
-  /* "Generic" is an explicit request not to assume a cut/fat class. USDA
-     results are necessarily more specific, so retain the parser's editable
-     generic estimate instead of silently substituting one of them. */
-  if (/\bgeneric\b/i.test(String(query || ""))) return false;
-  const words = structuredQueryWords(query);
-  if (!words.length) return false;
-  const candidateName = String(candidate?.name || "").toLowerCase();
-  if (hasUnsupportedStructuredQualifiers(candidateName, query)) return false;
-  const candidateText = `${candidateName} ${candidate?.brand || ""}`.toLowerCase();
-  /* A brand may strengthen a match, but it cannot establish the identity of
-     the food by itself (for example, "Coca-Cola" must not resolve to a
-     different drink merely because its manufacturer contains those words). */
-  const nameHits = words.filter((word) => candidateName.includes(word)).length;
-  if (!nameHits) return false;
-  const hits = words.filter((word) => candidateText.includes(word)).length;
-  return hits >= Math.max(1, Math.ceil(words.length * 0.5));
+function resolverQueryForFood(food) {
+  const base = String(food.searchQuery || food.name || "").trim();
+  const baseTokens = new Set(normalizedTokens(base));
+  const qualifierText = `${food.name || ""} ${food.qualifiers || ""}`;
+  const missingQualifiers = [...qualifiersForText(qualifierText).all].filter((word) => !baseTokens.has(word));
+  return [base, ...missingQualifiers].filter(Boolean).join(" ");
 }
 
-function hasUnsupportedStructuredQualifiers(candidateName, query) {
-  const materialQualifiers = new Set([
-    "brisket", "chuck", "corned", "cured", "deli", "diet", "energy", "ground",
-    "jerky", "lean", "lemonade", "liver", "loin", "minced", "punch", "regular",
-    "rib", "ribs", "sauce", "sausage", "sirloin", "skin", "skinless", "smoked",
-    "steak", "sugarfree", "tenderloin", "thigh", "water", "wing", "zero",
-  ]);
-  const queryWords = new Set(String(query || "").toLowerCase().match(/[a-z0-9]+/g) || []);
-  const candidateWords = String(candidateName || "").toLowerCase().match(/[a-z0-9]+/g) || [];
-  return candidateWords.some((word) => materialQualifiers.has(word) && !queryWords.has(word));
+export function evaluateStructuredCandidate(candidate, query) {
+  const reasons = [];
+  const servingGrams = Number(candidate?.servingGrams || 0);
+  const nutrients = [candidate?.calories, candidate?.protein, candidate?.carbs, candidate?.fat].map(Number);
+  if (!Number.isFinite(servingGrams) || servingGrams <= 0) reasons.push("missing_gram_serving");
+  if (nutrients.some((value) => !Number.isFinite(value) || value < 0)) reasons.push("invalid_nutrition");
+
+  const queryIdentity = identityTokens(query);
+  const candidateIdentity = identityTokens(candidate?.name);
+  const candidateNameSet = new Set(candidateIdentity);
+  const identityHits = queryIdentity.filter((word) => candidateNameSet.has(word));
+  const identityCoverage = queryIdentity.length ? identityHits.length / queryIdentity.length : 0;
+  if (!queryIdentity.length) reasons.push("missing_query_identity");
+  if (!identityHits.length) reasons.push("food_identity_mismatch");
+  else if (identityCoverage < 0.5) reasons.push("insufficient_identity_coverage");
+
+  const queryQualifiers = qualifiersForText(query);
+  const candidateQualifiers = qualifiersForText(candidate?.name);
+  reasons.push(...qualifierIncompatibilities(queryQualifiers, candidateQualifiers));
+
+  const queryTokens = new Set(normalizedTokens(query));
+  const brandHits = normalizedTokens(candidate?.brand).filter((word) => queryTokens.has(word)).length;
+  const qualifierMatches = [...queryQualifiers.all].filter((word) => candidateQualifiers.all.has(word)).length;
+  const sourceBonus = String(candidate?.source || "").toUpperCase() === "USDA" ? 4 : 0;
+  const compactnessPenalty = Math.max(0, candidateIdentity.length - queryIdentity.length) * 0.35;
+  const score = roundNumber(
+    (identityCoverage * 60)
+    + (identityHits.length * 8)
+    + (qualifierMatches * 6)
+    + Math.min(brandHits, 2)
+    + sourceBonus
+    - compactnessPenalty,
+  );
+
+  return { candidate, accepted: reasons.length === 0 && score >= 38, score, reasons };
 }
 
-function genericClarificationAppliesToFood(food, clarificationAnswer) {
-  const answer = String(clarificationAnswer || "").toLowerCase();
-  if (!/\bgeneric\b/.test(answer)) return false;
-  const identityWords = (answer.match(/[a-z0-9]+/g) || []).filter((word) => (
-    word.length > 2 && !["generic", "raw", "cooked", "weight", "other", "describe"].includes(word)
+function qualifierIncompatibilities(query, candidate) {
+  const reasons = [];
+  const queryState = canonicalState(query);
+  const candidateState = canonicalState(candidate);
+  if (queryState === "raw" && candidateState !== "raw") reasons.push("raw_state_not_supported");
+  if (queryState === "cooked" && candidateState === "raw") reasons.push("cooked_state_conflict");
+
+  const queryMethods = query.groups.method;
+  const candidateMethods = candidate.groups.method;
+  if (queryMethods.size) {
+    const exactMethod = intersects(queryMethods, candidateMethods);
+    const genericCooked = query.groups.state.has("cooked") && candidateState === "cooked";
+    if (!exactMethod && !genericCooked) reasons.push("preparation_not_supported");
+  } else if ([...candidateMethods].some((word) => additiveCookingMethods.has(word))) {
+    reasons.push("unsupported_additive_preparation");
+  }
+
+  ["coating", "processing", "cut", "skin", "diet", "alcohol", "composition"].forEach((groupName) => {
+    const requested = query.groups[groupName];
+    const offered = candidate.groups[groupName];
+    if (requested.size && !intersects(requested, offered)) reasons.push(`${groupName}_qualifier_conflict`);
+    if (!requested.size && offered.size) reasons.push(`unsupported_${groupName}_qualifier`);
+  });
+  return [...new Set(reasons)];
+}
+
+function canonicalState(qualifiers) {
+  if (qualifiers.groups.state.has("raw") || qualifiers.groups.state.has("uncooked")) return "raw";
+  if (qualifiers.groups.state.has("cooked") || qualifiers.groups.method.size) return "cooked";
+  return "unspecified";
+}
+
+function intersects(left, right) {
+  return [...left].some((value) => right.has(value));
+}
+
+function qualifiersForText(value) {
+  const tokens = normalizedTokens(value);
+  const groups = Object.fromEntries(Object.entries(qualifierGroups).map(([name, words]) => [
+    name,
+    new Set(tokens.filter((token) => words.has(token))),
+  ]));
+  return { groups, all: new Set(Object.values(groups).flatMap((group) => [...group])) };
+}
+
+function identityTokens(value) {
+  return normalizedTokens(value).filter((word) => (
+    word.length > 1
+    && !identityStopWords.has(word)
+    && !measurementWords.has(word)
+    && !materialQualifierWords.has(word)
+    && !/^\d+(?:\.\d+)?$/.test(word)
   ));
-  if (!identityWords.length) return true;
-  const foodText = `${food?.name || ""} ${food?.searchQuery || ""}`.toLowerCase();
-  return identityWords.some((word) => foodText.includes(word));
 }
 
-function structuredMatchScore(candidate, query) {
-  const words = structuredQueryWords(query);
-  const nameWords = String(candidate?.name || "").toLowerCase().match(/[a-z0-9]+/g) || [];
-  const brandWords = String(candidate?.brand || "").toLowerCase().match(/[a-z0-9]+/g) || [];
-  const nameOccurrences = nameWords.filter((word) => words.includes(word)).length;
-  const uniqueNameHits = new Set(nameWords.filter((word) => words.includes(word))).size;
-  const brandHits = new Set(brandWords.filter((word) => words.includes(word))).size;
-  /* Repeated identity tokens and compact names are useful tie-breakers for
-     branded USDA results: "Coca-Cola, Cola" must rank above a long product
-     from the same manufacturer whose actual identity is lemonade or water. */
-  return (uniqueNameHits * 6) + (nameOccurrences * 2) + brandHits - (nameWords.length * 0.03);
-}
-
-function structuredQueryWords(query) {
-  const ignoredWords = new Set([
-    "and", "with", "the", "a", "an", "of", "style",
-    "food", "foods", "beverage", "beverages", "drink", "drinks", "product", "generic",
-  ]);
-  return String(query || "")
+function normalizedTokens(value) {
+  return String(value || "")
     .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/sugar[\s-]*free/g, "sugarfree")
+    .replace(/deep[\s-]*fried/g, "deepfried")
+    .replace(/(?:separable\s+fat|fat\s+only)/g, "fatcomponent")
     .match(/[a-z0-9]+/g)
-    ?.filter((word) => word.length > 1 && !ignoredWords.has(word)) || [];
+    ?.map(canonicalToken) || [];
+}
+
+function canonicalToken(word) {
+  if (["alcohol", "alcoholic", "beer", "brandy", "cocktail", "gin", "liqueur", "rum", "vodka", "whiskey", "whisky", "wine"].includes(word)) return "alcoholic";
+  if (word === "fat") return "fatcomponent";
+  if (word.length > 4 && word.endsWith("ies")) return `${word.slice(0, -3)}y`;
+  if (word.length > 4 && word.endsWith("es") && !word.endsWith("ses")) return word.slice(0, -2);
+  if (word.length > 3 && word.endsWith("s") && !word.endsWith("ss")) return word.slice(0, -1);
+  return word;
+}
+
+export function extractPortionHints(description) {
+  const text = String(description || "");
+  const hints = [];
+  const occupied = [];
+  const metricPattern = /(\d+(?:[.,]\d+)?)\s*(kilograms?|kg|grams?|grm?|g|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l)\b/gi;
+  for (const match of text.matchAll(metricPattern)) {
+    const numeric = Number(match[1].replace(",", "."));
+    if (!Number.isFinite(numeric) || numeric <= 0) continue;
+    const normalizedUnit = normalizeMetricUnit(match[2]);
+    const isWeight = normalizedUnit === "g";
+    const amount = /^(?:kg|kilogram)/i.test(match[2]) ? numeric * 1000
+      : /^(?:l|liter|litre)/i.test(match[2]) && !/^ml|millil/i.test(match[2]) ? numeric * 1000
+        : numeric;
+    hints.push({
+      amount: roundNumber(amount),
+      unit: normalizedUnit,
+      servingGrams: isWeight ? roundNumber(amount) : null,
+      context: descriptionContext(text, match.index, match.index + match[0].length),
+      index: match.index,
+    });
+    occupied.push([match.index, match.index + match[0].length]);
+  }
+
+  const countPattern = /\b(\d+(?:[.,]\d+)?)\s+(?=[a-z])/gi;
+  for (const match of text.matchAll(countPattern)) {
+    const start = match.index;
+    if (occupied.some(([from, to]) => start >= from && start < to)) continue;
+    const amount = Number(match[1].replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    hints.push({
+      amount: roundNumber(amount),
+      unit: "piece",
+      servingGrams: null,
+      context: descriptionContext(text, start, start + match[0].length),
+      index: start,
+    });
+  }
+  return hints.sort((left, right) => left.index - right.index);
+}
+
+function normalizeMetricUnit(unit) {
+  return /^(?:ml|millil|l|liter|litre)/i.test(String(unit || "")) ? "ml" : "g";
+}
+
+function descriptionContext(text, start, end) {
+  const prefix = text.slice(0, start);
+  const leftConjunctions = [...prefix.matchAll(/\s+(?:and|plus)\s+/gi)];
+  const leftConjunction = leftConjunctions.length
+    ? leftConjunctions.at(-1).index + leftConjunctions.at(-1)[0].length - 1
+    : -1;
+  const leftBreak = Math.max(text.lastIndexOf(",", start), text.lastIndexOf(";", start), leftConjunction);
+  const comma = text.indexOf(",", end);
+  const semicolon = text.indexOf(";", end);
+  const suffix = text.slice(end);
+  const rightConjunctionMatch = suffix.match(/\s+(?:and|plus)\s+/i);
+  const rightConjunction = rightConjunctionMatch?.index === undefined ? -1 : end + rightConjunctionMatch.index;
+  const candidates = [comma, semicolon, rightConjunction].filter((index) => index >= 0);
+  const rightBreak = candidates.length ? Math.min(...candidates) : text.length;
+  return text.slice(leftBreak + 1, rightBreak).trim();
+}
+
+function reconcileParsedDescription(parsed, description, portionHints) {
+  const foods = (parsed.foods || []).map((food) => ({ ...food }));
+  const unusedFoods = new Set(foods.map((_, index) => index));
+  portionHints.forEach((hint) => {
+    const contextIdentity = identityTokens(hint.context);
+    let bestIndex = -1;
+    let bestScore = -1;
+    unusedFoods.forEach((index) => {
+      const foodIdentity = new Set(identityTokens(`${foods[index].name} ${foods[index].searchQuery}`));
+      const score = contextIdentity.filter((word) => foodIdentity.has(word)).length;
+      if (score > bestScore) {
+        bestIndex = index;
+        bestScore = score;
+      }
+    });
+    if (bestIndex < 0) return;
+    const food = foods[bestIndex];
+    food.amount = hint.amount;
+    food.unit = hint.unit;
+    if (hint.servingGrams) food.servingGrams = hint.servingGrams;
+    unusedFoods.delete(bestIndex);
+  });
+
+  const descriptionQualifiers = qualifiersForText(description);
+  if (foods.length === 1 && descriptionQualifiers.all.size) {
+    const food = foods[0];
+    const missing = [...descriptionQualifiers.all].filter((word) => !normalizedTokens(food.searchQuery).includes(word));
+    if (missing.length) food.searchQuery = `${food.searchQuery} ${missing.join(" ")}`.trim();
+  }
+  validateParsedDescription({ ...parsed, foods });
+  return { ...parsed, foods };
+}
+
+function parseDescriptionLocally(description, portionHints) {
+  const segments = String(description || "")
+    .split(/\s*(?:,|;|\band\b|\bplus\b)\s*/i)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const foods = segments.map((segment) => {
+    const cleanIdentity = segment
+      .replace(/\b\d+(?:[.,]\d+)?\s*(?:kilograms?|kg|grams?|grm?|g|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l)\b/gi, " ")
+      .replace(/^\s*\d+(?:[.,]\d+)?\s+/, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!identityTokens(cleanIdentity).length) return null;
+    return {
+      name: titleCaseDescription(cleanIdentity),
+      searchQuery: cleanIdentity,
+      amount: 1,
+      unit: "serving",
+      servingGrams: 0,
+      qualifiers: [...qualifiersForText(cleanIdentity).all].join(" "),
+      fallbackCalories: 0,
+      fallbackProtein: 0,
+      fallbackCarbs: 0,
+      fallbackFat: 0,
+      _hasAiFallback: false,
+    };
+  }).filter(Boolean);
+  return reconcileParsedDescription({ foods, confidence: "low", notes: "" }, description, portionHints);
+}
+
+function titleCaseDescription(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
 }
 
 function describedPortionGrams(food) {
@@ -465,6 +695,35 @@ function describedPortionGrams(food) {
   if (grams > 0) return grams;
   if (food.unit === "g") return Number(food.amount || 0);
   return 0;
+}
+
+function parsedFoodDiagnostic(food) {
+  return {
+    name: food.name,
+    searchQuery: food.searchQuery,
+    amount: food.amount,
+    unit: food.unit,
+    servingGrams: food.servingGrams,
+    qualifiers: food.qualifiers,
+  };
+}
+
+function candidateDiagnostic(candidate) {
+  return {
+    id: candidate?.id || "",
+    name: candidate?.name || "",
+    brand: candidate?.brand || "",
+    source: candidate?.source || "",
+    servingGrams: candidate?.servingGrams || 0,
+  };
+}
+
+function diagnosticError(error) {
+  return {
+    message: String(error?.message || "Unknown error"),
+    status: Number(error?.status || 0) || undefined,
+    cause: String(error?.cause?.message || "") || undefined,
+  };
 }
 
 function structuredMatchNote(food, match) {
@@ -609,11 +868,13 @@ function parseResponseText(data) {
 }
 
 function normalizeAnalysis(analysis, source = "OpenAI photo estimate") {
-  const rawFoods = Array.isArray(analysis?.foods)
-    ? analysis.foods
-    : analysis?.name
-      ? [analysis]
-      : [];
+  const rawFoods = analysis?.containsFood === false
+    ? []
+    : Array.isArray(analysis?.foods)
+      ? analysis.foods
+      : analysis?.name
+        ? [analysis]
+        : [];
 
   return {
     foods: rawFoods.slice(0, 8).map((food) => normalizeFoodItem(food, source)),

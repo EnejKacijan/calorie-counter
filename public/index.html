@@ -13,7 +13,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest?v=8" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" href="styles.css?v=30" />
 </head>
 
 <body>
@@ -191,8 +191,6 @@
             <button class="modal-close-button" id="closeFoodModal" type="button" aria-label="Close food form">×</button>
             <button class="modal-back-button" id="backFoodModal" type="button" aria-label="Back to food form">‹</button>
             <button class="quick-add-button" id="addFoodToggle" type="button" aria-label="Add food">+</button>
-            <button class="text-button copy-day-button" id="copyYesterdayButton" type="button">Copy from
-              yesterday</button>
             <span class="entry-mobile-title" id="foodMobileHeaderTitle" aria-hidden="true">Add</span>
           </div>
           <div class="entry-mode-header food-mode-header" id="foodModeHeader">
@@ -296,7 +294,9 @@
                   <small><span id="scanTotalProtein">0</span>g protein · <span id="scanTotalCarbs">0</span>g carbs ·
                     <span id="scanTotalFat">0</span>g fat</small>
                 </div>
-                <button class="scan-add-selected" id="scanAddSelectedFoods" type="button">Add selected foods</button>
+                <div class="scan-review-footer-actions">
+                  <button class="scan-add-selected" id="scanAddSelectedFoods" type="button">Add selected foods</button>
+                </div>
               </div>
             </section>
             <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number"
@@ -333,6 +333,10 @@
             <label class="food-form-field" for="manualFoodFat"><span>Fat (g)</span><input id="manualFoodFat" type="number"
                 min="0" step="0.1" aria-label="Fat grams" /></label>
             <button id="manualFoodSubmit" type="submit">Add food</button>
+            <div class="scan-simple-save-actions" id="scanSimpleSaveActions" hidden>
+              <button class="scan-save-as-meal" id="scanSaveAsMeal" type="button">Save as meal</button>
+              <span class="scan-save-meal-status" id="scanSaveMealStatus" role="status" aria-live="polite"></span>
+            </div>
           </form>
           <div class="edit-modal-actions" id="foodEditActions">
             <button class="edit-delete-button" id="deleteFoodEdit" type="button"
@@ -357,6 +361,8 @@
             <p class="label">Today's log</p>
             <div class="log-heading-actions">
               <span id="foodEntryCount">0 entries</span>
+              <button class="food-log-options-button" id="foodLogOptionsButton" type="button"
+                aria-label="Food log options" aria-controls="foodReusePanel" aria-expanded="false">···</button>
               <div class="floating-action-stack">
                 <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
                   aria-expanded="false"><span class="floating-add-glyph" aria-hidden="true">+</span></button>
@@ -365,16 +371,23 @@
           </div>
           <p class="entry-swipe-hint" id="foodSwipeHint" hidden>Swipe to save or delete</p>
           <div class="entry-list" id="foodList"></div>
-          <section class="saved-foods-panel" aria-label="Saved foods">
+          <section class="saved-foods-panel" aria-label="Saved meals and foods">
             <div class="foods-library-header">
               <div>
                 <p class="label">Library</p>
                 <h2>Foods</h2>
               </div>
             </div>
-            <section class="foods-library-section" aria-labelledby="myFoodsTitle">
+            <section class="foods-library-section saved-meals-section" id="savedMealsSection"
+              aria-labelledby="savedMealsTitle" hidden>
               <div class="foods-section-heading">
-                <p class="label" id="myFoodsTitle">Saved</p>
+                <p class="label" id="savedMealsTitle">Saved meals</p>
+              </div>
+              <div class="saved-meals" id="savedMeals"></div>
+            </section>
+            <section class="foods-library-section" id="savedFoodsSection" aria-labelledby="myFoodsTitle">
+              <div class="foods-section-heading">
+                <p class="label" id="myFoodsTitle">Saved foods</p>
               </div>
               <div class="saved-foods" id="savedFoods"></div>
             </section>
@@ -477,6 +490,22 @@
     <button class="fab-secondary-action" id="fabAddExercise" type="button"><i aria-hidden="true">+</i><b>Add Exercise</b></button>
     <button class="fab-saved-link" id="fabSavedFoods" type="button"><i aria-hidden="true">♥</i><b>Browse saved foods</b></button>
   </div>
+  <button class="food-reuse-backdrop" id="foodReuseBackdrop" type="button" aria-label="Close food log options"
+    hidden></button>
+  <section class="food-reuse-panel" id="foodReusePanel" role="dialog" aria-modal="true"
+    aria-labelledby="foodReuseTitle" hidden>
+    <div class="food-reuse-drag-zone" id="foodReuseDragZone" aria-hidden="true"><span></span></div>
+    <header class="food-reuse-header">
+      <button class="food-reuse-back" id="foodReuseBack" type="button" aria-label="Back" hidden>←</button>
+      <div>
+        <p class="label" id="foodReuseEyebrow">Food log</p>
+        <h2 id="foodReuseTitle">Reuse food</h2>
+      </div>
+      <button class="food-reuse-close" id="foodReuseClose" type="button" aria-label="Close">×</button>
+    </header>
+    <div class="food-reuse-content" id="foodReuseContent"></div>
+    <p class="food-reuse-status" id="foodReuseStatus" role="status" aria-live="polite"></p>
+  </section>
   <template id="entryTemplate">
     <article class="entry-card">
       <div class="entry-swipe-actions">
@@ -493,7 +522,8 @@
   </template>
 
   <script src="pwa.js?v=6"></script>
-  <script src="app.js?v=18"></script>
+  <script src="food-reuse.js?v=1"></script>
+  <script src="app.js?v=28"></script>
 </body>
 
 </html>

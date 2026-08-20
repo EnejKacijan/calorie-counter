@@ -34,8 +34,10 @@ const defaults = {
 
 const foodLibraryKey = "calorie-counter-food-library";
 const savedFoodLibraryKey = "calorie-counter-saved-foods";
+const savedMealLibraryKey = "calorie-counter-saved-meals";
 const savedFoodMigrationKey = "calorie-counter-saved-foods-v2";
 const appSessionKey = "calorie-counter-today-session-v1";
+const foodReuse = window.IntakeFoodReuse;
 let isFreshAppLaunch = true;
 
 try {
@@ -64,6 +66,7 @@ const exercisePresets = {
 let state = loadState();
 let foodLibrary = loadFoodLibrary();
 let savedFoods = loadSavedFoods();
+let savedMeals = loadSavedMeals();
 let suggestionAbortController = null;
 let autocompleteTimer = null;
 let selectedFoodBase = null;
@@ -87,6 +90,12 @@ const foodSwipeHintUsedKey = "daily-fuel-food-swipe-hint-used";
 const foodSwipeHintSessionKey = "daily-fuel-food-swipe-hint-session";
 const modalOpeners = new WeakMap();
 let desktopEditSession = null;
+let foodReuseState = { open: false, view: "menu", sourceDate: "", selectedMeal: "", savedMealId: "" };
+let foodReuseOpener = null;
+let foodReuseScrollLock = null;
+let foodReuseCloseTimer = 0;
+let foodReuseTouch = null;
+let foodReuseSuppressClickUntil = 0;
 const elements = {
   appShell: document.querySelector(".app-shell"),
   mainContent: document.querySelector(".main-content"),
@@ -197,10 +206,25 @@ const elements = {
   scanTotalCarbs: document.querySelector("#scanTotalCarbs"),
   scanTotalFat: document.querySelector("#scanTotalFat"),
   scanAddSelectedFoods: document.querySelector("#scanAddSelectedFoods"),
-  copyYesterdayButton: document.querySelector("#copyYesterdayButton"),
+  scanSimpleSaveActions: document.querySelector("#scanSimpleSaveActions"),
+  scanSaveAsMeal: document.querySelector("#scanSaveAsMeal"),
+  scanSaveMealStatus: document.querySelector("#scanSaveMealStatus"),
+  foodLogOptionsButton: document.querySelector("#foodLogOptionsButton"),
+  foodReuseBackdrop: document.querySelector("#foodReuseBackdrop"),
+  foodReusePanel: document.querySelector("#foodReusePanel"),
+  foodReuseDragZone: document.querySelector("#foodReuseDragZone"),
+  foodReuseBack: document.querySelector("#foodReuseBack"),
+  foodReuseClose: document.querySelector("#foodReuseClose"),
+  foodReuseEyebrow: document.querySelector("#foodReuseEyebrow"),
+  foodReuseTitle: document.querySelector("#foodReuseTitle"),
+  foodReuseContent: document.querySelector("#foodReuseContent"),
+  foodReuseStatus: document.querySelector("#foodReuseStatus"),
   foodSuggestions: document.querySelector("#foodSuggestions"),
   manualFoodShortcut: document.querySelector("#manualFoodShortcut"),
   savedFoods: document.querySelector("#savedFoods"),
+  savedFoodsSection: document.querySelector("#savedFoodsSection"),
+  savedMeals: document.querySelector("#savedMeals"),
+  savedMealsSection: document.querySelector("#savedMealsSection"),
   recentFoods: document.querySelector("#recentFoods"),
   searchNote: document.querySelector("#searchNote"),
   foodEntryCount: document.querySelector("#foodEntryCount"),
@@ -301,6 +325,33 @@ function saveFoodLibrary() {
 
 function saveSavedFoods() {
   localStorage.setItem(savedFoodLibraryKey, JSON.stringify(uniqueSavedFoods(savedFoods)));
+}
+
+function loadSavedMeals() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(savedMealLibraryKey) || "[]");
+    if (!Array.isArray(stored) || !foodReuse) return [];
+    return stored
+      .map((meal) => {
+        if (!meal?.id || !String(meal.name || "").trim() || !Array.isArray(meal.foods) || !meal.foods.length) return null;
+        return foodReuse.createSavedMeal({
+          id: meal.id,
+          name: meal.name,
+          meal: meal.meal,
+          foods: meal.foods,
+          createdAt: meal.createdAt,
+          updatedAt: meal.updatedAt,
+        });
+      })
+      .filter(Boolean)
+      .sort((left, right) => String(right.updatedAt || "").localeCompare(String(left.updatedAt || "")));
+  } catch {
+    return [];
+  }
+}
+
+function saveSavedMeals() {
+  localStorage.setItem(savedMealLibraryKey, JSON.stringify(savedMeals));
 }
 
 function normalizeFoodForLibrary(food) {
@@ -665,6 +716,8 @@ function syncDesktopFoodAddContentState() {
   content.classList.toggle("is-manual-entry", isManualEntry);
   content.classList.toggle("is-describing-ai", isDescribingAi);
   content.classList.toggle("is-searching", elements.foodSection.classList.contains("is-searching"));
+  content.classList.toggle("is-reviewing-scan", elements.foodSection.classList.contains("is-reviewing-scan"));
+  content.classList.toggle("is-reviewing-text-estimate", elements.foodSection.classList.contains("is-reviewing-text-estimate"));
   const backButton = content.querySelector(".desktop-add-food-back");
   if (backButton) backButton.hidden = !isDetailing;
 }
@@ -811,6 +864,7 @@ function closeMobileLogForm(section) {
 }
 
 document.addEventListener("keydown", (event) => {
+  if (foodReuseState.open) return;
   const section = desktopEditSession?.section || document.querySelector(".log-panel.is-adding");
   if (!section) return;
   if (event.key === "Escape") {
@@ -1137,7 +1191,6 @@ function render() {
   renderCalendar();
   renderEntries();
   renderSavedFoods();
-  updateCopyYesterdayButton();
   if (recentSuccess) playSuccessCue(recentSuccess);
   renderSnapshot = {
     remaining: Math.round(remaining),
@@ -1202,7 +1255,7 @@ function defaultMealForNow(date = new Date()) {
 }
 
 function mealLabel(meal = defaultMealForNow()) {
-  const labels = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
+  const labels = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snack: "Snack" };
   return (labels[meal] || labels[defaultMealForNow()]).toUpperCase();
 }
 
@@ -1379,6 +1432,25 @@ function renderEntries() {
   renderList(elements.foodList, day.foods, "foods", (food) => {
     return `${mealLabel(food.meal)} · ${foodLoggedTime(food)}`;
   });
+  if (!day.foods.length) {
+    const sourceDate = previousDayKey(state.selectedDate);
+    const sourceFoods = foodEntriesForDate(sourceDate);
+    if (sourceFoods.length && !isPhoneAddFoodLayout()) {
+      const shortcut = document.createElement("button");
+      shortcut.type = "button";
+      shortcut.className = "food-copy-yesterday-shortcut";
+      shortcut.textContent = "Copy yesterday →";
+      shortcut.addEventListener("click", () => {
+        confirmAndCopyFoods(sourceFoods, {
+          sourceDate,
+          successMessage: `${sourceFoods.length} ${sourceFoods.length === 1 ? "food" : "foods"} copied from yesterday.`,
+        });
+      });
+      const emptyState = elements.foodList.querySelector(".empty-state");
+      emptyState?.classList.add("has-reuse-shortcut");
+      emptyState?.appendChild(shortcut);
+    }
+  }
   updateFoodSwipeHint(day.foods.length > 0);
 
   renderList(elements.exerciseList, day.exercises, "exercises", (exercise) => {
@@ -1513,12 +1585,18 @@ function editEntry(collection, entry) {
 
 function deleteEntryWithUndo(collection, entry) {
   const dateKey = state.selectedDate;
+  const mobileDeletedMessage = collection === "foods"
+    ? "Food deleted"
+    : collection === "exercises"
+      ? "Exercise deleted"
+      : "Entry deleted";
+  const deletedMessage = isPhoneAddFoodLayout() ? mobileDeletedMessage : "Item deleted.";
   if (collection === "progress") {
     const previousProgress = [...state.progress];
     state.progress = state.progress.filter((item) => item.id !== entry.id);
     saveState();
     render();
-    showUndoToast("Item deleted.", () => {
+    showUndoToast(deletedMessage, () => {
       state.progress = previousProgress;
       saveState();
       render();
@@ -1534,7 +1612,7 @@ function deleteEntryWithUndo(collection, entry) {
   if (collection === "exercises" && editingExerciseId === entry.id) resetExerciseForm();
   saveState();
   render();
-  showUndoToast("Item deleted.", () => {
+  showUndoToast(deletedMessage, () => {
     ensureDay(dateKey);
     state.days[dateKey][collection] = previousEntries;
     saveState();
@@ -1744,10 +1822,511 @@ function summarizeDay(day) {
   return { ...foodTotals, exerciseCalories, netCalories: foodTotals.calories - exerciseCalories };
 }
 
+function foodEntriesForDate(dateKey) {
+  return state.days[dateKey]?.foods || [];
+}
+
+function foodMealGroups(dateKey) {
+  return foodReuse.groupFoodEntriesByMeal(foodEntriesForDate(dateKey));
+}
+
+function formatReuseDate(dateKey) {
+  return dateFromKey(dateKey).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function mealGroupSummary(group) {
+  const count = group.foods.length;
+  return `${count} ${count === 1 ? "food" : "foods"} · ${Math.round(group.calories)} kcal`;
+}
+
+function selectedScannedFoods() {
+  return scannedFoodItems.filter((food) => food.included && String(food.name || "").trim());
+}
+
+function scannedFoodToReusableEntry(food, meal) {
+  const amount = Math.max(0, Number(food.amount || 0));
+  const unit = ["serving", "piece", "g", "ml"].includes(food.unit) ? food.unit : "serving";
+  const inputMode = scannedFoodAnalysis?.inputMode === "text" ? "text" : "photo";
+  return {
+    catalogId: food.sourceId || "",
+    sourceId: food.sourceId || "",
+    name: String(food.name || "").trim(),
+    displayName: String(food.name || "").trim(),
+    brand: "",
+    source: food.source || (inputMode === "text" ? "AI ESTIMATE" : "OpenAI photo estimate"),
+    nutritionSource: food.nutritionSource || "",
+    resolvedFoodName: food.resolvedFoodName || String(food.name || "").trim(),
+    serving: formatScannedFoodPortion({ ...food, amount, unit }),
+    servingGrams: Number(food.servingGrams || 0) || null,
+    amount,
+    unit,
+    meal,
+    calories: Math.max(0, Number(food.calories || 0)),
+    protein: Math.max(0, Number(food.protein || 0)),
+    carbs: Math.max(0, Number(food.carbs || 0)),
+    fat: Math.max(0, Number(food.fat || 0)),
+    nutritionOverridden: Boolean(food.nutritionOverridden),
+    ...(food.manualNutritionOverride ? { manualNutritionOverride: { ...food.manualNutritionOverride } } : {}),
+    aiEstimate: {
+      inputMode,
+      confidence: food.confidence || scannedFoodAnalysis?.confidence || "low",
+      notes: String(food.notes || "").trim(),
+    },
+  };
+}
+
+function setFoodReuseStatus(message, isError = false) {
+  if (!elements.foodReuseStatus) return;
+  elements.foodReuseStatus.textContent = message;
+  elements.foodReuseStatus.classList.toggle("is-error", isError);
+}
+
+function lockMobileFoodReuseBackground() {
+  if (!isPhoneAddFoodLayout() || foodReuseScrollLock) return;
+  const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  foodReuseScrollLock = {
+    scrollY,
+    htmlOverflow: document.documentElement.style.overflow,
+    bodyPosition: document.body.style.position,
+    bodyTop: document.body.style.top,
+    bodyLeft: document.body.style.left,
+    bodyRight: document.body.style.right,
+    bodyWidth: document.body.style.width,
+    bodyOverflow: document.body.style.overflow,
+    appInert: Boolean(elements.appShell?.inert),
+  };
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.position = "fixed";
+  document.body.style.top = `${-scrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  document.body.style.overflow = "hidden";
+  if (elements.appShell) elements.appShell.inert = true;
+}
+
+function unlockMobileFoodReuseBackground() {
+  if (!foodReuseScrollLock) return;
+  const lock = foodReuseScrollLock;
+  foodReuseScrollLock = null;
+  document.documentElement.style.overflow = lock.htmlOverflow;
+  document.body.style.position = lock.bodyPosition;
+  document.body.style.top = lock.bodyTop;
+  document.body.style.left = lock.bodyLeft;
+  document.body.style.right = lock.bodyRight;
+  document.body.style.width = lock.bodyWidth;
+  document.body.style.overflow = lock.bodyOverflow;
+  if (elements.appShell) elements.appShell.inert = lock.appInert;
+  window.scrollTo(0, lock.scrollY);
+  requestAnimationFrame(() => window.scrollTo(0, lock.scrollY));
+}
+
+function finishFoodReuseClose(restoreFocus) {
+  elements.foodReusePanel.hidden = true;
+  elements.foodReuseBackdrop.hidden = true;
+  elements.foodReusePanel.classList.remove("is-preparing", "is-dragging", "is-closing");
+  elements.foodReusePanel.style.removeProperty("--food-reuse-drag-y");
+  elements.foodReuseBackdrop.style.removeProperty("opacity");
+  elements.foodLogOptionsButton?.setAttribute("aria-expanded", "false");
+  unlockMobileFoodReuseBackground();
+  if (restoreFocus) (foodReuseOpener?.isConnected ? foodReuseOpener : elements.foodLogOptionsButton)?.focus();
+  foodReuseOpener = null;
+}
+
+function closeFoodReusePanel({ restoreFocus = true, immediate = false } = {}) {
+  if (!foodReuseState.open) return;
+  foodReuseState.open = false;
+  foodReuseTouch = null;
+  window.clearTimeout(foodReuseCloseTimer);
+  elements.foodReusePanel.classList.remove("is-dragging");
+  elements.foodReusePanel.classList.add("is-closing");
+  document.body.classList.remove("food-reuse-open");
+
+  if (!isPhoneAddFoodLayout() || immediate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finishFoodReuseClose(restoreFocus);
+    return;
+  }
+
+  foodReuseCloseTimer = window.setTimeout(() => finishFoodReuseClose(restoreFocus), 220);
+}
+
+function openFoodReusePanel(view = "menu", options = {}) {
+  window.clearTimeout(foodReuseCloseTimer);
+  if (!foodReuseState.open) foodReuseOpener = document.activeElement;
+  foodReuseState = {
+    ...foodReuseState,
+    open: true,
+    view,
+    sourceDate: options.sourceDate ?? foodReuseState.sourceDate,
+    selectedMeal: options.selectedMeal ?? foodReuseState.selectedMeal,
+    savedMealId: options.savedMealId ?? foodReuseState.savedMealId,
+  };
+  elements.foodReusePanel.classList.remove("is-closing", "is-dragging");
+  elements.foodReusePanel.style.removeProperty("--food-reuse-drag-y");
+  elements.foodReuseBackdrop.style.removeProperty("opacity");
+  if (isPhoneAddFoodLayout()) {
+    lockMobileFoodReuseBackground();
+    elements.foodReusePanel.classList.add("is-preparing");
+    document.body.classList.remove("food-reuse-open");
+  }
+  elements.foodReusePanel.hidden = false;
+  elements.foodReuseBackdrop.hidden = false;
+  elements.foodLogOptionsButton?.setAttribute("aria-expanded", String(foodReuseOpener === elements.foodLogOptionsButton));
+
+  if (isDesktopEditLayout()) {
+    const anchor = view === "save-scan-meal-name" ? elements.scanSaveAsMeal : elements.foodLogOptionsButton;
+    const rect = anchor?.getBoundingClientRect();
+    if (rect) {
+    elements.foodReusePanel.style.setProperty("--food-reuse-top", `${Math.min(rect.bottom + 8, window.innerHeight - 420)}px`);
+    elements.foodReusePanel.style.setProperty("--food-reuse-right", `${Math.max(16, window.innerWidth - rect.right)}px`);
+    }
+  }
+  if (isPhoneAddFoodLayout()) {
+    void elements.foodReusePanel.offsetHeight;
+    elements.foodReusePanel.classList.remove("is-preparing");
+  }
+  document.body.classList.add("food-reuse-open");
+  renderFoodReusePanel();
+  requestAnimationFrame(() => elements.foodReusePanel.querySelector("button, input, select")?.focus());
+}
+
+function startFoodReuseTouch(event) {
+  if (!foodReuseState.open || !isPhoneAddFoodLayout() || event.touches.length !== 1) return;
+  const y = event.touches[0].clientY;
+  foodReuseTouch = {
+    startY: y,
+    lastY: y,
+    lastTime: performance.now(),
+    velocity: 0,
+    distance: 0,
+    dragging: false,
+    canDrag: elements.foodReuseContent.scrollTop <= 0,
+  };
+}
+
+function moveFoodReuseTouch(event) {
+  if (!foodReuseTouch || !foodReuseState.open || event.touches.length !== 1) return;
+  const y = event.touches[0].clientY;
+  const now = performance.now();
+  const step = y - foodReuseTouch.lastY;
+  const elapsed = Math.max(1, now - foodReuseTouch.lastTime);
+
+  if (!foodReuseTouch.dragging) {
+    if (!foodReuseTouch.canDrag) {
+      if (elements.foodReuseContent.scrollTop <= 0 && step > 0) {
+        foodReuseTouch.canDrag = true;
+        foodReuseTouch.startY = y;
+      }
+      foodReuseTouch.lastY = y;
+      foodReuseTouch.lastTime = now;
+      return;
+    }
+
+    const initialDistance = y - foodReuseTouch.startY;
+    if (initialDistance <= 0) {
+      foodReuseTouch.lastY = y;
+      foodReuseTouch.lastTime = now;
+      return;
+    }
+    if (initialDistance < 7) return;
+    foodReuseTouch.dragging = true;
+    elements.foodReusePanel.classList.add("is-dragging");
+  }
+
+  event.preventDefault();
+  const distance = Math.max(0, y - foodReuseTouch.startY);
+  foodReuseTouch.distance = distance;
+  foodReuseTouch.velocity = step / elapsed;
+  foodReuseTouch.lastY = y;
+  foodReuseTouch.lastTime = now;
+  elements.foodReusePanel.style.setProperty("--food-reuse-drag-y", `${distance}px`);
+  const progress = Math.min(1, distance / Math.max(1, elements.foodReusePanel.offsetHeight));
+  elements.foodReuseBackdrop.style.opacity = String(Math.max(0.2, 1 - progress * 0.82));
+}
+
+function endFoodReuseTouch({ cancelled = false } = {}) {
+  if (!foodReuseTouch) return;
+  const gesture = foodReuseTouch;
+  foodReuseTouch = null;
+  if (!gesture.dragging) return;
+
+  foodReuseSuppressClickUntil = performance.now() + 350;
+  const threshold = Math.min(140, elements.foodReusePanel.offsetHeight * 0.24);
+  const velocityDistanceFloor = Math.min(72, threshold * 0.72);
+  const shouldDismiss = !cancelled && (
+    gesture.distance >= threshold
+    || (gesture.distance >= velocityDistanceFloor && gesture.velocity >= 0.55)
+  );
+  elements.foodReusePanel.classList.remove("is-dragging");
+
+  if (shouldDismiss) {
+    elements.foodReusePanel.style.setProperty("--food-reuse-drag-y", "100%");
+    elements.foodReuseBackdrop.style.opacity = "0";
+    closeFoodReusePanel();
+    return;
+  }
+
+  elements.foodReusePanel.style.setProperty("--food-reuse-drag-y", "0px");
+  elements.foodReuseBackdrop.style.removeProperty("opacity");
+  window.setTimeout(() => {
+    if (foodReuseState.open) elements.foodReusePanel.style.removeProperty("--food-reuse-drag-y");
+  }, 220);
+}
+
+function reuseActionMarkup(action, title, description = "", { disabled = false } = {}) {
+  return `<button class="food-reuse-action" type="button" data-reuse-action="${action}"${disabled ? " disabled aria-disabled=\"true\"" : ""}>
+    <span><strong>${escapeHtml(title)}</strong>${description ? `<small>${escapeHtml(description)}</small>` : ""}</span>
+    <span aria-hidden="true">→</span>
+  </button>`;
+}
+
+function mealGroupMarkup(group, action) {
+  return `<button class="food-reuse-meal" type="button" data-reuse-action="${action}" data-meal="${escapeHtml(group.meal)}">
+    <span><strong>${escapeHtml(mealLabel(group.meal))}</strong><small>${escapeHtml(mealGroupSummary(group))}</small></span>
+    <span aria-hidden="true">→</span>
+  </button>`;
+}
+
+function renderFoodReuseEmpty(message, allowChooseDate = false) {
+  elements.foodReuseContent.innerHTML = `<div class="food-reuse-empty"><p>${escapeHtml(message)}</p>
+    ${allowChooseDate ? '<button type="button" class="secondary-button" data-reuse-action="copy-date">Choose another day</button>' : ""}
+  </div>`;
+}
+
+function renderFoodReusePanel() {
+  const view = foodReuseState.view;
+  const backViews = new Set(["repeat-meal", "copy-date", "save-meal-picker", "save-meal-name", "saved-meal-review"]);
+  elements.foodReuseBack.hidden = !backViews.has(view);
+  elements.foodReuseEyebrow.textContent = view === "saved-meal-review" ? "Saved meal" : "Food log";
+  setFoodReuseStatus("");
+
+  if (view === "save-scan-meal-name") {
+    const meal = foodReuseState.selectedMeal || elements.foodMeal.value || defaultMealForNow();
+    const foods = selectedScannedFoods().map((food) => scannedFoodToReusableEntry(food, meal));
+    if (!foods.length) {
+      closeFoodReusePanel({ restoreFocus: false });
+      return;
+    }
+    const calories = foods.reduce((sum, food) => sum + Number(food.calories || 0), 0);
+    elements.foodReuseEyebrow.textContent = scannedFoodAnalysis?.inputMode === "text" ? "AI estimate" : "Plate review";
+    elements.foodReuseTitle.textContent = "Save meal";
+    elements.foodReuseContent.innerHTML = `<form class="food-reuse-save-form" data-reuse-save-form>
+      <label class="food-reuse-field"><span class="label">Name</span><input name="mealName" maxlength="80" value="${escapeHtml(foodReuse.suggestSavedMealName(foods))}" required></label>
+      <p class="food-reuse-summary"><strong>${foods.length} ${foods.length === 1 ? "food" : "foods"}</strong><span>${Math.round(calories)} kcal</span></p>
+      <button class="primary-button" type="submit">Save meal</button>
+    </form>`;
+    return;
+  }
+
+  if (view === "menu") {
+    const mobileContextualActions = isPhoneAddFoodLayout();
+    const yesterdayFoods = foodEntriesForDate(previousDayKey(state.selectedDate));
+    const yesterdayMeals = foodMealGroups(previousDayKey(state.selectedDate));
+    const currentMeals = foodMealGroups(state.selectedDate);
+    elements.foodReuseTitle.textContent = "Reuse food";
+    elements.foodReuseContent.innerHTML = [
+      reuseActionMarkup(
+        "repeat-yesterday",
+        "Repeat yesterday",
+        mobileContextualActions
+          ? (yesterdayFoods.length ? "Add the previous calendar day's food" : "No food logged yesterday")
+          : "Copy the previous calendar day's food",
+        { disabled: mobileContextualActions && !yesterdayFoods.length },
+      ),
+      reuseActionMarkup(
+        "repeat-meal",
+        "Repeat a meal",
+        mobileContextualActions && !yesterdayMeals.length ? "No meals available yesterday" : "Choose a meal from yesterday",
+        { disabled: mobileContextualActions && !yesterdayMeals.length },
+      ),
+      reuseActionMarkup("copy-date", "Copy from another day", "Choose an entire day or one meal"),
+      reuseActionMarkup(
+        "save-meal-picker",
+        "Save a meal",
+        mobileContextualActions && !currentMeals.length ? "No food to save from this day" : "Create a reusable meal from this day",
+        { disabled: mobileContextualActions && !currentMeals.length },
+      ),
+    ].join("");
+    return;
+  }
+
+  if (view === "repeat-meal") {
+    const sourceDate = previousDayKey(state.selectedDate);
+    const groups = foodMealGroups(sourceDate);
+    elements.foodReuseTitle.textContent = `Repeat from ${formatReuseDate(sourceDate)}`;
+    if (!groups.length) {
+      renderFoodReuseEmpty("No food logged yesterday.", true);
+      return;
+    }
+    elements.foodReuseContent.innerHTML = `<p class="food-reuse-hint">Choose a meal to add to ${formatReuseDate(state.selectedDate)}.</p>${groups.map((group) => mealGroupMarkup(group, "copy-meal")).join("")}`;
+    foodReuseState.sourceDate = sourceDate;
+    return;
+  }
+
+  if (view === "copy-date") {
+    const sourceDate = foodReuseState.sourceDate || previousDayKey(state.selectedDate);
+    foodReuseState.sourceDate = sourceDate;
+    const groups = foodMealGroups(sourceDate);
+    elements.foodReuseTitle.textContent = "Copy another day";
+    elements.foodReuseContent.innerHTML = `<label class="food-reuse-field"><span class="label">Source date</span>
+      <input type="date" data-reuse-source-date value="${escapeHtml(sourceDate)}" max="${escapeHtml(localDateKey(new Date()))}">
+    </label>
+    <div class="food-reuse-source-results">
+      ${groups.length ? `${reuseActionMarkup("copy-day", "Copy entire day", `${foodEntriesForDate(sourceDate).length} foods · ${formatReuseDate(sourceDate)}`)}${groups.map((group) => mealGroupMarkup(group, "copy-meal")).join("")}` : '<div class="food-reuse-empty"><p>No food logged on this day.</p></div>'}
+    </div>`;
+    return;
+  }
+
+  if (view === "save-meal-picker") {
+    const groups = foodMealGroups(state.selectedDate);
+    elements.foodReuseTitle.textContent = "Save a meal";
+    if (!groups.length) {
+      renderFoodReuseEmpty(`No food logged on ${formatReuseDate(state.selectedDate)}.`);
+      return;
+    }
+    elements.foodReuseContent.innerHTML = `<p class="food-reuse-hint">Choose a meal from ${formatReuseDate(state.selectedDate)}.</p>${groups.map((group) => mealGroupMarkup(group, "name-saved-meal")).join("")}`;
+    return;
+  }
+
+  if (view === "save-meal-name") {
+    const group = foodMealGroups(state.selectedDate).find((item) => item.meal === foodReuseState.selectedMeal);
+    if (!group) {
+      foodReuseState.view = "save-meal-picker";
+      renderFoodReusePanel();
+      return;
+    }
+    const suggestedName = foodReuse.suggestSavedMealName(group.foods) || mealLabel(group.meal).toLowerCase();
+    elements.foodReuseTitle.textContent = "Save meal";
+    elements.foodReuseContent.innerHTML = `<form class="food-reuse-save-form" data-reuse-save-form>
+      <label class="food-reuse-field"><span class="label">Name</span><input name="mealName" maxlength="80" value="${escapeHtml(suggestedName)}" required></label>
+      <p class="food-reuse-summary"><strong>${escapeHtml(mealLabel(group.meal))}</strong><span>${escapeHtml(mealGroupSummary(group))}</span></p>
+      <button class="primary-button" type="submit">Save meal</button>
+    </form>`;
+    return;
+  }
+
+  if (view === "saved-meal-review") {
+    const savedMeal = savedMeals.find((meal) => meal.id === foodReuseState.savedMealId);
+    if (!savedMeal) {
+      closeFoodReusePanel({ restoreFocus: false });
+      return;
+    }
+    elements.foodReuseTitle.textContent = savedMeal.name;
+    const calories = savedMeal.foods.reduce((sum, food) => sum + Number(food.calories || 0), 0);
+    elements.foodReuseContent.innerHTML = `<div class="saved-meal-review-summary"><strong>${savedMeal.foods.length} ${savedMeal.foods.length === 1 ? "food" : "foods"}</strong><span>${Math.round(calories)} kcal</span></div>
+      <div class="saved-meal-review-foods">${savedMeal.foods.map((food) => `<div><span>${escapeHtml(food.name)}</span><small>${escapeHtml(food.serving || `${food.amount || 1} ${food.unit || "serving"}`)}</small></div>`).join("")}</div>
+      <label class="food-reuse-field"><span class="label">Meal</span><select data-saved-meal-target>
+        ${["breakfast", "lunch", "dinner", "snack"].map((meal) => `<option value="${meal}"${meal === savedMeal.meal ? " selected" : ""}>${mealLabel(meal).toLowerCase().replace(/^./, (letter) => letter.toUpperCase())}</option>`).join("")}
+      </select></label>
+      <button class="primary-button" type="button" data-reuse-action="add-saved-meal">Add meal</button>
+      <div class="food-reuse-management"><button type="button" data-reuse-action="rename-saved-meal">Rename</button><button type="button" class="is-destructive" data-reuse-action="delete-saved-meal">Delete saved meal</button></div>`;
+  }
+}
+
+function copyFoodEntries(entries, { sourceDate = "", targetMeal = null, successMessage = "Foods added." } = {}) {
+  if (!entries.length) return false;
+  const targetDay = currentDay();
+  const previousFoods = targetDay.foods;
+  const previousFoodLibrary = foodLibrary;
+  try {
+    const copiedFoods = foodReuse.cloneFoodEntries(entries, {
+      targetDate: state.selectedDate,
+      targetMeal,
+      sourceDate,
+      excludedFromStreak: isFutureDateKey(state.selectedDate),
+    });
+    if (editingFoodId) resetFoodForm();
+    targetDay.foods = [...copiedFoods, ...previousFoods];
+    rememberFoods(copiedFoods.map((food) => ({
+      ...food,
+      source: foodSource(food) || "Manual",
+      lastUsedAmount: food.amount,
+      lastUsedUnit: food.unit,
+    })));
+    saveState();
+    closeFoodReusePanel({ restoreFocus: false });
+    render();
+    elements.searchNote.textContent = successMessage;
+    return true;
+  } catch {
+    targetDay.foods = previousFoods;
+    foodLibrary = previousFoodLibrary;
+    try {
+      saveState();
+      saveFoodLibrary();
+    } catch {
+      // The original in-memory diary remains intact even if storage is unavailable.
+    }
+    setFoodReuseStatus("The foods could not be copied. Please try again.", true);
+    return false;
+  }
+}
+
+function confirmAndCopyFoods(entries, options = {}) {
+  if (!entries.length) return false;
+  if (entries.length > 2) {
+    const sourceLabel = options.sourceDate ? formatReuseDate(options.sourceDate) : "this meal";
+    const targetLabel = formatReuseDate(state.selectedDate);
+    if (!window.confirm(`Add ${entries.length} foods from ${sourceLabel} to ${targetLabel}?`)) return false;
+  }
+  return copyFoodEntries(entries, options);
+}
+
+function persistSavedMeal({ name, meal, foods }) {
+  if (!String(name || "").trim() || !Array.isArray(foods) || !foods.length) return null;
+  const savedMeal = foodReuse.createSavedMeal({ name, meal, foods });
+  const previousSavedMeals = savedMeals;
+  savedMeals = [savedMeal, ...savedMeals];
+  try {
+    saveSavedMeals();
+  } catch {
+    savedMeals = previousSavedMeals;
+    return null;
+  }
+  renderSavedFoods();
+  return savedMeal;
+}
+
+function saveMealFromSelectedGroup(name) {
+  const group = foodMealGroups(state.selectedDate).find((item) => item.meal === foodReuseState.selectedMeal);
+  if (!group || !String(name || "").trim()) return false;
+  const savedMeal = persistSavedMeal({ name, meal: group.meal, foods: group.foods });
+  if (!savedMeal) {
+    setFoodReuseStatus("The meal could not be saved. Please try again.", true);
+    return false;
+  }
+  closeFoodReusePanel({ restoreFocus: false });
+  elements.searchNote.textContent = `${savedMeal.name} saved as a meal.`;
+  return true;
+}
+
+function saveMealFromScanReview(name) {
+  const meal = foodReuseState.selectedMeal || elements.foodMeal.value || defaultMealForNow();
+  const foods = selectedScannedFoods().map((food) => scannedFoodToReusableEntry(food, meal));
+  const savedMeal = persistSavedMeal({ name, meal, foods });
+  if (!savedMeal) {
+    setFoodReuseStatus("The meal could not be saved. Please try again.", true);
+    return false;
+  }
+  closeFoodReusePanel({ restoreFocus: false });
+  elements.scanSaveMealStatus.textContent = "Meal saved";
+  elements.scanSaveAsMeal.focus({ preventScroll: true });
+  return true;
+}
+
+function openSavedMealReview(savedMealId) {
+  openFoodReusePanel("saved-meal-review", { savedMealId });
+}
+
 function renderSavedFoods() {
   if (!elements.savedFoods) return;
   elements.savedFoods.innerHTML = "";
+  if (elements.savedMeals) elements.savedMeals.innerHTML = "";
   if (elements.recentFoods) elements.recentFoods.innerHTML = "";
+
+  if (elements.savedMealsSection) elements.savedMealsSection.hidden = savedMeals.length === 0;
+  if (elements.savedFoodsSection) elements.savedFoodsSection.hidden = savedFoods.length === 0 && savedMeals.length > 0;
+  savedMeals.forEach((savedMeal) => elements.savedMeals?.appendChild(createSavedMealCard(savedMeal)));
 
   if (!savedFoods.length) {
     elements.savedFoods.innerHTML = "<div class=\"saved-foods-empty\">Save foods from your daily log and they will appear here.</div>";
@@ -1766,6 +2345,16 @@ function renderSavedFoods() {
   recentFoods.forEach((food) => {
     elements.recentFoods.appendChild(createLibraryFoodCard(food, { saved: false }));
   });
+}
+
+function createSavedMealCard(savedMeal, { compact = false } = {}) {
+  const calories = savedMeal.foods.reduce((sum, food) => sum + Number(food.calories || 0), 0);
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = `saved-meal-card${compact ? " is-compact" : ""}`;
+  card.innerHTML = `<span><strong>${escapeHtml(savedMeal.name)}</strong><small>${savedMeal.foods.length} ${savedMeal.foods.length === 1 ? "food" : "foods"} · ${Math.round(calories)} kcal</small></span><span aria-hidden="true">→</span>`;
+  card.addEventListener("click", () => openSavedMealReview(savedMeal.id));
+  return card;
 }
 
 function createLibraryFoodCard(food, { saved }) {
@@ -1939,7 +2528,11 @@ function updateFoodFilterTabs() {
 
 function foodSearchSummary(count, total = count) {
   const query = elements.manualFoodName.value.trim();
-  if (!query && foodSearchFilter === "my") return `${count} saved ${count === 1 ? "food" : "foods"}`;
+  if (!query && foodSearchFilter === "my") {
+    const foodCopy = `${savedFoods.length} saved ${savedFoods.length === 1 ? "food" : "foods"}`;
+    const mealCopy = `${savedMeals.length} saved ${savedMeals.length === 1 ? "meal" : "meals"}`;
+    return savedMeals.length ? `${mealCopy} · ${foodCopy}` : foodCopy;
+  }
   if (!query && foodSearchFilter === "recent") return `${count} recent ${count === 1 ? "food" : "foods"}`;
   if (!query) return "Search saved foods, USDA, or Open Food Facts.";
   if (!count) {
@@ -1954,7 +2547,7 @@ function showBrowseFoodSuggestions() {
   if (elements.manualFoodName.value.trim()) return false;
 
   if (foodSearchFilter === "my") {
-    renderSuggestions(savedFoods, { remember: false });
+    renderSavedFoodSuggestions();
     return true;
   }
 
@@ -1974,6 +2567,37 @@ function showBrowseFoodSuggestions() {
   elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
   setFoodSearchActive(false);
   return true;
+}
+
+function renderSavedFoodSuggestions() {
+  elements.foodSection.classList.remove("has-search-fallback");
+  elements.foodSuggestions.innerHTML = "";
+  latestFoodSuggestions = [];
+  setFoodSearchActive(false);
+
+  if (!savedMeals.length && !savedFoods.length) {
+    elements.foodSection.classList.remove("has-food-suggestions");
+    elements.searchNote.textContent = "No saved meals or foods yet.";
+    return;
+  }
+
+  if (savedMeals.length) {
+    const heading = document.createElement("p");
+    heading.className = "food-suggestion-section-label label";
+    heading.textContent = "Saved meals";
+    elements.foodSuggestions.appendChild(heading);
+    savedMeals.forEach((meal) => elements.foodSuggestions.appendChild(createSavedMealCard(meal, { compact: true })));
+  }
+
+  if (savedFoods.length) {
+    const heading = document.createElement("p");
+    heading.className = "food-suggestion-section-label label";
+    heading.textContent = "Saved foods";
+    elements.foodSuggestions.appendChild(heading);
+    savedFoods.forEach((food) => elements.foodSuggestions.appendChild(createFoodSuggestionCard(food)));
+  }
+  elements.foodSection.classList.add("has-food-suggestions");
+  elements.searchNote.textContent = foodSearchSummary(savedFoods.length);
 }
 
 function renderRecentFoodSuggestions() {
@@ -2255,6 +2879,8 @@ function fillManualFood(food, options = {}) {
   elements.foodUnit.value = lastUsedUnit;
   elements.foodMeal.value = defaultMealForNow();
   elements.manualFoodSubmit.textContent = "Add food";
+  elements.scanSimpleSaveActions.hidden = true;
+  elements.scanSaveMealStatus.textContent = "";
   updateFoodAmountStep();
   elements.foodSuggestions.innerHTML = "";
   setFoodSearchActive(false);
@@ -2319,6 +2945,8 @@ function resetFoodForm() {
   updateFoodAmountStep();
   elements.manualFoodSubmit.textContent = "Add food";
   elements.manualFoodSubmit.disabled = false;
+  elements.scanSimpleSaveActions.hidden = true;
+  elements.scanSaveMealStatus.textContent = "";
   editingFoodId = null;
   selectedFoodBase = null;
   foodNutritionOverridden = false;
@@ -2643,6 +3271,8 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
     ? "+ Add 1 food"
     : `+ Add ${includedFoods.length} foods`;
   elements.manualFoodSubmit.disabled = includedFoods.length === 0;
+  elements.scanSimpleSaveActions.hidden = includedFoods.length === 0;
+  elements.scanSaveAsMeal.disabled = includedFoods.length === 0;
   elements.manualFoodName.value = plateName;
   elements.manualFoodName.readOnly = true;
   elements.foodEditName.textContent = plateName;
@@ -2659,6 +3289,7 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
   elements.foodPhotoStatus.textContent = `${scannedFoodItems.length} ${scannedFoodItems.length === 1 ? "food" : "foods"} ${inputMode === "text" ? "estimated" : "detected"} · ${scannedFoodAnalysis?.confidence || "low"} confidence.`;
   setFoodSearchActive(false);
   syncFoodModeHeader();
+  syncDesktopFoodAddContentState();
 }
 
 async function lookupBarcode(code) {
@@ -2707,6 +3338,7 @@ function showScannedFoodsReview() {
   elements.foodSection.classList.add("is-detailing", "is-reviewing-scan");
   elements.foodSection.classList.toggle("is-reviewing-text-estimate", isTextEstimate);
   elements.scanReview.hidden = false;
+  elements.scanSimpleSaveActions.hidden = true;
   elements.scanReviewMeal.value = elements.foodMeal.value || defaultMealForNow();
   elements.scanReviewEyebrow.textContent = isTextEstimate ? "AI estimated foods" : "Detected foods";
   elements.scanReviewTitle.textContent = isTextEstimate ? "Review your estimate" : "Review your plate";
@@ -2717,6 +3349,7 @@ function showScannedFoodsReview() {
   elements.closeScanReview.dataset.shortLabel = isTextEstimate ? "Edit description" : "Simple view";
   selectedFoodBase = null;
   syncFoodModeHeader();
+  syncDesktopFoodAddContentState();
   renderScanReview();
 }
 
@@ -2766,6 +3399,7 @@ function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
 }
 
 function renderScanReview() {
+  if (elements.scanSaveMealStatus) elements.scanSaveMealStatus.textContent = "";
   elements.scanFoodList.replaceChildren();
   scannedFoodItems.forEach((food, index) => {
     const card = document.createElement("article");
@@ -2955,6 +3589,7 @@ function updateScanReviewTotals() {
     elements.foodNutritionGrid.hidden = false;
   }
   elements.scanAddSelectedFoods.disabled = selected.length === 0;
+  elements.scanSaveAsMeal.disabled = selected.length === 0;
   elements.scanAddSelectedFoods.textContent = selected.length === 1 ? "Add food" : `Add ${selected.length} foods`;
 }
 
@@ -3066,24 +3701,7 @@ function logScannedFoods(foods, meal) {
   if (!foods.length) return;
 
   [...foods].reverse().forEach((food) => {
-    addFood({
-      name: food.name.trim(),
-      brand: "",
-      source: food.source,
-      catalogId: food.sourceId || "",
-      sourceId: food.sourceId || "",
-      nutritionSource: food.nutritionSource || "",
-      resolvedFoodName: food.resolvedFoodName || food.name.trim(),
-      serving: food.unit === "serving" ? "1 serving" : `${food.amount} ${food.unit}`,
-      servingGrams: food.servingGrams || null,
-      amount: food.amount,
-      unit: food.unit,
-      meal,
-      calories: food.calories,
-      protein: food.protein,
-      carbs: food.carbs,
-      fat: food.fat,
-    }, { deferSaveRender: true });
+    addFood(scannedFoodToReusableEntry(food, meal), { deferSaveRender: true });
   });
 
   saveState();
@@ -3162,55 +3780,6 @@ function addFood(food, options = {}) {
     render();
   }
   return addedId;
-}
-
-function updateCopyYesterdayButton() {
-  const sourceDateKey = previousDayKey(state.selectedDate);
-  const sourceFoods = state.days[sourceDateKey]?.foods || [];
-
-  elements.copyYesterdayButton.disabled = sourceFoods.length === 0;
-  elements.copyYesterdayButton.title = sourceFoods.length
-    ? `Copy ${sourceFoods.length} food ${sourceFoods.length === 1 ? "entry" : "entries"} from the previous day`
-    : "No food entries on the previous day";
-}
-
-function copyFoodsFromYesterday() {
-  const sourceDateKey = previousDayKey(state.selectedDate);
-  const sourceFoods = state.days[sourceDateKey]?.foods || [];
-
-  if (!sourceFoods.length) {
-    elements.searchNote.textContent = "No food entries found on the previous day.";
-    updateCopyYesterdayButton();
-    return;
-  }
-
-  const copiedAt = new Date().toISOString();
-  const loggedForDate = state.selectedDate;
-  const excludedFromStreak = isFutureDateKey(loggedForDate);
-  const copiedFoods = sourceFoods.map(({
-    id,
-    createdAt,
-    updatedAt,
-    copiedFromDate,
-    loggedForDate: _loggedForDate,
-    logged_for_date: _loggedForDateLegacy,
-    excludedFromStreak: _excludedFromStreak,
-    ...food
-  }) => ({
-    ...food,
-    id: crypto.randomUUID(),
-    loggedAt: copiedAt,
-    createdAt: copiedAt,
-    loggedForDate,
-    excludedFromStreak,
-    copiedFromDate: sourceDateKey,
-  }));
-
-  if (editingFoodId) resetFoodForm();
-  currentDay().foods = [...copiedFoods, ...currentDay().foods];
-  elements.searchNote.textContent = `${copiedFoods.length} food ${copiedFoods.length === 1 ? "entry" : "entries"} copied from the previous day.`;
-  saveState();
-  render();
 }
 
 elements.manualFoodForm.addEventListener("submit", (event) => {
@@ -3306,6 +3875,7 @@ elements.scanFoodList.addEventListener("input", (event) => {
   if (!card) return;
   const food = scannedFoodItems.find((item) => item.id === card.dataset.scanFoodId);
   if (!food) return;
+  if (elements.scanSaveMealStatus) elements.scanSaveMealStatus.textContent = "";
 
   if (correctionInput) {
     food.correctionText = correctionInput.value;
@@ -3328,6 +3898,11 @@ elements.scanFoodList.addEventListener("input", (event) => {
     food[field] = Math.max(0, Number(input.value || 0));
     const multiplier = scannedFoodMultiplier(food);
     food.baseNutrition[field] = multiplier ? food[field] / multiplier : food[field];
+    food.nutritionOverridden = true;
+    food.manualNutritionOverride = Object.fromEntries(["calories", "protein", "carbs", "fat"].map((key) => [
+      key,
+      Math.max(0, Number(food[key] || 0)),
+    ]));
   }
   updateScanReviewTotals();
 });
@@ -3385,7 +3960,175 @@ elements.closeScanReview.addEventListener("click", () => {
   showSimpleScannedPlate();
 });
 elements.scanAddSelectedFoods.addEventListener("click", addSelectedScannedFoods);
-elements.copyYesterdayButton.addEventListener("click", copyFoodsFromYesterday);
+elements.scanReviewMeal?.addEventListener("change", () => {
+  if (elements.scanSaveMealStatus) elements.scanSaveMealStatus.textContent = "";
+});
+elements.scanSaveAsMeal?.addEventListener("click", () => {
+  if (!selectedScannedFoods().length) return;
+  const meal = elements.foodMeal.value || defaultMealForNow();
+  elements.scanReviewMeal.value = meal;
+  openFoodReusePanel("save-scan-meal-name", { selectedMeal: meal });
+});
+elements.foodLogOptionsButton?.addEventListener("click", () => openFoodReusePanel("menu", {
+  sourceDate: previousDayKey(state.selectedDate),
+  selectedMeal: "",
+  savedMealId: "",
+}));
+elements.foodReuseClose?.addEventListener("click", () => closeFoodReusePanel());
+elements.foodReuseBackdrop?.addEventListener("click", () => closeFoodReusePanel());
+elements.foodReusePanel?.addEventListener("touchstart", startFoodReuseTouch, { passive: true });
+elements.foodReusePanel?.addEventListener("touchmove", moveFoodReuseTouch, { passive: false });
+elements.foodReusePanel?.addEventListener("touchend", () => endFoodReuseTouch(), { passive: true });
+elements.foodReusePanel?.addEventListener("touchcancel", () => endFoodReuseTouch({ cancelled: true }), { passive: true });
+elements.foodReusePanel?.addEventListener("click", (event) => {
+  if (performance.now() < foodReuseSuppressClickUntil) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}, true);
+elements.foodReuseBack?.addEventListener("click", () => {
+  if (foodReuseState.view === "save-meal-name") foodReuseState.view = "save-meal-picker";
+  else if (foodReuseState.view === "saved-meal-review") {
+    closeFoodReusePanel();
+    return;
+  } else foodReuseState.view = "menu";
+  renderFoodReusePanel();
+});
+elements.foodReuseContent?.addEventListener("change", (event) => {
+  const dateInput = event.target.closest("[data-reuse-source-date]");
+  if (!dateInput) return;
+  foodReuseState.sourceDate = dateInput.value;
+  renderFoodReusePanel();
+});
+elements.foodReuseContent?.addEventListener("submit", (event) => {
+  const form = event.target.closest("[data-reuse-save-form]");
+  if (!form) return;
+  event.preventDefault();
+  const name = new FormData(form).get("mealName");
+  if (!String(name || "").trim()) {
+    form.querySelector("[name='mealName']")?.focus();
+    return;
+  }
+  if (foodReuseState.view === "save-scan-meal-name") saveMealFromScanReview(name);
+  else saveMealFromSelectedGroup(name);
+});
+elements.foodReuseContent?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-reuse-action]");
+  if (!button) return;
+  const action = button.dataset.reuseAction;
+
+  if (action === "repeat-yesterday") {
+    const sourceDate = previousDayKey(state.selectedDate);
+    const foods = foodEntriesForDate(sourceDate);
+    if (!foods.length) {
+      elements.foodReuseTitle.textContent = "Repeat yesterday";
+      renderFoodReuseEmpty("No food logged yesterday.", true);
+      return;
+    }
+    confirmAndCopyFoods(foods, {
+      sourceDate,
+      successMessage: `${foods.length} ${foods.length === 1 ? "food" : "foods"} ${isPhoneAddFoodLayout() ? "repeated" : "copied"} from yesterday.`,
+    });
+    return;
+  }
+  if (["repeat-meal", "copy-date", "save-meal-picker"].includes(action)) {
+    foodReuseState.view = action;
+    if (action === "repeat-meal") foodReuseState.sourceDate = previousDayKey(state.selectedDate);
+    renderFoodReusePanel();
+    return;
+  }
+  if (action === "copy-day") {
+    const foods = foodEntriesForDate(foodReuseState.sourceDate);
+    confirmAndCopyFoods(foods, {
+      sourceDate: foodReuseState.sourceDate,
+      successMessage: `${foods.length} ${foods.length === 1 ? "food" : "foods"} copied from ${formatReuseDate(foodReuseState.sourceDate)}.`,
+    });
+    return;
+  }
+  if (action === "copy-meal") {
+    const meal = button.dataset.meal;
+    const foods = foodEntriesForDate(foodReuseState.sourceDate).filter((food) => String(food.meal || "snack").toLowerCase() === meal);
+    confirmAndCopyFoods(foods, {
+      sourceDate: foodReuseState.sourceDate,
+      targetMeal: meal,
+      successMessage: `${mealLabel(meal).toLowerCase().replace(/^./, (letter) => letter.toUpperCase())} copied from ${formatReuseDate(foodReuseState.sourceDate)}.`,
+    });
+    return;
+  }
+  if (action === "name-saved-meal") {
+    foodReuseState.selectedMeal = button.dataset.meal;
+    foodReuseState.view = "save-meal-name";
+    renderFoodReusePanel();
+    return;
+  }
+  if (action === "add-saved-meal") {
+    const savedMeal = savedMeals.find((meal) => meal.id === foodReuseState.savedMealId);
+    const targetMeal = elements.foodReuseContent.querySelector("[data-saved-meal-target]")?.value || savedMeal?.meal;
+    if (!savedMeal) return;
+    if (copyFoodEntries(savedMeal.foods, {
+      targetMeal,
+      successMessage: `${savedMeal.name} added.`,
+    })) {
+      closeMobileLogForm(elements.foodSection);
+      resetFoodForm();
+    }
+    return;
+  }
+  if (action === "rename-saved-meal") {
+    const savedMeal = savedMeals.find((meal) => meal.id === foodReuseState.savedMealId);
+    if (!savedMeal) return;
+    const name = window.prompt("Rename saved meal", savedMeal.name);
+    if (!String(name || "").trim()) return;
+    const previousSavedMeals = savedMeals;
+    savedMeals = savedMeals.map((meal) => meal.id === savedMeal.id ? { ...meal, name: String(name).trim(), updatedAt: new Date().toISOString() } : meal);
+    try {
+      saveSavedMeals();
+    } catch {
+      savedMeals = previousSavedMeals;
+      setFoodReuseStatus("The meal could not be renamed. Please try again.", true);
+      return;
+    }
+    renderSavedFoods();
+    renderFoodReusePanel();
+    return;
+  }
+  if (action === "delete-saved-meal") {
+    const savedMeal = savedMeals.find((meal) => meal.id === foodReuseState.savedMealId);
+    if (!savedMeal || !window.confirm(`Delete saved meal “${savedMeal.name}”?`)) return;
+    const previousSavedMeals = savedMeals;
+    savedMeals = savedMeals.filter((meal) => meal.id !== savedMeal.id);
+    try {
+      saveSavedMeals();
+    } catch {
+      savedMeals = previousSavedMeals;
+      setFoodReuseStatus("The saved meal could not be deleted. Please try again.", true);
+      return;
+    }
+    renderSavedFoods();
+    closeFoodReusePanel({ restoreFocus: false });
+    if (foodSearchFilter === "my" && !elements.manualFoodName.value.trim()) renderSavedFoodSuggestions();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (!foodReuseState.open) return;
+  if (event.key === "Escape") {
+    closeFoodReusePanel();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...elements.foodReusePanel.querySelectorAll("button:not([disabled]):not([hidden]), input:not([disabled]), select:not([disabled])")]
+    .filter((element) => element.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 elements.addFoodToggle.addEventListener("click", () => {
   openAddFoodFromFab();
 });

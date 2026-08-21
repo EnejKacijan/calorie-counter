@@ -20,6 +20,7 @@ function parsedFood(overrides = {}) {
     fallbackProtein: 12,
     fallbackCarbs: 20,
     fallbackFat: 6,
+    isZeroCalorie: false,
     ...overrides,
   };
 }
@@ -38,6 +39,15 @@ function aiFetch(result) {
     ok: true,
     status: 200,
     json: async () => ({ output_text: JSON.stringify(result) }),
+  });
+}
+
+function aiFetchSequence(results) {
+  let index = 0;
+  return async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ output_text: JSON.stringify(results[Math.min(index++, results.length - 1)]) }),
   });
 }
 
@@ -145,6 +155,81 @@ test("explicit 200 g portion overrides parser drift and structured nutrition is 
   assert.equal(food.calories, 240);
   assert.equal(food.protein, 44);
   assert.equal(food.nutritionSource, "USDA");
+});
+
+test("all-zero placeholder nutrition is repaired before an ordinary food reaches review", async () => {
+  const zeroPlaceholder = parsedFood({
+    name: "Poultry breast, raw",
+    searchQuery: "poultry breast raw",
+    fallbackCalories: 0,
+    fallbackProtein: 0,
+    fallbackCarbs: 0,
+    fallbackFat: 0,
+  });
+  const repaired = parsedFood({
+    name: "Poultry breast, raw",
+    searchQuery: "poultry breast raw",
+    fallbackCalories: 300,
+    fallbackProtein: 55,
+    fallbackCarbs: 0,
+    fallbackFat: 7,
+  });
+  const analysis = await analyzeFoodDescription("250 g raw poultry breast", {
+    openAiApiKey: "test-key",
+    fetchFn: aiFetchSequence([parsedResponse([zeroPlaceholder]), parsedResponse([repaired])]),
+    searchFoodsFn: async () => [],
+  });
+  assert.equal(analysis.foods[0].amount, 250);
+  assert.equal(analysis.foods[0].calories, 300);
+  assert.equal(analysis.foods[0].protein, 55);
+  assert.equal(analysis.foods[0].nutritionSource, "AI estimate");
+});
+
+test("repeated all-zero placeholders never become an ordinary food review item", async () => {
+  const zeroPlaceholder = parsedFood({
+    fallbackCalories: 0,
+    fallbackProtein: 0,
+    fallbackCarbs: 0,
+    fallbackFat: 0,
+  });
+  await assert.rejects(
+    analyzeFoodDescription("250 g raw poultry breast", {
+      openAiApiKey: "test-key",
+      fetchFn: aiFetch(parsedResponse([zeroPlaceholder])),
+      searchFoodsFn: async () => [],
+    }),
+    (error) => error.status === 502,
+  );
+});
+
+test("positive macros with placeholder zero calories are repaired too", async () => {
+  const inconsistent = parsedFood({ fallbackCalories: 0, fallbackProtein: 25, fallbackCarbs: 0, fallbackFat: 4 });
+  const repaired = parsedFood({ fallbackCalories: 140, fallbackProtein: 25, fallbackCarbs: 0, fallbackFat: 4 });
+  const analysis = await analyzeFoodDescription("125 g raw lean protein", {
+    openAiApiKey: "test-key",
+    fetchFn: aiFetchSequence([parsedResponse([inconsistent]), parsedResponse([repaired])]),
+    searchFoodsFn: async () => [],
+  });
+  assert.equal(analysis.foods[0].calories, 140);
+  assert.equal(analysis.foods[0].protein, 25);
+});
+
+test("an explicitly classified zero-calorie item may retain true zero nutrition", async () => {
+  const analysis = await analyzeFoodDescription("one serving of a zero-calorie drink", {
+    openAiApiKey: "test-key",
+    fetchFn: aiFetch(parsedResponse([parsedFood({
+      name: "Zero-calorie drink",
+      searchQuery: "zero calorie drink",
+      fallbackCalories: 0,
+      fallbackProtein: 0,
+      fallbackCarbs: 0,
+      fallbackFat: 0,
+      isZeroCalorie: true,
+    })])),
+    searchFoodsFn: async () => [],
+  });
+  assert.equal(analysis.foods[0].calories, 0);
+  assert.equal(analysis.foods[0].isZeroCalorie, true);
 });
 
 test("unsafe structured candidate falls back to AI nutrition instead of failing", async () => {

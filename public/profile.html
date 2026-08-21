@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest?v=8" />
-    <link rel="stylesheet" href="styles.css?v=6" />
+    <link rel="stylesheet" href="styles.css?v=32" />
   </head>
   <body>
     <main class="app-shell">
@@ -232,6 +232,27 @@
               </div>
 
             </section>
+            <section class="meal-schedule-settings" aria-labelledby="mealScheduleTitle">
+              <div class="meal-schedule-header">
+                <div>
+                  <span class="label">Preferences</span>
+                  <h3 id="mealScheduleTitle">Meal schedule</h3>
+                </div>
+                <button class="meal-schedule-reset" id="mealScheduleReset" type="button">Reset to defaults</button>
+              </div>
+              <p class="meal-schedule-copy">Used only to preselect a meal when you add food. Existing entries are not changed.</p>
+              <div class="meal-schedule-fields">
+                <label for="profileBreakfastEnd">
+                  Breakfast ends
+                  <input id="profileBreakfastEnd" type="time" value="11:00" required />
+                </label>
+                <label for="profileLunchEnd">
+                  Lunch ends
+                  <input id="profileLunchEnd" type="time" value="16:00" required />
+                </label>
+              </div>
+              <p class="meal-schedule-preview" id="mealSchedulePreview"></p>
+            </section>
             <label class="theme-control profile-theme-control">
               Theme
               <select id="profileTheme" required>
@@ -254,6 +275,7 @@
     </nav>
 
     <script src="pwa.js?v=6"></script>
-    <script src="profile.js?v=6"></script>
+    <script src="meal-schedule.js?v=1"></script>
+    <script src="profile.js?v=7"></script>
   </body>
 </html>

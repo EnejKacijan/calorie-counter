@@ -38,6 +38,8 @@ const savedMealLibraryKey = "calorie-counter-saved-meals";
 const savedFoodMigrationKey = "calorie-counter-saved-foods-v2";
 const appSessionKey = "calorie-counter-today-session-v1";
 const foodReuse = window.IntakeFoodReuse;
+const foodPersistence = window.IntakeFoodPersistence;
+const mealSchedule = window.IntakeMealSchedule;
 let isFreshAppLaunch = true;
 
 try {
@@ -47,7 +49,7 @@ try {
   // If session storage is unavailable, selecting today on load is the safe fallback.
   isFreshAppLaunch = true;
 }
-const maxRecentFoodItems = 100;
+const maxRecentFoodItems = foodPersistence?.MAX_RECENT_FOODS || 100;
 const stapleFoodLibrary = [
   { id: "usda-chicken-breast-grilled", name: "Chicken breast, grilled", brand: "USDA", source: "USDA", serving: "per 100g", calories: 165, protein: 31, carbs: 0, fat: 4 },
   { id: "usda-chicken-thigh-roasted", name: "Chicken thigh, roasted", brand: "USDA", source: "USDA", serving: "per 100g", calories: 209, protein: 26, carbs: 0, fat: 11 },
@@ -298,7 +300,10 @@ function loadState() {
 function loadFoodLibrary() {
   try {
     const saved = JSON.parse(localStorage.getItem(foodLibraryKey) || "[]");
-    return Array.isArray(saved) ? uniqueRecentFoods(saved.map(normalizeFoodForLibrary).filter(Boolean)).slice(0, maxRecentFoodItems) : [];
+    if (!Array.isArray(saved)) return [];
+    const migrated = uniqueRecentFoods(saved.map(normalizeFoodForLibrary).filter(Boolean)).slice(0, maxRecentFoodItems);
+    localStorage.setItem(foodLibraryKey, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return [];
   }
@@ -313,7 +318,10 @@ function loadSavedFoods() {
 
   try {
     const saved = JSON.parse(localStorage.getItem(savedFoodLibraryKey) || "[]");
-    return Array.isArray(saved) ? uniqueSavedFoods(saved.map(normalizeFoodForLibrary).filter(Boolean)) : [];
+    if (!Array.isArray(saved)) return [];
+    const migrated = uniqueSavedFoods(saved.map(normalizeFoodForLibrary).filter(Boolean));
+    localStorage.setItem(savedFoodLibraryKey, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return [];
   }
@@ -331,7 +339,7 @@ function loadSavedMeals() {
   try {
     const stored = JSON.parse(localStorage.getItem(savedMealLibraryKey) || "[]");
     if (!Array.isArray(stored) || !foodReuse) return [];
-    return stored
+    const migrated = foodPersistence.prepareSavedMeals(stored)
       .map((meal) => {
         if (!meal?.id || !String(meal.name || "").trim() || !Array.isArray(meal.foods) || !meal.foods.length) return null;
         return foodReuse.createSavedMeal({
@@ -345,6 +353,8 @@ function loadSavedMeals() {
       })
       .filter(Boolean)
       .sort((left, right) => String(right.updatedAt || "").localeCompare(String(left.updatedAt || "")));
+    localStorage.setItem(savedMealLibraryKey, JSON.stringify(migrated));
+    return migrated;
   } catch {
     return [];
   }
@@ -356,27 +366,42 @@ function saveSavedMeals() {
 
 function normalizeFoodForLibrary(food) {
   if (!food?.name) return null;
-  const originalSource = foodSource(food);
-  const catalogId = String(food.catalogId || (/^(?:usda|off)-/i.test(String(food.id || "")) ? food.id : "")).trim();
+  const identifiedFood = foodPersistence.ensureStableFoodIdentity(food);
+  const originalSource = foodSource(identifiedFood);
+  const catalogId = String(identifiedFood.catalogId || (/^(?:usda|off)-/i.test(String(identifiedFood.id || "")) ? identifiedFood.id : "")).trim();
   return {
-    id: food.id || catalogId || `custom-${foodKey(food)}`,
+    id: identifiedFood.id || catalogId || identifiedFood.localFoodId,
     catalogId,
-    name: food.name,
-    brand: food.brand || "",
+    sourceId: String(identifiedFood.sourceId || ""),
+    localFoodId: String(identifiedFood.localFoodId || ""),
+    reusableFoodId: String(identifiedFood.reusableFoodId || ""),
+    name: identifiedFood.name,
+    displayName: String(identifiedFood.displayName || identifiedFood.name || ""),
+    brand: identifiedFood.brand || "",
     source: originalSource,
-    nutritionSource: String(food.nutritionSource || ""),
-    resolvedFoodName: String(food.resolvedFoodName || food.name || ""),
-    serving: food.serving || (food.amount && food.unit ? `${food.amount} ${food.unit}` : "1 serving"),
-    servingGrams: Number(food.servingGrams || 0) || null,
-    calories: Math.round(Number(food.calories || 0)),
-    protein: Math.round(Number(food.protein || 0)),
-    carbs: Math.round(Number(food.carbs || 0)),
-    fat: Math.round(Number(food.fat || 0)),
-    savedAt: food.savedAt || new Date().toISOString(),
-    lastUsedAt: food.lastUsedAt || food.loggedAt || food.updatedAt || food.createdAt || food.savedAt || new Date().toISOString(),
-    useCount: Math.max(1, Number(food.useCount || 0) || 1),
-    lastUsedAmount: Number(food.lastUsedAmount ?? food.amount ?? 0) || null,
-    lastUsedUnit: food.lastUsedUnit || food.unit || "",
+    nutritionSource: String(identifiedFood.nutritionSource || ""),
+    resolvedFoodName: String(identifiedFood.resolvedFoodName || identifiedFood.name || ""),
+    serving: identifiedFood.serving || (identifiedFood.amount && identifiedFood.unit ? `${identifiedFood.amount} ${identifiedFood.unit}` : "1 serving"),
+    servingGrams: Number(identifiedFood.servingGrams || 0) || null,
+    calories: Math.round(Number(identifiedFood.calories || 0)),
+    protein: Math.round(Number(identifiedFood.protein || 0)),
+    carbs: Math.round(Number(identifiedFood.carbs || 0)),
+    fat: Math.round(Number(identifiedFood.fat || 0)),
+    nutritionOverridden: Boolean(identifiedFood.nutritionOverridden),
+    ...(identifiedFood.manualNutritionOverride
+      ? { manualNutritionOverride: structuredClone(identifiedFood.manualNutritionOverride) }
+      : {}),
+    ...(identifiedFood.aiEstimate
+      ? { aiEstimate: structuredClone(identifiedFood.aiEstimate) }
+      : {}),
+    ...(identifiedFood.sourceMetadata
+      ? { sourceMetadata: structuredClone(identifiedFood.sourceMetadata) }
+      : {}),
+    savedAt: identifiedFood.savedAt || new Date().toISOString(),
+    lastUsedAt: identifiedFood.lastUsedAt || identifiedFood.loggedAt || identifiedFood.updatedAt || identifiedFood.createdAt || identifiedFood.savedAt || new Date().toISOString(),
+    useCount: Math.max(1, Number(identifiedFood.useCount || 0) || 1),
+    lastUsedAmount: Number(identifiedFood.lastUsedAmount ?? identifiedFood.amount ?? 0) || null,
+    lastUsedUnit: identifiedFood.lastUsedUnit || identifiedFood.unit || "",
   };
 }
 
@@ -402,15 +427,7 @@ function foodSource(food) {
 }
 
 function foodIdentityKey(food) {
-  const catalogId = String(food?.catalogId || "").trim();
-  const id = String(food?.id || "").trim();
-  const stableId = catalogId || (/^(?:usda|off)-/i.test(id) ? id : "");
-  if (stableId) return `id:${stableId.toLowerCase()}`;
-
-  const source = normalizedFoodText(foodSource(food));
-  const name = normalizedFoodText(food?.name);
-  const brand = normalizedFoodText(food?.brand);
-  return `${source || "manual"}:${name}:${brand}`;
+  return foodPersistence.foodIdentityKey(food);
 }
 
 function foodNameBrandKey(food) {
@@ -426,55 +443,22 @@ function foodsShareIdentity(left, right) {
 }
 
 function uniqueSavedFoods(foods) {
-  const foodMap = new Map();
-  foods.forEach((food) => {
-    const key = savedFoodKey(food);
-    if (!key.trim()) return;
-    const existing = foodMap.get(key);
-    if (!existing || String(food.savedAt || "").localeCompare(String(existing.savedAt || "")) >= 0) {
-      foodMap.set(key, food);
-    }
-  });
-  return [...foodMap.values()].sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+  return foodPersistence.uniqueSavedFoods(foods);
 }
 
 function uniqueRecentFoods(foods) {
-  const foodMap = new Map();
-  foods.forEach((food) => {
-    const key = recentFoodKey(food);
-    if (!key) return;
-    const existing = foodMap.get(key);
-    if (!existing || String(food.lastUsedAt || "").localeCompare(String(existing.lastUsedAt || "")) >= 0) {
-      foodMap.set(key, {
-        ...existing,
-        ...food,
-        useCount: Math.max(Number(existing?.useCount || 0), Number(food.useCount || 0), 1),
-      });
-    }
-  });
-  return [...foodMap.values()].sort((a, b) => String(b.lastUsedAt || "").localeCompare(String(a.lastUsedAt || "")));
+  return foodPersistence.uniqueRecentFoods(foods);
 }
 
 function rememberFoods(foods) {
   const nextFoods = foods.map(normalizeFoodForLibrary).filter(Boolean);
   if (!nextFoods.length) return;
 
-  const foodMap = new Map(foodLibrary.map((food) => [recentFoodKey(food), food]));
   const now = new Date().toISOString();
-  nextFoods.forEach((food) => {
-    const key = recentFoodKey(food);
-    const existing = foodMap.get(key);
-    foodMap.set(key, {
-      ...existing,
-      ...food,
-      lastUsedAt: now,
-      useCount: Number(existing?.useCount || 0) + 1,
-    });
+  foodLibrary = foodPersistence.updateRecentFoods(foodLibrary, nextFoods, {
+    now,
+    maximum: maxRecentFoodItems,
   });
-
-  foodLibrary = uniqueRecentFoods([...foodMap.values()]
-    .sort((a, b) => String(b.lastUsedAt || "").localeCompare(String(a.lastUsedAt || "")))
-  ).slice(0, maxRecentFoodItems);
   saveFoodLibrary();
 }
 
@@ -1248,10 +1232,8 @@ function formatDecimal(value, digits = 1) {
 }
 
 function defaultMealForNow(date = new Date()) {
-  const hour = date.getHours();
-  if (hour < 11) return "breakfast";
-  if (hour < 16) return "lunch";
-  return "dinner";
+  return mealSchedule?.defaultMealForDate(date, state.user?.mealSchedule)
+    || (date.getHours() < 11 ? "breakfast" : date.getHours() < 16 ? "lunch" : "dinner");
 }
 
 function mealLabel(meal = defaultMealForNow()) {
@@ -2274,7 +2256,8 @@ function confirmAndCopyFoods(entries, options = {}) {
 
 function persistSavedMeal({ name, meal, foods }) {
   if (!String(name || "").trim() || !Array.isArray(foods) || !foods.length) return null;
-  const savedMeal = foodReuse.createSavedMeal({ name, meal, foods });
+  const identifiedFoods = foods.map((food) => foodPersistence.ensureStableFoodIdentity(food));
+  const savedMeal = foodReuse.createSavedMeal({ name, meal, foods: identifiedFoods });
   const previousSavedMeals = savedMeals;
   savedMeals = [savedMeal, ...savedMeals];
   try {
@@ -2635,7 +2618,10 @@ function renderRecentFoodSuggestions() {
 function addSuggestedFood(food) {
   const portion = parseServing(food.serving);
   addFood({
-    catalogId: food.catalogId || food.id || "",
+    catalogId: food.catalogId || "",
+    sourceId: food.sourceId || "",
+    localFoodId: food.localFoodId || "",
+    reusableFoodId: food.reusableFoodId || "",
     name: food.name,
     brand: food.brand || "",
     source: food.source || "Recent",
@@ -3734,11 +3720,22 @@ function resizeImageForAnalysis(file) {
 }
 
 function addFood(food, options = {}) {
-  const now = new Date().toISOString();
+  const currentTime = new Date();
+  const now = currentTime.toISOString();
   const loggedForDate = state.selectedDate;
+  const newEntryTimestamp = foodPersistence.timestampForNewDiaryEntry(loggedForDate, { now: currentTime });
   const excludedFromStreak = isFutureDateKey(loggedForDate);
-  const nextFood = {
+  const existingEntry = editingFoodId
+    ? currentDay().foods.find((entry) => entry.id === editingFoodId)
+    : null;
+  const identifiedFood = foodPersistence.ensureStableFoodIdentity({
+    ...existingEntry,
     ...food,
+  }, {
+    idFactory: () => crypto.randomUUID(),
+  });
+  const nextFood = {
+    ...identifiedFood,
     calories: Math.round(Number(food.calories || 0)),
     protein: Math.round(Number(food.protein || 0)),
     carbs: Math.round(Number(food.carbs || 0)),
@@ -3762,8 +3759,8 @@ function addFood(food, options = {}) {
     currentDay().foods.unshift({
       ...nextFood,
       id: addedId,
-      loggedAt: now,
-      createdAt: now,
+      loggedAt: newEntryTimestamp,
+      createdAt: newEntryTimestamp,
       loggedForDate,
       excludedFromStreak,
     });
@@ -3802,7 +3799,10 @@ elements.manualFoodForm.addEventListener("submit", (event) => {
   elements.foodAmount.setCustomValidity("");
   const isEditing = Boolean(editingFoodId);
   addFood({
-    catalogId: selectedFoodBase?.catalogId || selectedFoodBase?.id || "",
+    catalogId: selectedFoodBase?.catalogId || "",
+    sourceId: selectedFoodBase?.sourceId || "",
+    localFoodId: selectedFoodBase?.localFoodId || "",
+    reusableFoodId: selectedFoodBase?.reusableFoodId || "",
     name: elements.manualFoodName.value.trim(),
     brand: selectedFoodBase?.brand || "",
     source: foodSource(selectedFoodBase) || "Manual",

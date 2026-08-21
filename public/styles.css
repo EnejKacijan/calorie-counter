@@ -487,6 +487,8 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 
   .food-reuse-panel {
+    --food-reuse-mobile-content-inset: max(18px, env(safe-area-inset-left));
+    --food-reuse-mobile-row-inset: calc(var(--food-reuse-mobile-content-inset) + 4px);
     inset: auto 0 0;
     width: 100%;
     max-height: min(82dvh, 700px);
@@ -496,6 +498,39 @@ body.progress-page .weight-chart-panel .progress-chart {
     transform: translateY(100%);
     transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
+  }
+
+  .food-reuse-header {
+    box-sizing: border-box;
+    display: flex;
+    min-height: 58px;
+    align-items: center;
+    padding: 2px var(--food-reuse-mobile-row-inset) 8px;
+  }
+
+  .food-reuse-header .label {
+    display: none;
+  }
+
+  .food-reuse-header > div {
+    flex: 1 1 auto;
+  }
+
+  .food-reuse-header h2 {
+    margin: 0;
+  }
+
+  .food-reuse-back,
+  .food-reuse-close {
+    flex: 0 0 42px;
+  }
+
+  .food-reuse-back {
+    justify-items: start;
+  }
+
+  .food-reuse-close {
+    justify-items: end;
   }
 
   body.food-reuse-open .food-reuse-panel {
@@ -533,7 +568,7 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 
   .food-reuse-content {
-    padding-inline: max(18px, env(safe-area-inset-left));
+    padding-inline: var(--food-reuse-mobile-content-inset);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
@@ -26048,9 +26083,10 @@ body.progress-page:not(.profile-landing-active) .weight-log-panel {
   }
 
   body.progress-page:not(.profile-landing-active) .weight-log-panel {
+    box-sizing: border-box;
     width: 100%;
     max-width: 100%;
-    padding: 0;
+    padding: 0 0 14px;
   }
 
   body.progress-page:not(.profile-landing-active) .weight-log-heading {
@@ -26146,4 +26182,141 @@ body[data-theme="dark"]:not(.profile-landing-active) .success-cue {
   background: var(--panel);
   color: var(--ink);
   box-shadow: none;
+}
+
+/* Profile meal boundaries use the same section rhythm as the existing plan
+   controls. They only configure automatic meal preselection. */
+body.profile-page:not(.profile-landing-active) .meal-schedule-settings {
+  display: grid;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  padding: 24px;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-header > div {
+  display: grid;
+  gap: 5px;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-header :is(.label, h3),
+body.profile-page:not(.profile-landing-active) .meal-schedule-copy,
+body.profile-page:not(.profile-landing-active) .meal-schedule-preview {
+  margin: 0;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-header h3 {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-reset {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 0 14px;
+  font: 700 11px/1 var(--font-mono, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-reset:is(:hover, :focus-visible):not(:disabled) {
+  border-color: var(--ink);
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-reset:disabled {
+  color: var(--muted);
+  cursor: default;
+  opacity: 0.65;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-copy,
+body.profile-page:not(.profile-landing-active) .meal-schedule-preview {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-preview {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-preview.is-invalid {
+  color: var(--warning, #a94f36);
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: min(620px, 100%);
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-fields label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font: 700 11px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+body.profile-page:not(.profile-landing-active) .meal-schedule-fields input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0 14px;
+  color-scheme: light;
+  font: 600 16px/1 var(--font-mono, monospace);
+}
+
+body[data-theme="dark"].profile-page:not(.profile-landing-active) .meal-schedule-fields input {
+  color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  body.profile-page:not(.profile-landing-active) .meal-schedule-settings {
+    gap: 12px;
+    padding: 20px;
+  }
+
+  body.profile-page:not(.profile-landing-active) .meal-schedule-header {
+    align-items: end;
+  }
+
+  body.profile-page:not(.profile-landing-active) .meal-schedule-header h3 {
+    font-size: 18px;
+  }
+
+  body.profile-page:not(.profile-landing-active) .meal-schedule-reset {
+    min-height: 44px;
+    padding-inline: 11px;
+  }
+}
+
+@media (max-width: 370px) {
+  body.profile-page:not(.profile-landing-active) .meal-schedule-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  body.profile-page:not(.profile-landing-active) .meal-schedule-reset {
+    justify-self: start;
+  }
 }

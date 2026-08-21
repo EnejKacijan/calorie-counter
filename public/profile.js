@@ -8,6 +8,8 @@ const defaults = {
   days: {},
 };
 
+const mealSchedule = window.IntakeMealSchedule;
+
 document.body.classList.add("profile-page");
 
 let state = loadState();
@@ -52,6 +54,10 @@ const elements = {
   activityHint: document.querySelector("#activityHint"),
   goalPaceHint: document.querySelector("#goalPaceHint"),
   profileTheme: document.querySelector("#profileTheme"),
+  profileBreakfastEnd: document.querySelector("#profileBreakfastEnd"),
+  profileLunchEnd: document.querySelector("#profileLunchEnd"),
+  mealScheduleReset: document.querySelector("#mealScheduleReset"),
+  mealSchedulePreview: document.querySelector("#mealSchedulePreview"),
   recommendationPreview: document.querySelector("#recommendationPreview"),
   recommendedCalories: document.querySelector("#recommendedCalories"),
   recommendedProtein: document.querySelector("#recommendedProtein"),
@@ -212,6 +218,7 @@ elements.mobileTabLinks.forEach((link) => {
 
 function fillProfileForm() {
   const user = state.user || {};
+  const savedMealSchedule = mealSchedule.normalizeMealSchedule(user.mealSchedule);
   elements.profileName.value = user.name || "";
   elements.profileSex.value = user.sex || "";
   elements.profileAge.value = user.age || "";
@@ -222,6 +229,9 @@ function fillProfileForm() {
   elements.profileActivity.value = String(user.activityMultiplier || 1.375);
   elements.profileGoalPace.value = String(user.weeklyRateKg ?? user.goalPace ?? 0.5);
   elements.profileTheme.value = user.theme || state.theme || localStorage.getItem("calorie-counter-theme") || "light";
+  elements.profileBreakfastEnd.value = savedMealSchedule.breakfastEnd;
+  elements.profileLunchEnd.value = savedMealSchedule.lunchEnd;
+  updateMealScheduleState();
   setGoalEditing(false);
   applyTheme(elements.profileTheme.value);
   updateActivityHints();
@@ -241,8 +251,37 @@ function profileFromForm() {
     goalType: elements.profileGoalType.value,
     activityMultiplier: Number(elements.profileActivity.value),
     weeklyRateKg: Number(elements.profileGoalPace.value),
+    mealSchedule: mealSchedule.normalizeMealSchedule(mealScheduleFromForm()),
     theme: elements.profileTheme.value,
   };
+}
+
+function mealScheduleFromForm() {
+  return {
+    breakfastEnd: elements.profileBreakfastEnd.value,
+    lunchEnd: elements.profileLunchEnd.value,
+  };
+}
+
+function updateMealScheduleState() {
+  const schedule = mealScheduleFromForm();
+  const hasTimes = Boolean(schedule.breakfastEnd && schedule.lunchEnd);
+  const isValid = mealSchedule.isValidMealSchedule(schedule);
+
+  elements.profileLunchEnd.setCustomValidity(hasTimes && !isValid
+    ? "Lunch must end after breakfast."
+    : "");
+  elements.mealSchedulePreview.textContent = isValid
+    ? mealSchedule.scheduleSummary(schedule)
+    : hasTimes
+      ? "Lunch must end after breakfast."
+      : "Choose both meal boundaries.";
+  elements.mealSchedulePreview.classList.toggle("is-invalid", hasTimes && !isValid);
+
+  const defaultsSchedule = mealSchedule.DEFAULT_MEAL_SCHEDULE;
+  elements.mealScheduleReset.disabled = schedule.breakfastEnd === defaultsSchedule.breakfastEnd
+    && schedule.lunchEnd === defaultsSchedule.lunchEnd;
+  return isValid;
 }
 
 function calculateRecommendedGoals(profile) {
@@ -356,12 +395,14 @@ function isProfileReady() {
     elements.profileTargetWeight,
     elements.profileGoalType,
     elements.profileActivity,
+    elements.profileBreakfastEnd,
+    elements.profileLunchEnd,
   ];
   const profileFieldsValid = requiredFields.every((field) => field.value && field.checkValidity());
   const goalsValid = [elements.goalCalories, elements.goalProtein, elements.goalCarbs, elements.goalFat]
     .every((input) => input.value !== "" && input.checkValidity());
 
-  return profileFieldsValid && goalsValid;
+  return profileFieldsValid && goalsValid && mealSchedule.isValidMealSchedule(mealScheduleFromForm());
 }
 
 function hasProfileChanges() {
@@ -387,6 +428,10 @@ function hasProfileChanges() {
   };
   const profileChanged = profileKeys.some((key) => String(current[key]) !== String(savedProfile[key]));
   if (profileChanged) return true;
+
+  const savedMealSchedule = mealSchedule.normalizeMealSchedule(state.user.mealSchedule);
+  if (current.mealSchedule.breakfastEnd !== savedMealSchedule.breakfastEnd
+    || current.mealSchedule.lunchEnd !== savedMealSchedule.lunchEnd) return true;
 
   if (goalsAreCustom !== Boolean(state.goalsAreCustom)) {
     // Merely opening the custom editor is not a profile change. It becomes
@@ -489,6 +534,24 @@ elements.goalEditButton.addEventListener("click", () => {
   setGoalEditing(false);
   updateRecommendedSummary({ ...goalsFromInputs(), tdee: recommendation?.tdee });
   elements.recommendationPreview.textContent = "Your custom daily targets.";
+});
+
+[elements.profileBreakfastEnd, elements.profileLunchEnd].forEach((input) => {
+  input.addEventListener("input", () => {
+    updateMealScheduleState();
+    updateSubmitState();
+  });
+  input.addEventListener("change", () => {
+    updateMealScheduleState();
+    updateSubmitState();
+  });
+});
+
+elements.mealScheduleReset.addEventListener("click", () => {
+  elements.profileBreakfastEnd.value = mealSchedule.DEFAULT_MEAL_SCHEDULE.breakfastEnd;
+  elements.profileLunchEnd.value = mealSchedule.DEFAULT_MEAL_SCHEDULE.lunchEnd;
+  updateMealScheduleState();
+  updateSubmitState();
 });
 
 elements.goalResetButton.addEventListener("click", () => {

@@ -1,4 +1,4 @@
-const cacheName = "intake-v20";
+const cacheName = "intake-v27";
 const appShellFiles = [
   "/",
   "/index.html",
@@ -7,6 +7,8 @@ const appShellFiles = [
   "/assistant.html",
   "/styles.css",
   "/app.js",
+  "/meal-schedule.js",
+  "/food-persistence.js",
   "/food-reuse.js",
   "/progress.js",
   "/profile.js",

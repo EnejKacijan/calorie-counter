@@ -50,7 +50,7 @@ const parsedFoodDescriptionSchema = {
         additionalProperties: false,
         required: [
           "name", "searchQuery", "amount", "unit", "servingGrams", "qualifiers",
-          "fallbackCalories", "fallbackProtein", "fallbackCarbs", "fallbackFat",
+          "fallbackCalories", "fallbackProtein", "fallbackCarbs", "fallbackFat", "isZeroCalorie",
         ],
         properties: {
           name: { type: "string" },
@@ -63,6 +63,7 @@ const parsedFoodDescriptionSchema = {
           fallbackProtein: { type: "number" },
           fallbackCarbs: { type: "number" },
           fallbackFat: { type: "number" },
+          isZeroCalorie: { type: "boolean" },
         },
       },
     },
@@ -271,11 +272,13 @@ async function parseFoodDescriptionWithRepair(input) {
             "Preserve explicit quantities exactly. Accept compact or spaced metric forms such as 200g, 200 g, 0.2 kg, and 250 ml. Convert kilograms to grams. For liquids use unit ml and set servingGrams to the best density-aware mass estimate for the full described volume.",
             "servingGrams is the total described portion in grams, not grams per serving. If grams are explicitly given, use unit g, amount equal to those grams, and servingGrams equal to the same value.",
             "Portion details are optional. When the user gives no amount, infer one cautious common portion, set servingGrams to that estimated portion, and keep the result editable.",
-            "fallback nutrition is for the entire described portion and is used only if no structured source can be resolved.",
+            "Fallback nutrition is for the entire described portion and is used only if no structured source can be resolved. It is a real cautious estimate, never a placeholder.",
+            "Estimate calories, protein, carbs, and fat from the interpreted food and total portion. Scale the full nutrition estimate to explicit grams or milliliters. A nutrient may be 0 only when it is genuinely absent; never use 0 merely because you are uncertain.",
+            "Set isZeroCalorie true only when the described item is genuinely expected to have effectively zero calories and zero macros for the whole portion. For ordinary food, isZeroCalorie must be false and all four fallback nutrition values must not be zero together.",
             "Do not request follow-up clarification. For an ambiguous food, use a cautious common interpretation and make the assumption explicit in the normalized name or notes.",
             "If the description is not food or drink, return an empty foods array. Never invent a food merely to satisfy the schema.",
             input.portionHints.length ? `Deterministic quantity parser found these hints; preserve them: ${JSON.stringify(input.portionHints)}.` : "",
-            attempt ? "This is a repair attempt. Ensure every required field is finite, non-negative, and internally consistent." : "",
+            attempt ? "This is a repair attempt. Replace missing or placeholder nutrition with a cautious portion-scaled estimate. Ensure every required field is finite, non-negative, and internally consistent; ordinary food cannot have all-zero nutrition." : "",
           ].filter(Boolean).join(" "),
           input: [{
             role: "user",
@@ -333,6 +336,13 @@ function validateParsedDescription(parsed) {
     if (numeric.some((value) => !Number.isFinite(value) || value < 0)) throw invalidEstimateError();
     if (Number(food.amount) <= 0 || Number(food.amount) > 10_000 || Number(food.servingGrams) > 10_000) throw invalidEstimateError();
     if (!descriptionUnits.has(food.unit)) throw invalidEstimateError();
+    const fallbackNutrition = numeric.slice(2);
+    const allFallbackNutritionIsZero = fallbackNutrition.every((value) => value === 0);
+    const ordinaryEstimateIsMissingEnergy = food.isZeroCalorie !== true && fallbackNutrition[0] === 0;
+    if (food._hasAiFallback !== false
+      && (food.isZeroCalorie === true ? !allFallbackNutritionIsZero : ordinaryEstimateIsMissingEnergy)) {
+      throw invalidEstimateError();
+    }
   });
 }
 
@@ -422,6 +432,7 @@ async function resolveDescribedFood(food, options = {}) {
     sourceId: "",
     nutritionSource: "AI estimate",
     resolvedFoodName: String(food.name || "Estimated food").trim(),
+    isZeroCalorie: food.isZeroCalorie === true,
   };
   if (food._hasAiFallback === false) {
     options.emitDiagnostic("resolver_decision", {
@@ -678,6 +689,7 @@ function parseDescriptionLocally(description, portionHints) {
       fallbackProtein: 0,
       fallbackCarbs: 0,
       fallbackFat: 0,
+      isZeroCalorie: false,
       _hasAiFallback: false,
     };
   }).filter(Boolean);
@@ -705,6 +717,11 @@ function parsedFoodDiagnostic(food) {
     unit: food.unit,
     servingGrams: food.servingGrams,
     qualifiers: food.qualifiers,
+    fallbackCalories: food.fallbackCalories,
+    fallbackProtein: food.fallbackProtein,
+    fallbackCarbs: food.fallbackCarbs,
+    fallbackFat: food.fallbackFat,
+    isZeroCalorie: food.isZeroCalorie === true,
   };
 }
 

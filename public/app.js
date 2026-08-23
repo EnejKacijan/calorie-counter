@@ -3454,7 +3454,7 @@ function renderScanReview() {
     const fields = document.createElement("div");
     fields.className = "scan-food-fields";
     fields.append(
-      createScanField("Amount", "amount", food.amount, "number"),
+      createScanField("Amount", "amount", food.amount, "decimal"),
       createScanUnitField(food.unit),
       createScanField("Calories", "calories", food.calories, "number"),
       createScanField("Protein", "protein", food.protein, "number", "g"),
@@ -3502,14 +3502,21 @@ function createScanField(label, field, value, type, suffix = "") {
   const inputWrap = document.createElement("span");
   inputWrap.className = "scan-item-input";
   const input = document.createElement("input");
-  input.type = type;
+  // iOS offers a locale-aware decimal keypad. A native number input rejects
+  // its comma in locales such as Slovenian, so Amount uses text input while
+  // retaining the decimal keypad and is normalized before calculations.
+  input.type = type === "decimal" ? "text" : type;
   input.value = value;
   input.dataset.scanField = field;
   input.disabled = false;
-  if (type === "number") {
+  if (type === "number" || type === "decimal") {
     input.min = "0";
-    input.step = "0.1";
     input.inputMode = "decimal";
+  }
+  if (type === "number") input.step = "0.1";
+  if (type === "decimal") {
+    input.pattern = "[0-9]*[.,]?[0-9]*";
+    input.spellcheck = false;
   }
   inputWrap.append(input);
   if (suffix) {
@@ -3543,6 +3550,12 @@ function scannedFoodMultiplier(food) {
   if (food.unit === "g") return food.amount / (food.servingGrams || 100);
   if (food.unit === "ml") return food.amount;
   return food.amount;
+}
+
+function parseScanDecimal(value) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
 function updateScanFoodPortion(food) {
@@ -3891,7 +3904,7 @@ elements.scanFoodList.addEventListener("input", (event) => {
   if (field === "name") {
     food.name = input.value;
   } else if (field === "amount") {
-    food.amount = Math.max(0, Number(input.value || 0));
+    food.amount = parseScanDecimal(input.value);
     updateScanFoodPortion(food);
     syncScanCardNutrition(card, food);
   } else if (["calories", "protein", "carbs", "fat"].includes(field)) {

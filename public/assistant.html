@@ -12,7 +12,7 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest?v=8" />
-    <link rel="stylesheet" href="styles.css?v=7" />
+    <link rel="stylesheet" href="styles.css?v=43" />
   </head>
   <body class="assistant-page">
     <main class="app-shell" id="appShell">
@@ -82,7 +82,11 @@
               aria-expanded="false" aria-controls="assistantContextControls">
               <span>Conversation</span>
               <b id="assistantContextSummary">Food diary · Last 7 days</b>
-              <i aria-hidden="true">⌄</i>
+              <i aria-hidden="true">
+                <svg viewBox="0 0 16 16" focusable="false">
+                  <path d="m3.25 5.75 4.75 4.5 4.75-4.5" />
+                </svg>
+              </i>
             </button>
             <div class="assistant-context-controls" id="assistantContextControls">
               <div class="assistant-mobile-conversation-actions">

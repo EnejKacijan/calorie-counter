@@ -142,6 +142,33 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 }
 
+/* The viewport scrollbar belongs to the root element in Chromium. The theme
+   flag lives on body, so explicitly bridge it to the root scrollbar instead
+   of leaving a bright system track around the dark interface. */
+html:has(body[data-theme="dark"]) {
+  color-scheme: dark;
+  scrollbar-color: #626864 #111412;
+}
+
+html:has(body[data-theme="dark"])::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+html:has(body[data-theme="dark"])::-webkit-scrollbar-track {
+  background: #111412;
+}
+
+html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb {
+  border: 3px solid #111412;
+  border-radius: 999px;
+  background: #626864;
+}
+
+html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
+  background: #7a817c;
+}
+
 /* Food log reuse and Saved Meals */
 .food-reuse-panel[hidden],
 .food-reuse-backdrop[hidden],
@@ -20602,8 +20629,8 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
   body.assistant-page .assistant-footnote,
   body.assistant-page.assistant-has-messages .assistant-footnote {
     padding: 7px 18px 8px !important;
-    color: var(--muted) !important;
-    font-size: 0.68rem !important;
+    color: color-mix(in srgb, var(--muted) 78%, var(--ink) 22%) !important;
+    font-size: 0.72rem !important;
     line-height: 1.4 !important;
   }
 
@@ -21635,10 +21662,17 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
   /* A filtered empty state should guide the next step, rather than present
      two equally loud recovery actions. */
   body:not(.profile-landing-active) #foodSection.is-adding .food-search-fallbacks {
-    gap: 10px !important;
+    gap: 12px !important;
     margin-top: 2px !important;
-    border: 1px solid var(--line) !important;
-    padding: 16px !important;
+    border: 0 !important;
+    padding: 16px 0 0 !important;
+  }
+
+  body:not(.profile-landing-active) #foodSection.food-log.is-adding.has-search-fallback:not(.is-detailing):not(.is-editing) .suggestions {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   body:not(.profile-landing-active) #foodSection.is-adding .food-search-fallback-copy strong {
@@ -21658,15 +21692,15 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
 
   body:not(.profile-landing-active) #foodSection.is-adding .food-search-fallbacks > div:last-child {
     display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 2px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
   }
 
   body:not(.profile-landing-active) #foodSection.is-adding .food-search-fallbacks button {
     min-height: 44px !important;
-    border: 0 !important;
+    border: 1px solid var(--line) !important;
     background: transparent !important;
-    color: var(--muted) !important;
+    color: var(--ink) !important;
     font-family: var(--font-ui) !important;
     font-size: 0.78rem !important;
     font-weight: 600 !important;
@@ -24147,6 +24181,21 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   body:not(.profile-landing-active) .day-tile.is-today.has-food-log i {
     display: none !important;
   }
+
+  body[data-theme="dark"]:not(.profile-landing-active) .day-tile.is-selected {
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active) .day-tile.is-selected span,
+  body[data-theme="dark"]:not(.profile-landing-active) .day-tile.is-selected strong {
+    background: transparent !important;
+    color: var(--paper) !important;
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active) .day-tile.is-today.is-selected::after {
+    background: var(--paper) !important;
+  }
 }
 
 /* Preserve equal day cells without overflow on narrower tablet widths. */
@@ -24169,6 +24218,27 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   }
 }
 
+/* iOS draws a translucent system status bar over the safe-area inset. Paint
+   that inset with the same surface as the mobile shell so the top edge reads
+   as one continuous background instead of a separate black band. */
+@media (max-width: 700px) {
+  body:not(.profile-landing-active) .app-shell::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1000;
+    height: env(safe-area-inset-top);
+    background: #fbfaf6;
+    pointer-events: none;
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active) .app-shell::before {
+    background: #1b1a16;
+  }
+}
+
 /* Desktop entry editing is a true dialog. The original panels remain in the
    page behind it, while the existing form is temporarily hosted here. */
 @media (min-width: 921px) {
@@ -24183,6 +24253,10 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     z-index: 899;
     background: rgba(29, 27, 23, 0.18);
     pointer-events: auto;
+  }
+
+  body[data-theme="dark"]:not(.profile-landing-active).desktop-edit-modal-open::before {
+    background: rgba(0, 0, 0, 0.52) !important;
   }
 
   .desktop-edit-modal {
@@ -24642,7 +24716,7 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   /* Keep an exceeded macro discoverable without returning to the former
      crowded horizontal layout: the compact delta sits on the value line,
      directly above its bar. */
-  body:not(.profile-landing-active) .macro-card.is-over .macro-overage {
+  body:not(.profile-landing-active) .macro-card .macro-overage {
     display: block !important;
     float: right !important;
     margin: 0 !important;
@@ -24658,12 +24732,13 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     color: var(--warn) !important;
   }
 
-  body:not(.profile-landing-active) .macro-card.is-over .macro-overage > span:not(.macro-overage-unit) {
+  body:not(.profile-landing-active) .macro-card .macro-overage > span:not(.macro-overage-unit) {
     display: inline !important;
   }
 
-  body:not(.profile-landing-active) .macro-card.is-over .macro-overage-unit {
-    display: none !important;
+  body:not(.profile-landing-active) .macro-card .macro-overage-unit {
+    display: inline !important;
+    margin-left: 2px !important;
   }
 
   body:not(.profile-landing-active) .macro-bar {
@@ -24992,11 +25067,14 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
   body:not(.profile-landing-active) .macro-card .macro-amount {
     position: relative !important;
-    display: flex !important;
+    display: grid !important;
     grid-row: 2 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    row-gap: 3px !important;
     width: 100% !important;
     min-width: 0 !important;
-    align-items: baseline !important;
+    align-items: start !important;
     justify-self: start !important;
     color: var(--ink) !important;
     font-size: clamp(0.58rem, 2.35vw, 0.66rem) !important;
@@ -25005,6 +25083,13 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     line-height: 1.15 !important;
     text-align: left !important;
     white-space: nowrap !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-total {
+    display: flex !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+    align-items: baseline !important;
   }
 
   body:not(.profile-landing-active) .macro-card .macro-eaten,
@@ -25029,16 +25114,15 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
   body:not(.profile-landing-active) .macro-card .macro-overage {
     display: inline-flex !important;
-    position: absolute !important;
-    right: 0 !important;
-    bottom: 0 !important;
+    position: static !important;
+    grid-row: 2 !important;
     flex: 0 0 auto !important;
     align-items: baseline !important;
     float: none !important;
-    justify-self: end !important;
+    justify-self: start !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
-    font-size: clamp(0.48rem, 1.85vw, 0.54rem) !important;
+    font-size: clamp(0.55rem, 2vw, 0.62rem) !important;
     font-style: normal !important;
     font-weight: 650 !important;
     letter-spacing: 0 !important;
@@ -25054,6 +25138,10 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   body:not(.profile-landing-active) .macro-card.is-over.is-carbs .macro-overage,
   body:not(.profile-landing-active) .macro-card.is-over.is-fat .macro-overage {
     color: var(--warn) !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card:not(.is-over) .macro-overage {
+    color: var(--muted) !important;
   }
 }
 
@@ -25594,14 +25682,28 @@ body.progress-page:not(.profile-landing-active) .weight-target-legend b {
   }
 
   body.assistant-page .assistant-context-summary > i {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
     color: var(--muted);
-    font-size: 0.9rem;
     font-style: normal;
-    line-height: 1;
+  }
+
+  body.assistant-page .assistant-context-summary > i svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+    transform-origin: center;
     transition: transform 160ms ease;
   }
 
-  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-summary > i {
+  body.assistant-page .assistant-context-bar.is-expanded .assistant-context-summary > i svg {
     transform: rotate(180deg);
   }
 
@@ -25638,15 +25740,15 @@ body.progress-page:not(.profile-landing-active) .weight-target-legend b {
   body.assistant-page .assistant-conversation-backdrop {
     display: block;
     position: fixed;
-    inset: 0 0 calc(58px + env(safe-area-inset-bottom));
+    inset: calc(max(14px, env(safe-area-inset-top)) + 52px) 0 calc(58px + env(safe-area-inset-bottom));
     z-index: 10;
     width: 100%;
     border: 0;
-    background: rgba(17, 17, 15, 0.04);
+    background: rgba(17, 17, 15, 0.2);
   }
 
   body[data-theme="dark"].assistant-page .assistant-conversation-backdrop {
-    background: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.38);
   }
 
   body[data-theme="dark"].assistant-page .assistant-context-bar.is-expanded .assistant-context-controls {
@@ -25752,7 +25854,7 @@ body.progress-page:not(.profile-landing-active) .weight-target-legend b {
     position: static !important;
     margin: 0 !important;
     border-top: 0 !important;
-    padding: 0 18px 8px !important;
+    padding: 4px 18px 9px !important;
   }
 
   body.assistant-page:not(.assistant-has-messages) .assistant-empty {
@@ -26365,5 +26467,455 @@ body[data-theme="dark"].profile-page:not(.profile-landing-active) .meal-schedule
 
   body.profile-page:not(.profile-landing-active) .meal-schedule-reset {
     justify-self: start;
+  }
+}
+
+/* Desktop progress polish: the inline form is already visible, so a second
+   jump action competes with it. Keep metadata compact while making actual
+   chart values, entry deltas, and guidance comfortably readable. */
+@media (min-width: 921px) {
+  body.progress-page:not(.profile-landing-active) .weight-current-panel {
+    grid-template-columns: minmax(180px, 1.15fr) minmax(190px, 1fr) minmax(220px, 1fr);
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-jump {
+    display: none !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) :is(
+    .weight-y-label,
+    .weight-target-label,
+    .weight-chart-axis
+  ) {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .progress-entry-card p small {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form input {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) :is(
+    .nutrition-goal-label,
+    .nutrition-axis-label,
+    .nutrition-value-label
+  ) {
+    font-size: 11px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-detail-date,
+  body.progress-page:not(.profile-landing-active) .nutrition-summary-grid span,
+  body.progress-page:not(.profile-landing-active) .nutrition-insight-title {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-detail-value {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-insight p:not(.nutrition-insight-title) {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* Complete the responsive handoff between the phone UI (through 640px) and
+   the tablet UI (from 701px). Device scaling commonly lands in this band, so
+   it must not mix a hidden sidebar with desktop-only content geometry. */
+@media (min-width: 641px) and (max-width: 700px) {
+  body:not(.profile-landing-active) .mobile-tabbar,
+  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
+    display: grid !important;
+  }
+
+  body:not(.profile-landing-active) .mobile-menu-button {
+    display: none !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .goal-panel {
+    width: 100% !important;
+    margin-top: -30px !important;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .calorie-dashboard {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    padding: 24px 18px !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .calorie-dashboard .calorie-ring {
+    width: min(210px, 52vw) !important;
+    min-width: 0 !important;
+    margin-inline: auto !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .calorie-insights {
+    width: min(386px, calc(100vw - 104px)) !important;
+    max-width: min(386px, calc(100vw - 104px)) !important;
+    margin: 2px auto 0 !important;
+    padding: 2px 0 8px !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .macro-grid {
+    position: relative !important;
+    z-index: 2 !important;
+    width: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 20px !important;
+    margin-top: -28px !important;
+    border: 0 !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .macro-card,
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .macro-card:last-child {
+    min-width: 0 !important;
+    border: 0 !important;
+    padding: 5px 6px 7px !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card-header > div > .label {
+    color: var(--ink) !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-amount {
+    font-size: 10px !important;
+  }
+
+  body:not(.profile-landing-active) .macro-card .macro-overage {
+    font-size: 9.5px !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .ring-copy::before {
+    content: "Remaining" !important;
+    display: block !important;
+    margin-bottom: 3px !important;
+    color: var(--muted) !important;
+    font-family: "Courier New", ui-monospace, monospace !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    margin: 10px auto 0 !important;
+    border: 1px solid var(--line) !important;
+    background: var(--panel) !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats article {
+    min-height: 62px !important;
+    border-right: 1px solid var(--line) !important;
+    padding: 11px 14px !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats article:last-child {
+    border-right: 0 !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats span {
+    display: block !important;
+    margin-bottom: 7px !important;
+    color: var(--muted) !important;
+    font-family: "Courier New", ui-monospace, monospace !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats strong {
+    color: var(--ink) !important;
+    font-size: 18px !important;
+    font-weight: 560 !important;
+  }
+
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats small,
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .mobile-diary-stats em {
+    color: var(--muted) !important;
+    font-family: "Courier New", ui-monospace, monospace !important;
+    font-size: 9.5px !important;
+    font-style: normal !important;
+    font-weight: 500 !important;
+  }
+
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log).is-adding {
+    right: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  body:not(.profile-landing-active) :is(#foodSection, #exerciseSection).is-adding {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}
+
+/* The read state must stay a read state throughout the tablet band. Earlier
+   phone and desktop rules hid these controls only on either side of it. */
+@media (min-width: 641px) and (max-width: 920px) {
+  body:not(.profile-landing-active) .log-panel:not(.is-adding) :is(
+    .entry-mode-header,
+    .add-mode-switch,
+    .food-field-labels,
+    .exercise-field-labels,
+    .compact-form,
+    .photo-food-tools,
+    .search-note,
+    .suggestions,
+    .saved-foods-panel,
+    .edit-modal-actions
+  ) {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) #foodSection:not(.is-adding) #manualFoodForm,
+  body:not(.profile-landing-active) #exerciseSection:not(.is-adding) #exerciseForm {
+    display: none !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) #manualFoodForm {
+    display: grid !important;
+    width: 100% !important;
+    max-width: none !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    align-content: start !important;
+    padding: 0 26px 28px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-search-row {
+    order: 1 !important;
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-name-field {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) :is(
+    .scan-food-button,
+    .gallery-food-button
+  ) {
+    display: grid !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: auto auto !important;
+    place-content: center !important;
+    gap: 7px !important;
+    font-size: 12px !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) :is(
+    .scan-food-button,
+    .gallery-food-button
+  ) b {
+    display: inline !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-ai-description-trigger {
+    order: 2 !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    justify-content: space-between !important;
+    padding-inline: 14px !important;
+    font-size: 11.5px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs {
+    order: 3 !important;
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .food-filter-tabs button.is-active {
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .search-note {
+    order: 4 !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .suggestions {
+    order: 5 !important;
+    width: 100% !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .manual-food-shortcut {
+    order: 6 !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: space-between !important;
+    border: 1px solid var(--line) !important;
+    padding-inline: 14px !important;
+    font-size: 11.5px !important;
+  }
+
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) .manual-food-shortcut::after {
+    content: "→" !important;
+  }
+}
+
+/* Tablet progress keeps desktop information hierarchy without forcing the
+   wide four-column summary or duplicating the already-visible logging form. */
+@media (min-width: 701px) and (max-width: 920px) {
+  body.progress-page:not(.profile-landing-active) .weight-current-panel {
+    display: grid !important;
+    grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1.15fr) minmax(150px, 0.9fr) !important;
+    grid-template-rows: auto auto !important;
+    gap: 8px 24px !important;
+    min-height: 0 !important;
+    padding: 24px 28px 26px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-current-heading,
+  body.progress-page:not(.profile-landing-active) .weight-summary-details {
+    display: contents !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-current-heading .label {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-current-value {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-summary-details p {
+    display: grid !important;
+    grid-template-rows: auto minmax(2.5em, auto) !important;
+    gap: 8px !important;
+    align-content: start !important;
+    align-self: stretch !important;
+    margin: 0 !important;
+    color: var(--ink) !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-summary-details p::before {
+    color: var(--muted) !important;
+    font-family: var(--font-mono) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    text-transform: uppercase !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-trend {
+    grid-column: 2 !important;
+    grid-row: 1 / 3 !important;
+    font-size: 14px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-trend::before {
+    content: "Trend" !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-target-status {
+    grid-column: 3 !important;
+    grid-row: 1 / 3 !important;
+    font-size: 12px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-target-status::before {
+    content: "To goal" !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-jump {
+    display: none !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-chart-panel .progress-chart {
+    height: clamp(280px, 42vw, 340px) !important;
+    max-height: 340px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) :is(
+    .weight-y-label,
+    .weight-target-label,
+    .weight-chart-axis
+  ) {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .progress-entry-card p small {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .weight-log-form input {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) :is(
+    .nutrition-goal-label,
+    .nutrition-axis-label,
+    .nutrition-value-label
+  ) {
+    font-size: 11px !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-detail-date,
+  body.progress-page:not(.profile-landing-active) .nutrition-summary-grid span,
+  body.progress-page:not(.profile-landing-active) .nutrition-insight-title {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-chart-detail-value {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  body.progress-page:not(.profile-landing-active) .nutrition-insight p:not(.nutrition-insight-title) {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+  }
+
+  body.profile-page:not(.profile-landing-active) .profile-grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr) !important;
+  }
+
+  body.profile-page:not(.profile-landing-active) .profile-section:last-child {
+    grid-column: 1 / -1 !important;
+    border-top: 1px solid var(--line) !important;
+  }
+
+  body.profile-page:not(.profile-landing-active) .profile-section:last-child .profile-fields {
+    max-width: 420px !important;
   }
 }

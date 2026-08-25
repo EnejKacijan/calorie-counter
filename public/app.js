@@ -1329,12 +1329,11 @@ function renderMacros(daily) {
     const progress = goal > 0 ? Math.max(0, Math.min((consumed / goal) * 100, 100)) : 0;
     const isOver = consumed > goal;
     const remaining = Math.abs(goal - consumed);
-    const macroStatus = isOver ? "over" : "remaining";
-    const macroOverageLabel = `<em class="macro-overage${isOver ? "" : " is-remaining"}"><span>${Math.round(Number(remaining || 0))}</span><span class="macro-overage-unit">${macro.unit} ${macroStatus}</span></em>`;
+    const macroOverageLabel = isOver ? `<em class="macro-overage"><span>+${Math.round(Number(remaining || 0))}</span><span class="macro-overage-unit"> ${macro.unit}</span></em>` : "";
     const progressLabel = `${Math.round(progress)}%`;
     const previousConsumed = renderSnapshot?.macroValues?.[macro.key];
     const initialConsumed = previousConsumed === undefined ? roundedConsumed : previousConsumed;
-    const macroAmountLabel = `<span class="macro-total"><span class="macro-eaten">${initialConsumed}</span><span class="macro-goal"><span class="macro-goal-desktop"> / ${Math.round(Number(goal || 0))} ${macro.unit}</span><span class="macro-goal-mobile">/${Math.round(Number(goal || 0))}&nbsp;${macro.unit}</span></span></span>${macroOverageLabel}`;
+    const macroAmountLabel = `<span class="macro-eaten">${initialConsumed}</span><span class="macro-goal"><span class="macro-goal-desktop"> / ${Math.round(Number(goal || 0))} ${macro.unit}</span><span class="macro-goal-mobile">/${Math.round(Number(goal || 0))}&nbsp;${macro.unit}</span></span>${macroOverageLabel}`;
     const macroConsumedLabel = `${initialConsumed}${macro.unit}`;
     const macroGoalLabel = `of ${Math.round(Number(goal || 0))}${macro.unit}`;
     const previousProgress = renderSnapshot?.macros?.[macro.key];
@@ -1372,7 +1371,7 @@ function renderMacros(daily) {
           <span style="width:${initialBarProgress}%; background:${macro.color}"></span>
         </div>
         <div class="macro-card-footer">
-          <p class="label">${isOver ? `${formatMacro(remaining, macro.unit)} over` : `${formatMacro(remaining, macro.unit)} remaining`}</p>
+          <p class="label">${isOver ? `${formatMacro(remaining, macro.unit)} over` : `${formatMacro(remaining, macro.unit)} left`}</p>
           <p class="label">${progressLabel}</p>
         </div>
       </div>

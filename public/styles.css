@@ -25067,14 +25067,11 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
   body:not(.profile-landing-active) .macro-card .macro-amount {
     position: relative !important;
-    display: grid !important;
+    display: flex !important;
     grid-row: 2 !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto !important;
-    row-gap: 3px !important;
     width: 100% !important;
     min-width: 0 !important;
-    align-items: start !important;
+    align-items: baseline !important;
     justify-self: start !important;
     color: var(--ink) !important;
     font-size: clamp(0.58rem, 2.35vw, 0.66rem) !important;
@@ -25083,13 +25080,6 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     line-height: 1.15 !important;
     text-align: left !important;
     white-space: nowrap !important;
-  }
-
-  body:not(.profile-landing-active) .macro-card .macro-total {
-    display: flex !important;
-    grid-row: 1 !important;
-    min-width: 0 !important;
-    align-items: baseline !important;
   }
 
   body:not(.profile-landing-active) .macro-card .macro-eaten,
@@ -25114,15 +25104,16 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
   body:not(.profile-landing-active) .macro-card .macro-overage {
     display: inline-flex !important;
-    position: static !important;
-    grid-row: 2 !important;
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
     flex: 0 0 auto !important;
     align-items: baseline !important;
     float: none !important;
-    justify-self: start !important;
+    justify-self: end !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
-    font-size: clamp(0.55rem, 2vw, 0.62rem) !important;
+    font-size: clamp(0.48rem, 1.85vw, 0.54rem) !important;
     font-style: normal !important;
     font-weight: 650 !important;
     letter-spacing: 0 !important;
@@ -25140,8 +25131,11 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     color: var(--warn) !important;
   }
 
-  body:not(.profile-landing-active) .macro-card:not(.is-over) .macro-overage {
-    color: var(--muted) !important;
+}
+
+@media (max-width: 640px) {
+  body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active):not(.modal-open) .main-content {
+    padding-top: 14px !important;
   }
 }
 

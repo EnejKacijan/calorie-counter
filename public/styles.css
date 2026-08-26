@@ -595,9 +595,57 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   }
 
   .food-reuse-content {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
     padding-inline: var(--food-reuse-mobile-content-inset);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .food-reuse-field {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* iOS standalone PWAs give date controls an intrinsic inline width that
+     can exceed a bottom sheet. Constrain both the host and its WebKit value
+     editor so the field always stays inside the content insets. */
+  .food-reuse-field input[type="date"] {
+    display: block;
+    box-sizing: border-box;
+    width: 100% !important;
+    inline-size: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    max-inline-size: 100% !important;
+    height: 50px;
+    padding: 12px 13px;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    appearance: none;
+    -webkit-appearance: none;
+    -webkit-min-logical-width: 0;
+  }
+
+  .food-reuse-field input[type="date"]::-webkit-date-and-time-value,
+  .food-reuse-field input[type="date"]::-webkit-datetime-edit {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    line-height: 24px;
+    text-align: center;
   }
 
   .food-reuse-action,

@@ -414,3 +414,35 @@ test("photo model non-food decision always normalizes to an empty food list", as
   assert.deepEqual(analysis.foods, []);
   assert.equal(analysis.confidence, "high");
 });
+
+test("photo analysis preserves a model-detected count of identical servings", async () => {
+  const sufficientlyLargeImage = `data:image/jpeg;base64,${"A".repeat(600)}`;
+  let requestBody;
+  const analysis = await analyzeFoodImage(sufficientlyLargeImage, {
+    openAiApiKey: "test-key",
+    fetchFn: async (_url, options) => {
+      requestBody = JSON.parse(options.body);
+      return aiFetch({
+        containsFood: true,
+        foods: [{
+          name: "Vegetable pizza",
+          amount: 2,
+          unit: "serving",
+          servingGrams: 600,
+          calories: 1200,
+          protein: 48,
+          carbs: 150,
+          fat: 44,
+          confidence: "high",
+          notes: "Two visible pizzas.",
+        }],
+        confidence: "high",
+        notes: "",
+      })(_url, options);
+    },
+  });
+
+  assert.equal(analysis.foods[0].amount, 2);
+  assert.equal(analysis.foods[0].unit, "serving");
+  assert.match(requestBody.instructions, /two whole pizzas means amount 2 and unit serving/i);
+});

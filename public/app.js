@@ -3228,16 +3228,24 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
         : `Scanned plate (${includedFoods.length} foods)`
       : "Scanned plate";
   const servingGrams = includedFoods.reduce((sum, food) => sum + Number(food.servingGrams || 0), 0);
+  const simplePortion = IntakeScannedFood.simplePlatePortion(includedFoods);
+  const singleFood = includedFoods.length === 1 ? includedFoods[0] : null;
+  const baseNutrition = (key) => singleFood
+    ? Number(singleFood.baseNutrition?.[key] ?? singleFood[key] ?? 0)
+    : total(key);
 
   selectedFoodBase = {
     name: plateName,
     source: inputMode === "text" ? "AI ESTIMATE" : "OpenAI photo estimate",
     serving: "1 serving",
-    servingGrams: servingGrams || 100,
-    calories: total("calories"),
-    protein: total("protein"),
-    carbs: total("carbs"),
-    fat: total("fat"),
+    servingGrams: singleFood && !["g", "ml"].includes(simplePortion.unit)
+      ? servingGrams / simplePortion.amount || 100
+      : servingGrams || 100,
+    calories: baseNutrition("calories"),
+    protein: baseNutrition("protein"),
+    carbs: baseNutrition("carbs"),
+    fat: baseNutrition("fat"),
+    scanInitialMultiplier: simplePortion.initialMultiplier,
   };
 
   editingFoodId = null;
@@ -3262,8 +3270,8 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
   elements.manualFoodName.value = plateName;
   elements.manualFoodName.readOnly = true;
   elements.foodEditName.textContent = plateName;
-  elements.foodAmount.value = 1;
-  elements.foodUnit.value = "serving";
+  elements.foodAmount.value = simplePortion.amount;
+  elements.foodUnit.value = simplePortion.unit;
   if (!elements.foodMeal.value) elements.foodMeal.value = defaultMealForNow();
   updateFoodAmountStep();
   updateNutritionForPortion(true);
@@ -3340,20 +3348,7 @@ function showScannedFoodsReview() {
 }
 
 function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
-  const servingGrams = Math.max(0, Number(food.servingGrams || (food.unit === "g" ? food.amount : 0)) || 0);
-  const estimatedUnit = ["serving", "piece", "g", "ml"].includes(food.unit) ? food.unit : "serving";
-  const estimatedAmount = Math.max(0.1, Number(food.amount || (estimatedUnit === "g" ? servingGrams : 1)) || 1);
-  const nutrients = {
-    calories: Math.max(0, Number(food.calories || 0)),
-    protein: Math.max(0, Number(food.protein || 0)),
-    carbs: Math.max(0, Number(food.carbs || 0)),
-    fat: Math.max(0, Number(food.fat || 0)),
-  };
-  const baseDivisor = inputMode === "text" && estimatedUnit !== "g" ? estimatedAmount : 1;
-  const baseNutrition = Object.fromEntries(Object.entries(nutrients).map(([key, value]) => [
-    key,
-    Math.round((value / Math.max(0.1, baseDivisor)) * 10) / 10,
-  ]));
+  const normalized = IntakeScannedFood.normalizeScannedFoodEstimate(food, inputMode);
   // Text estimates should expose the structured resolver's interpretation in
   // review. Keep photo naming untouched because its label describes what was
   // visually detected, while resolvedFoodName is source metadata there.
@@ -3365,9 +3360,9 @@ function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
     id: crypto.randomUUID(),
     included: true,
     name: reviewName || "Unknown food",
-    amount: inputMode === "text" ? estimatedAmount : 1,
-    unit: inputMode === "text" ? estimatedUnit : "serving",
-    servingGrams,
+    amount: normalized.amount,
+    unit: normalized.unit,
+    servingGrams: normalized.servingGrams,
     confidence: food.confidence || "low",
     notes: String(food.notes || "").trim(),
     source: food.source || "OpenAI photo estimate",
@@ -3379,8 +3374,11 @@ function createScannedFoodItem(food, { inputMode = "photo" } = {}) {
     correctionStatus: "",
     isCorrecting: false,
     detailsOpen: false,
-    ...nutrients,
-    baseNutrition,
+    calories: normalized.calories,
+    protein: normalized.protein,
+    carbs: normalized.carbs,
+    fat: normalized.fat,
+    baseNutrition: normalized.baseNutrition,
   };
 }
 
@@ -3680,6 +3678,7 @@ function addSimpleScannedFoods() {
   };
   const quantityMultiplier = selectedFoodBase
     ? portionMultiplier(selectedFoodBase, Number(elements.foodAmount.value || 0), elements.foodUnit.value)
+      / Math.max(0.1, Number(selectedFoodBase.scanInitialMultiplier || 1))
     : 1;
 
   const scaledFoods = selected.map((food) => {

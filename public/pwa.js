@@ -9,6 +9,22 @@ document.querySelectorAll("a.is-active[href]").forEach((link) => {
   link.setAttribute("aria-current", "page");
 });
 
+const mobileTabLinks = Array.from(document.querySelectorAll(".mobile-tabbar a[href]"));
+const previewMobileTab = (link) => {
+  mobileTabLinks.forEach((item) => {
+    const active = item === link;
+    item.classList.toggle("is-active", active);
+    if (active) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  });
+};
+mobileTabLinks.forEach((link) => {
+  link.addEventListener("pointerdown", () => previewMobileTab(link), { passive: true });
+  link.addEventListener("keydown", (event) => {
+    if (["Enter", " "].includes(event.key)) previewMobileTab(link);
+  });
+});
+
 document.querySelectorAll('[role="tablist"] button').forEach((tab) => {
   tab.setAttribute("role", "tab");
   if (!tab.hasAttribute("aria-selected")) {

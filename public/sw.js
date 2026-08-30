@@ -1,4 +1,4 @@
-const cacheName = "intake-v27";
+const cacheName = "intake-v28";
 const appShellFiles = [
   "/",
   "/index.html",
@@ -49,28 +49,25 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
+    const refreshed = fetchAndCache(request);
+    event.waitUntil(refreshed.catch(() => undefined));
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(cacheName).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/index.html"))),
+      caches.match(request, { ignoreSearch: true }).then((cached) => {
+        if (cached) return cached;
+        return refreshed.catch(() => caches.match("/index.html"));
+      }),
     );
     return;
   }
 
   if (isVersionedAppAsset(url.pathname)) {
+    const refreshed = fetchAndCache(request);
+    event.waitUntil(refreshed.catch(() => undefined));
     event.respondWith(
-      fetch(request, { cache: "no-store" })
-        .then((response) => {
-          if (!response || response.status !== 200) return response;
-          const copy = response.clone();
-          caches.open(cacheName).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request)),
+      caches.match(request, { ignoreSearch: true }).then((cached) => {
+        if (cached) return cached;
+        return refreshed;
+      }),
     );
     return;
   }
@@ -90,4 +87,12 @@ self.addEventListener("fetch", (event) => {
 
 function isVersionedAppAsset(pathname) {
   return appShellFiles.includes(pathname) || [".css", ".js", ".webmanifest"].some((extension) => pathname.endsWith(extension));
+}
+
+async function fetchAndCache(request) {
+  const response = await fetch(request);
+  if (!response || response.status !== 200) return response;
+  const cache = await caches.open(cacheName);
+  await cache.put(request, response.clone());
+  return response;
 }

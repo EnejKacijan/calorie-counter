@@ -412,6 +412,8 @@ test("photo model non-food decision always normalizes to an empty food list", as
     fetchFn: aiFetch({ containsFood: false, foods: [], confidence: "high", notes: "No food visible." }),
   });
   assert.deepEqual(analysis.foods, []);
+  assert.equal(analysis.outcome, "no_food");
+  assert.equal(analysis.containsFood, false);
   assert.equal(analysis.confidence, "high");
 });
 
@@ -441,6 +443,8 @@ test("photo analysis preserves a model-detected count of identical servings", as
       })(_url, options);
     },
   });
+  assert.equal(analysis.outcome, "food_detected");
+  assert.equal(analysis.containsFood, true);
 
   assert.equal(analysis.foods[0].amount, 2);
   assert.equal(analysis.foods[0].unit, "serving");

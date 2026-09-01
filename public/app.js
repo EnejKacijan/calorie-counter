@@ -199,6 +199,10 @@ const elements = {
   scanReviewEyebrow: document.querySelector("#scanReviewEyebrow"),
   scanReviewTitle: document.querySelector("#scanReviewTitle"),
   scanReviewDescription: document.querySelector("#scanReviewDescription"),
+  scanReviewHeadingActions: document.querySelector(".scan-review-heading-actions"),
+  scanNoFood: document.querySelector("#scanNoFood"),
+  scanNoFoodRetry: document.querySelector("#scanNoFoodRetry"),
+  scanNoFoodManual: document.querySelector("#scanNoFoodManual"),
   scanFoodList: document.querySelector("#scanFoodList"),
   scanReviewMeal: document.querySelector("#scanReviewMeal"),
   closeScanReview: document.querySelector("#closeScanReview"),
@@ -208,6 +212,7 @@ const elements = {
   scanTotalCarbs: document.querySelector("#scanTotalCarbs"),
   scanTotalFat: document.querySelector("#scanTotalFat"),
   scanAddSelectedFoods: document.querySelector("#scanAddSelectedFoods"),
+  scanReviewFooter: document.querySelector(".scan-review-footer"),
   scanSimpleSaveActions: document.querySelector("#scanSimpleSaveActions"),
   scanSaveAsMeal: document.querySelector("#scanSaveAsMeal"),
   scanSaveMealStatus: document.querySelector("#scanSaveMealStatus"),
@@ -2949,14 +2954,19 @@ function resetFoodForm() {
   elements.foodAiDescriptionTrigger.setAttribute("aria-expanded", "false");
   elements.foodAiDescriptionSubmit.textContent = "Estimate nutrition";
   elements.scanReview.hidden = true;
+  elements.scanNoFood.hidden = true;
+  elements.scanReviewHeadingActions.hidden = false;
+  elements.scanFoodList.hidden = false;
+  elements.scanReviewFooter.hidden = false;
   elements.openScanReview.hidden = true;
   elements.scanFoodList.replaceChildren();
-  elements.foodSection.classList.remove("is-editing", "is-detailing", "is-reviewing-scan", "is-reviewing-text-estimate", "is-manual-entry", "is-describing-ai", "has-food-suggestions");
+  elements.foodSection.classList.remove("is-editing", "is-detailing", "is-reviewing-scan", "is-reviewing-text-estimate", "is-scan-empty", "is-manual-entry", "is-describing-ai", "has-food-suggestions");
   syncFoodNutritionMode();
   elements.manualFoodName.placeholder = "Search food";
   elements.foodNameLabel.textContent = "Food name (required)";
   elements.foodSuggestions.innerHTML = "";
   elements.foodPhotoStatus.textContent = "";
+  elements.foodPhotoStatus.setAttribute("role", "status");
   elements.foodScanLoading.hidden = true;
   document.body.classList.remove("food-scan-active");
   elements.searchNote.textContent = "Search saved foods, USDA, or Open Food Facts.";
@@ -3163,6 +3173,7 @@ async function analyzeFoodPhoto(file) {
   elements.foodScanButton?.querySelector("b") && (elements.foodScanButton.querySelector("b").textContent = scanLoadingText);
   elements.foodScanButton?.setAttribute("aria-label", "Scanning food");
   elements.foodPhotoStatus.textContent = "Scanning food...";
+  elements.foodPhotoStatus.setAttribute("role", "status");
   elements.foodScanLoading.hidden = false;
   document.body.classList.add("food-scan-active");
 
@@ -3182,9 +3193,10 @@ async function analyzeFoodPhoto(file) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) throw new Error(data.error || "Food photo analysis failed.");
-    const analysis = data.analysis || { foods: data.food ? [data.food] : [] };
+    const analysis = data.analysis || { outcome: data.food ? "food_detected" : "no_food", foods: data.food ? [data.food] : [] };
     showSimpleScannedPlate(analysis, imageDataUrl);
   } catch (error) {
+    elements.foodPhotoStatus.setAttribute("role", "alert");
     elements.foodPhotoStatus.textContent = error.message || "Photo analysis failed.";
   } finally {
     elements.foodPhotoButton.disabled = false;
@@ -3203,9 +3215,12 @@ async function analyzeFoodPhoto(file) {
 function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}) {
   const foods = Array.isArray(analysis?.foods) ? analysis.foods : [];
   const inputMode = options.inputMode || scannedFoodAnalysis?.inputMode || "photo";
-  if (!scannedFoodItems.length && !foods.length) {
-    throw new Error(inputMode === "text" ? "No food could be estimated from this description." : "No food was detected in this photo.");
+  if (analysis && !foods.length) {
+    if (inputMode === "text") throw new Error("No food could be estimated from this description.");
+    showNoFoodDetected(analysis, imageDataUrl);
+    return;
   }
+  if (!scannedFoodItems.length && !foods.length) return;
 
   if (foods.length) {
     scannedFoodItems = foods.map((food) => createScannedFoodItem(food, { inputMode }));
@@ -3253,6 +3268,7 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
   elements.foodSection.classList.remove("is-editing");
   elements.foodSection.classList.remove("is-reviewing-scan");
   elements.foodSection.classList.remove("is-reviewing-text-estimate");
+  elements.foodSection.classList.remove("is-scan-empty");
   elements.foodSection.classList.add("is-detailing");
   elements.scanReview.hidden = true;
   elements.openScanReview.hidden = scannedFoodItems.length === 0;
@@ -3286,6 +3302,50 @@ function showSimpleScannedPlate(analysis = null, imageDataUrl = "", options = {}
   syncDesktopFoodAddContentState();
 }
 
+function showNoFoodDetected(analysis = null, imageDataUrl = "") {
+  scannedFoodItems = [];
+  scannedFoodAnalysis = {
+    outcome: "no_food",
+    containsFood: false,
+    foods: [],
+    confidence: analysis?.confidence || "low",
+    notes: String(analysis?.notes || "").trim(),
+    imageDataUrl,
+    inputMode: "photo",
+  };
+  selectedFoodBase = null;
+  elements.foodSection.classList.remove("is-editing", "is-reviewing-text-estimate");
+  elements.foodSection.classList.add("is-detailing", "is-reviewing-scan", "is-scan-empty");
+  elements.scanReview.hidden = false;
+  elements.scanNoFood.hidden = false;
+  elements.scanReviewHeadingActions.hidden = true;
+  elements.scanFoodList.hidden = true;
+  elements.scanReviewFooter.hidden = true;
+  elements.scanSimpleSaveActions.hidden = true;
+  elements.openScanReview.hidden = true;
+  elements.scanReviewEyebrow.textContent = "Photo scan";
+  elements.scanReviewTitle.textContent = "No food found";
+  elements.scanReviewDescription.textContent = "We couldn't detect any food in this photo.";
+  elements.foodPhotoStatus.setAttribute("role", "status");
+  elements.foodPhotoStatus.textContent = "No food detected. Try another photo or add food manually.";
+  syncFoodModeHeader();
+  syncDesktopFoodAddContentState();
+  requestAnimationFrame(() => {
+    elements.scanReviewTitle.setAttribute("tabindex", "-1");
+    elements.scanReviewTitle.focus();
+  });
+}
+
+function leaveNoFoodResult() {
+  if (!elements.foodSection.classList.contains("is-scan-empty")) return;
+  elements.foodSection.classList.remove("is-reviewing-scan", "is-scan-empty");
+  elements.scanReview.hidden = true;
+  elements.scanNoFood.hidden = true;
+  scannedFoodAnalysis = null;
+  syncFoodModeHeader();
+  syncDesktopFoodAddContentState();
+}
+
 async function lookupBarcode(code) {
   const cleanCode = String(code || "").replace(/\D/g, "");
   if (!/^\d{8,14}$/.test(cleanCode)) throw new Error("Enter a valid 8–14 digit barcode.");
@@ -3293,6 +3353,7 @@ async function lookupBarcode(code) {
   const response = await fetch(`/api/foods/barcode?code=${encodeURIComponent(cleanCode)}`);
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.food) throw new Error(data.error || "Product not found.");
+  leaveNoFoodResult();
   fillManualFood(data.food);
   elements.foodPhotoStatus.textContent = `${data.food.name} found.`;
 }
@@ -3332,6 +3393,11 @@ function showScannedFoodsReview() {
   elements.foodSection.classList.add("is-detailing", "is-reviewing-scan");
   elements.foodSection.classList.toggle("is-reviewing-text-estimate", isTextEstimate);
   elements.scanReview.hidden = false;
+  elements.scanNoFood.hidden = true;
+  elements.scanReviewHeadingActions.hidden = false;
+  elements.scanFoodList.hidden = false;
+  elements.scanReviewFooter.hidden = false;
+  elements.foodSection.classList.remove("is-scan-empty");
   elements.scanSimpleSaveActions.hidden = true;
   elements.scanReviewMeal.value = elements.foodMeal.value || defaultMealForNow();
   elements.scanReviewEyebrow.textContent = isTextEstimate ? "AI estimated foods" : "Detected foods";
@@ -3972,6 +4038,13 @@ elements.closeScanReview.addEventListener("click", () => {
   showSimpleScannedPlate();
 });
 elements.scanAddSelectedFoods.addEventListener("click", addSelectedScannedFoods);
+elements.scanNoFoodRetry?.addEventListener("click", () => elements.foodPhotoInput.click());
+elements.scanNoFoodManual?.addEventListener("click", () => {
+  leaveNoFoodResult();
+  fillManualFood({ name: "", source: "Manual", serving: "1 serving", servingGrams: 100, calories: 0, protein: 0, carbs: 0, fat: 0 }, { editableName: true });
+  elements.foodEditName.textContent = "Manual food";
+  elements.manualFoodName.focus();
+});
 elements.scanReviewMeal?.addEventListener("change", () => {
   if (elements.scanSaveMealStatus) elements.scanSaveMealStatus.textContent = "";
 });

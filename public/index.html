@@ -270,7 +270,8 @@
             <p class="search-note" id="searchNote" aria-live="polite">Search, scan, choose a source, or enter food manually.</p>
             <div class="suggestions" id="foodSuggestions"></div>
             <button class="manual-food-shortcut" id="manualFoodShortcut" type="button">Enter food manually</button>
-            <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle" hidden>
+            <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle"
+              aria-describedby="scanReviewDescription" hidden>
               <div class="scan-review-heading">
                 <div>
                   <p class="label" id="scanReviewEyebrow">Detected foods</p>
@@ -284,6 +285,14 @@
                       <option value="dinner">Dinner</option>
                     </select></label>
                   <button class="scan-simple-view" id="closeScanReview" type="button">Back to simple view</button>
+                </div>
+              </div>
+              <div class="scan-no-food" id="scanNoFood" role="status" aria-live="polite" hidden>
+                <div class="scan-no-food-mark" aria-hidden="true">×</div>
+                <p>Try a clear, well-lit photo with the food fully visible.</p>
+                <div class="scan-no-food-actions">
+                  <button id="scanNoFoodRetry" type="button">Try another photo</button>
+                  <button id="scanNoFoodManual" type="button">Add food manually</button>
                 </div>
               </div>
               <div class="scan-food-list" id="scanFoodList"></div>
@@ -526,7 +535,7 @@
   <script src="food-persistence.js?v=1"></script>
   <script src="food-reuse.js?v=1"></script>
   <script src="scanned-food.js?v=2"></script>
-  <script src="app.js?v=37"></script>
+  <script src="app.js?v=39"></script>
 </body>
 
 </html>

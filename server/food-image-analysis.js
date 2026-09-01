@@ -892,9 +892,12 @@ function normalizeAnalysis(analysis, source = "OpenAI photo estimate") {
       : analysis?.name
         ? [analysis]
         : [];
+  const foods = rawFoods.slice(0, 8).map((food) => normalizeFoodItem(food, source));
 
   return {
-    foods: rawFoods.slice(0, 8).map((food) => normalizeFoodItem(food, source)),
+    outcome: foods.length ? "food_detected" : "no_food",
+    containsFood: foods.length > 0,
+    foods,
     confidence: normalizeConfidence(analysis?.confidence),
     notes: String(analysis?.notes || "").trim(),
   };

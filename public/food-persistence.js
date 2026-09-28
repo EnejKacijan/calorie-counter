@@ -145,12 +145,18 @@
       const food = ensureStableFoodIdentity(candidate, { idFactory: options.idFactory });
       const key = foodIdentityKey(food);
       const existing = records.get(key);
-      records.set(key, {
+      const recent = {
         ...existing,
         ...food,
         lastUsedAt: timestamp,
         useCount: Number(existing?.useCount || 0) + 1,
-      });
+      };
+      // Recent describes the latest use, not the last photographed use.
+      // A representative Saved cover is never an occurrence attachment.
+      if (!food.photoMediaId) delete recent.photoMediaId;
+      delete recent.coverImageId;
+      delete recent.captureId;
+      records.set(key, recent);
     });
 
     return uniqueRecentFoods([...records.values()]).slice(0, maximum);

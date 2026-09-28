@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-intake-starting>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f5ee" />
+    <link rel="stylesheet" href="startup.css?v=1" />
+    <script src="startup-theme.js?v=1"></script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Intake" />
     <meta name="apple-mobile-web-app-title" content="Intake" />
@@ -12,10 +14,18 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest?v=8" />
-    <link rel="stylesheet" href="styles.css?v=45" />
-  </head>
-  <body>
-    <main class="app-shell">
+  <link rel="stylesheet" href="styles.css?v=75" />
+  <link rel="stylesheet" href="touch-feedback.css?v=2" />
+    <link rel="stylesheet" href="modern-ux.css?v=9" />
+  <link rel="stylesheet" href="bottom-navigation.css?v=3" />
+    <link rel="stylesheet" href="profile-polish.css?v=3" />
+    <link rel="stylesheet" href="onboarding.css?v=8" />
+  <link rel="stylesheet" href="profile-settings.css?v=6" />
+  <link rel="stylesheet" href="food-photos.css?v=6" />
+</head>
+  <body data-app-loading>
+    <p id="appStartupStatus" role="status"><span>Opening Intake…</span><button type="button" hidden>Reload</button></p>
+    <main class="app-shell" inert data-startup-surface aria-busy="true">
       <aside class="sidebar" id="sidebar">
         <div class="brand-mark">
           <span class="brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24"><circle class="intake-mark-ring" cx="12" cy="12" r="7.5" pathLength="100" /><circle class="intake-mark-accent" cx="12" cy="12" r="7.5" pathLength="100" /><path class="intake-mark-spark" d="M12 8.6c.35 2.05 1.35 3.05 3.4 3.4-2.05.35-3.05 1.35-3.4 3.4-.35-2.05-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.35 3.4-3.4Z" /></svg></span>
@@ -43,7 +53,6 @@
           </div>
         </div>
 
-        <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log out</b></button>
       </aside>
       <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
 
@@ -61,221 +70,109 @@
           </div>
         </section>
 
-        <section class="intro-shell" id="introShell" aria-labelledby="introTitle">
-          <div class="intro-copy">
-            <div class="intro-brand">
-              <span class="brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24"><circle class="intake-mark-ring" cx="12" cy="12" r="7.5" pathLength="100" /><circle class="intake-mark-accent" cx="12" cy="12" r="7.5" pathLength="100" /><path class="intake-mark-spark" d="M12 8.6c.35 2.05 1.35 3.05 3.4 3.4-2.05.35-3.05 1.35-3.4 3.4-.35-2.05-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.35 3.4-3.4Z" /></svg></span>
-              <span>Intake</span>
-            </div>
-            <h1 id="introTitle">Intake</h1>
-            <p>A quiet daily diary for food, macros, and body weight. Set a target once, then log meals, check remaining calories, and watch weight changes without visual noise.</p>
-            <div class="intro-actions">
-              <button class="primary-action" id="introStartButton" type="button">Start tracking</button>
-            </div>
-            <p class="intro-preview-label">Static sample preview</p>
-            <div class="intro-stats" aria-label="Intake preview metrics">
-              <article>
-                <span>Remaining</span>
-                  <strong>1310</strong>
-                <small>kcal today</small>
-              </article>
-              <article>
-                <span>Protein</span>
-                  <strong>94g</strong>
-                  <small>of 150g</small>
-              </article>
-              <article>
-                <span>Weight</span>
-                <strong>72.4</strong>
-                <small>kg today</small>
-              </article>
-            </div>
-          </div>
-          <div class="intro-preview app-screenshot-preview" aria-hidden="true">
-            <picture>
-              <source media="(max-width: 640px)" srcset="landing-preview-mobile.png" />
-              <img src="landing-preview.png" alt="" />
-            </picture>
-          </div>
-        </section>
+        <section id="onboarding" aria-labelledby="onboardingTitle" hidden></section>
 
-        <section class="auth-shell in-app">
-          <form class="auth-panel" id="profileForm">
-            <div class="profile-form-header">
-              <div>
-                <p class="eyebrow">PLAN SETTINGS</p>
-                <h2 id="profileFormTitle">Set Up Your Goals</h2>
-                <p class="auth-copy" id="profileFormCopy">Create a local profile so the app can estimate daily calories and macros from your body stats and goal.</p>
-                <p class="profile-required-note" id="profileRequiredNote">All fields are required. Measurements use cm and kg.</p>
-              </div>
-            </div>
-
-            <div class="profile-grid">
-              <section class="profile-section profile-section-main profile-section-basics">
-                <div class="section-heading">
-                  <span>Body</span>
-                  <strong>Basics</strong>
-                </div>
-                <div class="profile-fields compact-profile-fields">
-                  <label class="wide-field">
-                    Name
-                    <input id="profileName" type="text" autocomplete="name" required />
-                  </label>
-                  <label>
-                    Sex
-                    <select id="profileSex" required>
-                      <option value="" disabled selected>Select</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </label>
-                  <label>
-                    Age
-                    <input id="profileAge" type="number" min="13" max="100" required />
-                  </label>
-                  <label>
-                    Height (cm)
-                    <input id="profileHeight" type="number" min="120" max="230" required />
-                  </label>
-                  <label>
-                    Current weight (kg)
-                    <input id="profileWeight" type="number" min="35" max="250" step="0.1" required />
-                  </label>
-                </div>
-              </section>
-
-              <section class="profile-section profile-section-goal">
-                <div class="section-heading">
-                  <span>Goal</span>
-                  <strong>Direction</strong>
-                </div>
-                <div class="profile-fields">
-                  <label>
-                    Goal weight (kg)
-                    <input id="profileTargetWeight" type="number" min="35" max="250" step="0.1" required />
-                  </label>
-                  <label>
-                    Main goal
-                    <select id="profileGoalType" required>
-                      <option value="lose">Lose fat</option>
-                      <option value="maintain">Maintain weight</option>
-                      <option value="gain">Build muscle</option>
-                    </select>
-                  </label>
-                  <label>
-                    Goal pace
-                    <select id="profileGoalPace" required>
-                      <option value="0.25">0.25 kg/week</option>
-                      <option value="0.5">0.5 kg/week</option>
-                      <option value="0.75">0.75 kg/week</option>
-                    </select>
-                    <small class="field-hint" id="goalPaceHint">Used to adjust recommended calories for losing or gaining weight.</small>
-                  </label>
-                </div>
-              </section>
-
-              <section class="profile-section profile-section-activity">
-                <div class="section-heading">
-                  <span>Activity</span>
-                  <strong>Daily Routine</strong>
-                </div>
-                <div class="profile-fields">
-                  <label>
-                    Activity level
-                    <select id="profileActivity" required>
-                      <option value="1.2">Mostly sitting</option>
-                      <option value="1.375">Lightly active</option>
-                      <option value="1.55">Moderately active</option>
-                      <option value="1.725">Very active</option>
-                    </select>
-                    <small class="field-hint" id="activityHint">Mostly sitting: desk work and little planned exercise.</small>
-                  </label>
-                </div>
-              </section>
-            </div>
-
-            <section class="recommendation goal-editor" id="goalEditor">
-              <div class="goal-editor-header">
-                <div>
-                  <span>Nutrition targets</span>
-                  <strong id="recommendationPreview">Fill in your profile to preview your recommended daily calories and macros.</strong>
-                </div>
-              </div>
-
-              <div class="recommended-summary" aria-label="Daily targets">
-                <article>
-                  <label for="goalCalories">Calories</label>
-                  <strong id="recommendedCalories">--</strong>
-                  <input id="goalCalories" type="number" min="1200" step="50" readonly required />
-                </article>
-                <article>
-                  <label for="goalProtein">Protein</label>
-                  <strong id="recommendedProtein">--</strong>
-                  <input id="goalProtein" type="number" min="0" step="1" readonly required />
-                </article>
-                <article>
-                  <label for="goalCarbs">Carbs</label>
-                  <strong id="recommendedCarbs">--</strong>
-                  <input id="goalCarbs" type="number" min="0" step="1" readonly required />
-                </article>
-                <article>
-                  <label for="goalFat">Fat</label>
-                  <strong id="recommendedFat">--</strong>
-                  <input id="goalFat" type="number" min="0" step="1" readonly required />
-                </article>
-              </div>
-              <p class="maintenance-preview" id="maintenancePreview">Maintenance will appear after your profile is complete.</p>
-
-              <div class="goal-editor-actions">
-                <button class="goal-reset-button" id="goalResetButton" type="button">Use recommended</button>
-                <button class="goal-edit-button" id="goalEditButton" type="button" title="Edit daily targets" aria-label="Edit daily targets">Edit</button>
-              </div>
-
+        <section id="profileSettings" hidden>
+          <p id="profileSettingsStatus" role="status"></p>
+          <div id="profileSettingsOverview">
+            <section class="settings-section settings-plan" aria-labelledby="planTitle">
+              <div class="settings-heading"><h2 id="planTitle">Your plan</h2><button type="button" data-edit-settings="plan">Edit plan</button></div>
+              <p class="settings-goal" id="planGoal"></p>
+              <p class="settings-calories"><strong id="planCalories"></strong> <span>kcal / day</span></p>
+              <dl class="settings-values" id="planValues"></dl>
+              <dl class="settings-macros" id="planMacros" aria-label="Daily macro targets"></dl>
             </section>
-            <section class="meal-schedule-settings" aria-labelledby="mealScheduleTitle">
-              <div class="meal-schedule-header">
-                <div>
-                  <span class="label">Preferences</span>
-                  <h3 id="mealScheduleTitle">Meal schedule</h3>
-                </div>
-                <button class="meal-schedule-reset" id="mealScheduleReset" type="button">Reset to defaults</button>
-              </div>
-              <p class="meal-schedule-copy">Used only to preselect a meal when you add food. Existing entries are not changed.</p>
-              <div class="meal-schedule-fields">
-                <label for="profileBreakfastEnd">
-                  Breakfast ends
-                  <input id="profileBreakfastEnd" type="time" value="11:00" required />
-                </label>
-                <label for="profileLunchEnd">
-                  Lunch ends
-                  <input id="profileLunchEnd" type="time" value="16:00" required />
-                </label>
-              </div>
-              <p class="meal-schedule-preview" id="mealSchedulePreview"></p>
+            <section class="settings-section" aria-labelledby="personalTitle">
+              <div class="settings-heading"><h2 id="personalTitle">Personal details</h2><button type="button" data-edit-settings="personal" aria-label="Edit personal details">Edit</button></div>
+              <dl class="settings-values" id="personalValues"></dl>
             </section>
-            <label class="theme-control profile-theme-control">
-              Theme
-              <select id="profileTheme" required>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </label>
-            <button class="primary-action" id="profileSubmitButton" type="submit">Start tracking</button>
+            <section class="settings-section" aria-labelledby="mealScheduleTitle">
+              <div class="settings-heading"><h2 id="mealScheduleTitle">Meal schedule</h2><button type="button" data-edit-settings="schedule" aria-label="Edit meal schedule">Edit</button></div>
+              <dl class="settings-values" id="savedMealSchedule"></dl>
+              <p class="settings-note">Used to preselect a meal when adding food. Existing entries stay unchanged.</p>
+            </section>
+            <section class="settings-section settings-link-section" aria-labelledby="appearanceTitle">
+              <button type="button" data-edit-settings="appearance" class="settings-destination" aria-labelledby="appearanceTitle savedAppearance">
+                <strong id="appearanceTitle">Appearance</strong><span class="settings-destination-value" id="savedAppearance"></span><span aria-hidden="true">→</span>
+              </button>
+            </section>
+            <section class="settings-section settings-privacy settings-link-section" aria-labelledby="dataPrivacyTitle">
+              <button type="button" id="profilePrivacyOpen" class="settings-destination" aria-labelledby="dataPrivacyTitle"><span><strong id="dataPrivacyTitle">Data &amp; privacy</strong><small>Backups, AI permissions and local data</small></span><span aria-hidden="true">→</span></button>
+            </section>
+          </div>
+          <div id="profileEditorBackdrop" class="profile-editor-backdrop" hidden></div>
+          <form id="profileForm" class="profile-editor-surface" hidden novalidate aria-labelledby="profileFormTitle">
+            <div class="ux-sheet-handle" id="profileSheetHandle" aria-hidden="true"><span></span></div>
+            <div class="settings-edit-heading"><button id="profileEditBack" type="button" aria-label="Back to Profile">&#8592;</button><h2 id="profileFormTitle" tabindex="-1">Edit plan</h2></div>
+            <div class="settings-editor-scroll" id="profileEditorScroll">
+            <fieldset data-settings-fields="plan">
+              <legend class="sr-only">Plan details</legend>
+              <div class="settings-fields">
+                <h3>Goal</h3>
+                <label for="profileGoalType">Direction<select id="profileGoalType" required><option value="lose">Lose fat</option><option value="maintain">Maintain weight</option><option value="gain">Build muscle</option></select></label>
+                <h3 class="settings-field-group">Body &amp; weight</h3>
+                <label for="profileWeight">Current weight (kg)<input id="profileWeight" type="text" inputmode="decimal" required /></label>
+                <label for="profileTargetWeight">Goal weight (kg)<input id="profileTargetWeight" type="text" inputmode="decimal" required /></label>
+                <h3 class="settings-field-group">Activity &amp; pace</h3>
+                <label for="profileActivity">Activity<select id="profileActivity" required><option value="1.2">Mostly sitting</option><option value="1.375">Lightly active</option><option value="1.55">Moderately active</option><option value="1.725">Very active</option></select><small id="activityHint"></small></label>
+                <label for="profileGoalPace">Pace<select id="profileGoalPace" required><option value="0.25">0.25 kg/week</option><option value="0.5">0.5 kg/week</option><option value="0.75">0.75 kg/week</option></select></label>
+              </div>
+              <section id="goalEditor" aria-labelledby="targetsTitle">
+                <h3 id="targetsTitle">Daily targets</h3>
+                <p id="targetModeNote" class="settings-note"></p>
+                <div class="settings-fields settings-targets">
+                  <label for="goalCalories">Calories (kcal)<input id="goalCalories" type="number" min="1200" step="50" required /></label>
+                  <label for="goalProtein">Protein (g)<input id="goalProtein" type="number" min="0" step="1" required /></label>
+                  <label for="goalCarbs">Carbs (g)<input id="goalCarbs" type="number" min="0" step="1" required /></label>
+                  <label for="goalFat">Fat (g)<input id="goalFat" type="number" min="0" step="1" required /></label>
+                </div>
+                <div class="settings-target-actions"><button id="goalEditButton" type="button">Customize targets</button><button id="goalResetButton" type="button">Use recommended</button></div>
+              </section>
+            </fieldset>
+            <fieldset data-settings-fields="personal">
+              <legend class="sr-only">Personal details</legend>
+              <div class="settings-fields">
+                <label for="profileName">Name (optional)<input id="profileName" type="text" autocomplete="name" /></label>
+                <div class="settings-choice-field"><span id="profileSexLabel">Sex</span><input id="profileSex" type="hidden" /><div class="settings-choices" role="radiogroup" aria-labelledby="profileSexLabel"><label><input type="radio" name="profileSexChoice" value="male" />Male</label><label><input type="radio" name="profileSexChoice" value="female" />Female</label></div></div>
+                <label for="profileAge">Age<input id="profileAge" type="number" min="18" max="100" step="1" inputmode="numeric" required aria-describedby="adultNotice" /></label>
+                <label for="profileHeight">Height (cm)<input id="profileHeight" type="number" min="120" max="230" step="1" inputmode="numeric" required /></label>
+              </div>
+              <p id="adultNotice" class="settings-note">For adults aged 18 and over. Nutrition targets are estimates, not medical advice.</p>
+            </fieldset>
+            <fieldset data-settings-fields="schedule">
+              <legend class="sr-only">Meal schedule</legend>
+              <p class="settings-note">These times decide which meal is preselected when you add food. Existing diary entries are not changed.</p>
+              <div class="settings-fields">
+                <label for="profileBreakfastEnd" class="settings-time-row"><span>Breakfast ends / lunch begins</span><input id="profileBreakfastEnd" type="time" required /></label>
+                <label for="profileLunchEnd" class="settings-time-row"><span>Lunch ends / dinner begins</span><input id="profileLunchEnd" type="time" required /></label>
+              </div>
+              <button id="mealScheduleReset" type="button">Reset to defaults</button>
+            </fieldset>
+            <fieldset data-settings-fields="appearance">
+              <legend class="sr-only">Appearance</legend>
+              <input id="profileTheme" type="hidden" /><div class="settings-choices appearance-choices" role="radiogroup" aria-label="Appearance"><label><input type="radio" name="profileThemeChoice" value="system" />System</label><label><input type="radio" name="profileThemeChoice" value="light" />Light</label><label><input type="radio" name="profileThemeChoice" value="dark" />Dark</label></div>
+              <p class="settings-note">System follows your device appearance. Applies when you save.</p>
+            </fieldset>
+            <p id="profileTargetChange" class="settings-note" role="status" hidden></p>
+            <p id="profileSaveError" class="settings-error" role="alert" hidden></p>
+            </div>
+            <div class="settings-edit-actions"><button id="profileCancelButton" type="button">Cancel</button><button id="profileSubmitButton" type="submit">Save changes</button></div>
           </form>
-          <button class="profile-page-logout" id="profilePageLogoutButton" type="button">Log out</button>
+          <section id="profileDataScreen" class="profile-editor-surface" hidden aria-labelledby="profileDataTitle">
+            <div class="settings-edit-heading"><button type="button" id="profileDataBack" aria-label="Back to Profile">←</button><h2 id="profileDataTitle" tabindex="-1">Data &amp; privacy</h2></div>
+            <div class="settings-editor-scroll"><section id="privacyControls" class="privacy-controls" aria-label="Privacy and data"></section></div>
+          </section>
         </section>
       </section>
     </main>
 
-    <nav class="mobile-tabbar" aria-label="Mobile navigation">
-      <a href="index.html"><b>Today</b></a>
-      <a href="assistant.html"><b>Assistant</b></a>
-      <a href="progress.html"><b>Progress</b></a>
-      <a class="is-active" href="profile.html"><b>Profile</b></a>
-    </nav>
+<nav class="mobile-tabbar" aria-label="Mobile navigation" inert data-startup-surface aria-busy="true">
+    <a href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 10.25 12 4.5l7 5.75V20H5z M9.5 20v-6.25h5V20z" /></svg></span><b class="nav-label">Today</b></a>
+    <a href="assistant.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 5.5h15v10.5h-8.25L7.5 19.5V16h-3z" /></svg></span><b class="nav-label">Assistant</b></a>
+    <a href="progress.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 13.5h3.5V20H4z M10.25 9.5h3.5V20h-3.5z M16.5 5h3.5v15h-3.5z" /></svg></span><b class="nav-label">Progress</b></a>
+    <a class="is-active" aria-current="page" href="profile.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 7.5a3.6 3.6 0 1 1-7.2 0 3.6 3.6 0 0 1 7.2 0z M5.5 20.5a6.5 6.5 0 0 1 13 0z" /></svg></span><b class="nav-label">Profile</b></a>
+  </nav>
 
-    <script src="pwa.js?v=8"></script>
-    <script src="meal-schedule.js?v=1"></script>
-    <script src="profile.js?v=7"></script>
+    <script src="app-start.js?v=28"></script>
   </body>
 </html>

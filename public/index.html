@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-intake-starting>
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f7f5ee" />
+    <link rel="stylesheet" href="startup.css?v=1" />
+    <script src="startup-theme.js?v=1"></script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="application-name" content="Intake" />
   <meta name="apple-mobile-web-app-title" content="Intake" />
@@ -13,11 +15,22 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest?v=8" />
-  <link rel="stylesheet" href="styles.css?v=45" />
+  <link rel="stylesheet" href="styles.css?v=75" />
+  <link rel="stylesheet" href="touch-feedback.css?v=2" />
+    <link rel="stylesheet" href="modern-ux.css?v=9" />
+  <link rel="stylesheet" href="bottom-navigation.css?v=3" />
+  <link rel="stylesheet" href="today-diary.css?v=14" />
+  <link rel="stylesheet" href="calendar-swipe.css?v=1" />
+  <link rel="stylesheet" href="food-search.css?v=6" />
+  <link rel="stylesheet" href="add-flow.css?v=12" />
+  <link rel="stylesheet" href="food-reuse.css?v=5" />
+  <link rel="stylesheet" href="package-scan.css?v=9" />
+<link rel="stylesheet" href="food-photos.css?v=7" />
 </head>
 
-<body>
-  <main class="app-shell">
+<body data-app-loading>
+  <p id="appStartupStatus" role="status"><span>Opening Intake…</span><button type="button" hidden>Reload</button></p>
+  <main class="app-shell" inert data-startup-surface aria-busy="true">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mark">
         <span class="brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24">
@@ -64,13 +77,6 @@
         </div>
       </div>
 
-      <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg
-            viewBox="0 0 24 24">
-            <path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" />
-            <path d="M14 8l4 4-4 4" />
-            <path d="M18 12H9" />
-          </svg></span> <b>Log
-          out</b></button>
     </aside>
     <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
 
@@ -102,7 +108,13 @@
       <section class="calendar-panel" aria-label="Calendar">
         <button class="icon-button" id="previousWeekButton" type="button" title="Previous week"
           aria-label="Previous week">‹</button>
-        <div class="calendar-strip" id="calendarStrip"></div>
+        <div class="calendar-week-viewport">
+          <div class="calendar-week-track">
+            <div class="calendar-strip" data-week-preview="-1" aria-hidden="true" inert></div>
+            <div class="calendar-strip" id="calendarStrip"></div>
+            <div class="calendar-strip" data-week-preview="1" aria-hidden="true" inert></div>
+          </div>
+        </div>
         <button class="icon-button" id="nextWeekButton" type="button" title="Next week"
           aria-label="Next week">›</button>
       </section>
@@ -114,7 +126,6 @@
               <strong class="calorie-left-value" id="remainingCalories"><span>0</span><small>kcal</small></strong>
               <p class="calorie-left-label"><span class="desktop-balance-label">Daily balance</span><span class="mobile-balance-label">left</span></p>
               <small class="goal-helper" id="goalHelper">Food minus exercise, compared with your daily goal.</small>
-              <small class="mobile-streak-pill" id="mobileClearDayStreak">0 days streak</small>
             </div>
             <span class="status-pill" id="goalStatus">On track</span>
           </div>
@@ -158,27 +169,10 @@
                 <span>Net</span>
                 <strong id="netCaloriesTotal">0</strong>
               </article>
-              <article class="streak-insight">
-                <span>Streak</span>
-                <strong id="clearDayStreak">0</strong>
-                <small id="clearDayStreakLabel">clear days</small>
-              </article>
             </div>
           </div>
         </div>
         <div class="macro-grid" id="macroGrid"></div>
-        <div class="mobile-diary-stats" aria-label="Daily stats">
-          <article>
-            <span>Streak</span>
-            <strong><b id="mobileStreakValue">0</b> <small id="mobileStreakUnit">days</small></strong>
-            <small class="mobile-stat-detail" id="mobileStreakBest" hidden></small>
-          </article>
-          <article>
-            <span>Weight</span>
-            <strong><b id="mobileWeightValue">--</b> <small>kg</small></strong>
-            <small class="mobile-stat-detail" id="mobileWeightDelta" hidden></small>
-          </article>
-        </div>
       </section>
 
       <section class="workspace">
@@ -217,20 +211,12 @@
           </div>
           <form class="compact-form" id="manualFoodForm">
             <div class="food-search-row">
-              <label class="food-form-field food-name-field" for="manualFoodName"><span>Food name (required)</span><input
+              <label class="food-form-field food-name-field" for="manualFoodName"><span id="foodNameLabel">Food name (required)</span><input
                   id="manualFoodName" type="search" placeholder="Search food" autocomplete="off" enterkeyhint="search"
-                  aria-describedby="searchNote" required /></label>
+                  aria-labelledby="foodNameLabel" aria-describedby="searchNote" required /></label>
               <button class="scan-food-button" id="foodScanButton" type="button" style="height:48px!important;min-height:48px!important"><svg
                   viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5a1 1 0 0 0-1 1v3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M4 16v3a1 1 0 0 0 1 1h3M7 12h10" /></svg><b>Scan food</b></button>
-              <button class="scan-food-button gallery-food-button" id="foodGalleryShortcut" type="button" style="height:48px!important;min-height:48px!important"><svg
-                  viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1" /><circle cx="8.5" cy="9" r="1.25" /><path d="m5 17 4.5-4 3.25 2.75 2.25-2 4.25 3.3" /></svg><b>Gallery</b></button>
-              <div class="scan-choice-menu" id="foodScanMenu" aria-hidden="true">
-                <button id="foodPhotoButton" type="button">Camera</button>
-                <button id="foodGalleryButton" type="button">Gallery</button>
-              </div>
             </div>
-            <button class="food-ai-description-trigger" id="foodAiDescriptionTrigger" type="button"
-              aria-controls="foodAiDescription" aria-expanded="false">Describe food to AI <span aria-hidden="true">→</span></button>
             <section class="food-ai-description" id="foodAiDescription" aria-labelledby="foodAiDescriptionTitle" hidden>
               <div class="food-ai-description-heading">
                 <p class="label">AI estimate</p>
@@ -257,19 +243,30 @@
             </section>
             <div class="food-filter-tabs" aria-label="Food source filters">
               <button class="is-active" type="button" data-food-filter="all">All</button>
-              <button type="button" data-food-filter="my">Saved</button>
+              <button type="button" data-food-filter="my" aria-label="Saved meals and foods" aria-describedby="savedLibraryHint">Saved</button>
               <button type="button" data-food-filter="recent">Recent</button>
               <button type="button" data-food-filter="usda">USDA</button>
             </div>
+            <p class="saved-library-hint" id="savedLibraryHint" hidden></p>
             <div class="food-edit-summary" id="foodEditSummary" aria-live="polite">
               <span>Food entry</span>
               <strong id="foodEditName">Food</strong>
+              <p id="foodEditBrand" hidden></p>
+              <strong id="foodDetailCalories"></strong>
               <small>Adjust serving, meal, or nutrition values.</small>
               <button class="scan-review-option" id="openScanReview" type="button" hidden>Review your plate</button>
             </div>
-            <p class="search-note" id="searchNote" aria-live="polite">Search, scan, choose a source, or enter food manually.</p>
-            <div class="suggestions" id="foodSuggestions"></div>
-            <button class="manual-food-shortcut" id="manualFoodShortcut" type="button">Enter food manually</button>
+            <div class="food-filter-viewport" id="foodFilterViewport">
+              <div class="food-filter-pane">
+                <p class="search-note" id="searchNote" data-peer-note aria-live="polite">Search, scan, choose a source, or enter food manually.</p>
+                <div class="suggestions" id="foodSuggestions" data-peer-results></div>
+                <div class="food-peer-actions" data-peer-actions>
+                  <button class="manual-food-shortcut" id="manualFoodShortcut" type="button">Enter food manually</button>
+                  <button class="food-ai-description-trigger" id="foodAiDescriptionTrigger" type="button"
+                    aria-controls="foodAiDescription" aria-expanded="false">Describe food to AI <span aria-hidden="true">→</span></button>
+                </div>
+              </div>
+            </div>
             <section class="scan-review" id="scanReview" aria-labelledby="scanReviewTitle"
               aria-describedby="scanReviewDescription" hidden>
               <div class="scan-review-heading">
@@ -283,8 +280,9 @@
                       <option value="breakfast">Breakfast</option>
                       <option value="lunch">Lunch</option>
                       <option value="dinner">Dinner</option>
+                      <option value="snack">Snack</option>
                     </select></label>
-                  <button class="scan-simple-view" id="closeScanReview" type="button">Back to simple view</button>
+                  <button class="scan-simple-view" id="closeScanReview" type="button" hidden>Edit description</button>
                 </div>
               </div>
               <div class="scan-no-food" id="scanNoFood" role="status" aria-live="polite" hidden>
@@ -296,6 +294,7 @@
                 </div>
               </div>
               <div class="scan-food-list" id="scanFoodList"></div>
+              <button id="scanRemoveUndo" type="button" hidden>Undo remove</button>
               <div class="scan-review-footer">
                 <div class="scan-review-total" aria-live="polite">
                   <span id="scanSelectedCount">0 selected</span>
@@ -308,40 +307,47 @@
                 </div>
               </div>
             </section>
-            <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="number"
-                min="0.1" step="0.1" value="1" aria-label="Amount" required /></label>
+            <label class="food-form-field" for="foodAmount"><span>Amount</span><input id="foodAmount" type="text"
+                inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" value="1" aria-label="Amount" autocomplete="off" required /></label>
             <label class="food-form-field" for="foodUnit"><span>Unit</span><select id="foodUnit" aria-label="Unit">
                 <option value="serving">serving</option>
                 <option value="piece">piece</option>
                 <option value="g">g</option>
                 <option value="ml">ml</option>
               </select></label>
+            <p class="food-portion-note" id="foodPortionNote" hidden></p>
             <label class="food-form-field" for="foodMeal"><span>Meal</span><select id="foodMeal" aria-label="Meal">
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>
                 <option value="dinner">Dinner</option>
+                <option value="snack">Snack</option>
               </select></label>
             <section class="food-nutrition-summary" id="foodNutritionSummary" aria-label="Nutrition" hidden>
               <div class="food-nutrition-summary-heading">
                 <span>Nutrition</span>
-                <button id="editFoodNutrition" type="button">Edit nutrition</button>
+                <button id="editFoodNutrition" type="button" aria-controls="manualFoodCalories manualFoodProtein manualFoodCarbs manualFoodFat"><span class="nutrition-section-title" hidden>Nutrition</span><span id="foodNutritionAction">Edit nutrition</span></button>
               </div>
-              <div class="food-nutrition-grid" id="foodNutritionGrid">
+              <div class="food-nutrition-grid" id="foodNutritionGrid" aria-live="polite" aria-atomic="true">
                 <div><span>Calories</span><strong id="foodNutritionCalories">0 kcal</strong></div>
                 <div><span>Protein</span><strong id="foodNutritionProtein">0 g</strong></div>
                 <div><span>Carbs</span><strong id="foodNutritionCarbs">0 g</strong></div>
                 <div><span>Fat</span><strong id="foodNutritionFat">0 g</strong></div>
               </div>
+              <div id="foodNutritionEditor" hidden>
+                <p class="nutrition-value-basis" id="foodNutritionBasis">For this entry</p>
+                <div class="nutrition-editor-fields"></div>
+              </div>
             </section>
             <label class="food-form-field" for="manualFoodCalories"><span>Calories (kcal)</span><input id="manualFoodCalories"
-                type="number" min="0" step="0.1" aria-label="Calories" required /></label>
+                type="text" inputmode="decimal" min="0" step="0.1" aria-label="Calories" required /></label>
             <label class="food-form-field" for="manualFoodProtein"><span>Protein (g)</span><input id="manualFoodProtein"
-                type="number" min="0" step="0.1" aria-label="Protein grams" /></label>
+                type="text" inputmode="decimal" min="0" step="0.1" aria-label="Protein grams" /></label>
             <label class="food-form-field" for="manualFoodCarbs"><span>Carbs (g)</span><input id="manualFoodCarbs"
-                type="number" min="0" step="0.1" aria-label="Carbs grams" /></label>
-            <label class="food-form-field" for="manualFoodFat"><span>Fat (g)</span><input id="manualFoodFat" type="number"
+                type="text" inputmode="decimal" min="0" step="0.1" aria-label="Carbs grams" /></label>
+            <label class="food-form-field" for="manualFoodFat"><span>Fat (g)</span><input id="manualFoodFat" type="text" inputmode="decimal"
                 min="0" step="0.1" aria-label="Fat grams" /></label>
             <button id="manualFoodSubmit" type="submit">Add food</button>
+            <p class="add-entry-status" id="manualFoodFormStatus" role="alert" hidden></p>
             <div class="scan-simple-save-actions" id="scanSimpleSaveActions" hidden>
               <button class="scan-save-as-meal" id="scanSaveAsMeal" type="button">Save as meal</button>
               <span class="scan-save-meal-status" id="scanSaveMealStatus" role="status" aria-live="polite"></span>
@@ -352,39 +358,25 @@
               aria-label="Delete food entry">Delete entry</button>
           </div>
           <div class="photo-food-tools">
-            <input id="foodPhotoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif"
-              capture="environment" hidden />
-            <input id="foodGalleryInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
             <span class="photo-food-status" id="foodPhotoStatus" aria-live="polite"></span>
           </div>
-          <div class="food-scan-loading" id="foodScanLoading" role="status" aria-live="polite" hidden>
-            <div class="food-scan-loading-card">
-              <span class="food-scan-spinner" aria-hidden="true"></span>
-              <div>
-                <strong>Analyzing your food</strong>
-                <small>Identifying foods and estimating portions…</small>
-              </div>
-            </div>
-          </div>
           <div class="logged-list-heading">
-            <p class="label">Today's log</p>
+            <div class="log-title-meta"><p class="label" role="heading" aria-level="2">Today's log</p><span id="foodEntryCount" hidden>0 entries</span></div>
             <div class="log-heading-actions">
-              <span id="foodEntryCount">0 entries</span>
               <button class="food-log-options-button" id="foodLogOptionsButton" type="button"
-                aria-label="Food log options" aria-controls="foodReusePanel" aria-expanded="false">···</button>
+                aria-label="Reuse food and meals" aria-controls="foodReusePanel" aria-expanded="false" hidden>Reuse</button>
               <div class="floating-action-stack">
                 <button class="floating-add-button" id="floatingAddButton" type="button" aria-label="Add entry"
                   aria-expanded="false"><span class="floating-add-glyph" aria-hidden="true">+</span></button>
               </div>
             </div>
           </div>
-          <p class="entry-swipe-hint" id="foodSwipeHint" hidden>Swipe to save or delete</p>
           <div class="entry-list" id="foodList"></div>
           <section class="saved-foods-panel" aria-label="Saved meals and foods">
             <div class="foods-library-header">
               <div>
                 <p class="label">Library</p>
-                <h2>Foods</h2>
+                <h2>Saved &amp; recent</h2>
               </div>
             </div>
             <section class="foods-library-section saved-meals-section" id="savedMealsSection"
@@ -446,7 +438,7 @@
                 <option value="Walking">Walking</option>
               </select></label>
             <label class="exercise-form-field" for="exerciseMinutes"><span>Minutes</span><input id="exerciseMinutes"
-                type="number" min="1" value="60" aria-label="Minutes" required /></label>
+                type="text" inputmode="numeric" min="1" value="60" aria-label="Minutes" required /></label>
             <div class="exercise-estimate" id="exerciseEstimate">
               <div class="exercise-estimate-copy" id="exerciseEstimateCopy">
                 <span>Estimated calories</span>
@@ -455,19 +447,20 @@
               </div>
               <button class="exercise-calories-edit" id="exerciseCaloriesEdit" type="button" aria-expanded="false">Edit</button>
               <label class="exercise-form-field exercise-calories-field" for="exerciseCalories" hidden><span>Calories burned</span><input id="exerciseCalories"
-                  type="number" min="0" aria-label="Calories burned" required /></label>
+                  type="text" inputmode="numeric" min="0" aria-label="Calories burned" required /></label>
               <small class="exercise-manual-estimate-note" id="exerciseManualEstimateNote" hidden></small>
             </div>
             <button id="exerciseSubmit" type="submit">Add exercise</button>
+            <p class="add-entry-status" id="exerciseFormStatus" role="alert" hidden></p>
           </form>
           <div class="edit-modal-actions" id="exerciseEditActions">
             <button class="edit-delete-button" id="deleteExerciseEdit" type="button" title="Delete exercise"
               aria-label="Delete exercise">Delete exercise</button>
           </div>
           <div class="logged-list-heading exercise-list-heading">
-            <p class="label">Exercise log</p>
+            <p class="label" role="heading" aria-level="2">Exercise log</p>
             <div class="log-heading-actions">
-              <span id="exerciseEntryCount">0 entries</span>
+              <span id="exerciseEntryCount" hidden>0 entries</span>
             </div>
           </div>
           <div class="entry-list" id="exerciseList"></div>
@@ -476,18 +469,12 @@
     </section>
   </main>
 
-  <section class="desktop-edit-modal" id="desktopEditModal" aria-hidden="true" hidden>
-    <div class="desktop-edit-dialog" id="desktopEditDialog" role="dialog" aria-modal="true">
-      <button class="desktop-edit-modal-close" id="desktopEditModalClose" type="button" aria-label="Close editor">×</button>
-      <div class="desktop-edit-modal-body" id="desktopEditModalBody"></div>
-    </div>
-  </section>
 
-  <nav class="mobile-tabbar has-fab" aria-label="Mobile navigation">
-    <a class="is-active" href="index.html"><b>Today</b></a>
-    <a href="assistant.html"><b>Assistant</b></a>
-    <a href="progress.html"><b>Progress</b></a>
-    <a href="profile.html"><b>Profile</b></a>
+<nav class="mobile-tabbar has-fab" aria-label="Mobile navigation" inert data-startup-surface aria-busy="true">
+    <a class="is-active" aria-current="page" href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 10.25 12 4.5l7 5.75V20H5z M9.5 20v-6.25h5V20z" /></svg></span><b class="nav-label">Today</b></a>
+    <a href="assistant.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 5.5h15v10.5h-8.25L7.5 19.5V16h-3z" /></svg></span><b class="nav-label">Assistant</b></a>
+    <a href="progress.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 13.5h3.5V20H4z M10.25 9.5h3.5V20h-3.5z M16.5 5h3.5v15h-3.5z" /></svg></span><b class="nav-label">Progress</b></a>
+    <a href="profile.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 7.5a3.6 3.6 0 1 1-7.2 0 3.6 3.6 0 0 1 7.2 0z M5.5 20.5a6.5 6.5 0 0 1 13 0z" /></svg></span><b class="nav-label">Profile</b></a>
   </nav>
   <button class="fab-overlay" id="fabOverlay" type="button" aria-label="Close add menu"></button>
   <div class="fab-actions" id="fabActions" aria-hidden="true">
@@ -503,12 +490,12 @@
     hidden></button>
   <section class="food-reuse-panel" id="foodReusePanel" role="dialog" aria-modal="true"
     aria-labelledby="foodReuseTitle" hidden>
-    <div class="food-reuse-drag-zone" id="foodReuseDragZone" aria-hidden="true"><span></span></div>
+    <div class="food-reuse-drag-zone ux-sheet-handle" id="foodReuseDragZone" aria-hidden="true"><span></span></div>
     <header class="food-reuse-header">
       <button class="food-reuse-back" id="foodReuseBack" type="button" aria-label="Back" hidden>←</button>
       <div>
         <p class="label" id="foodReuseEyebrow">Food log</p>
-        <h2 id="foodReuseTitle">Reuse food</h2>
+        <h2 id="foodReuseTitle" tabindex="-1">Reuse food</h2>
       </div>
       <button class="food-reuse-close" id="foodReuseClose" type="button" aria-label="Close">×</button>
     </header>
@@ -517,25 +504,23 @@
   </section>
   <template id="entryTemplate">
     <article class="entry-card">
-      <div class="entry-swipe-actions">
-        <button class="swipe-save-action" type="button" title="Save food" aria-label="Save food">♡</button>
-        <button class="swipe-delete-action" type="button" title="Delete" aria-label="Delete">×</button>
-      </div>
       <div class="entry-surface">
         <div class="entry-main">
           <strong></strong>
           <p></p>
         </div>
+        <button class="entry-actions-toggle" type="button" aria-expanded="false" aria-label="Show entry actions">•••</button>
+      </div>
+      <div class="entry-inline-actions" hidden>
+        <button class="entry-inline-edit" type="button">Edit</button>
+        <button class="entry-inline-save" type="button">Save</button>
+        <button class="entry-inline-delete" type="button">Delete</button>
       </div>
     </article>
   </template>
 
-  <script src="pwa.js?v=8"></script>
-  <script src="meal-schedule.js?v=1"></script>
-  <script src="food-persistence.js?v=1"></script>
-  <script src="food-reuse.js?v=1"></script>
-  <script src="scanned-food.js?v=2"></script>
-  <script src="app.js?v=39"></script>
+  <p class="sr-only" id="diaryFeedback" role="status" aria-live="polite" aria-atomic="true"></p>
+    <script src="app-start.js?v=31"></script>
 </body>
 
 </html>

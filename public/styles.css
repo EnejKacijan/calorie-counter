@@ -1,3 +1,50 @@
+@import url("./scroll-surfaces.css");
+@import url("./form-focus.css");
+
+body #foodGalleryShortcut { display: none !important; }
+.unified-scanner header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.unified-scanner header h2 { margin: 0; }
+.unified-scanner header .package-scan-close { margin: 0; float: none; }
+.scanner-surface { position: relative; border: 1px solid var(--line); }
+.scanner-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px; }
+.unified-scanner .scanner-modes button { border: 0; border-bottom: 2px solid transparent; }
+.unified-scanner .scanner-modes button[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-bottom-color: var(--ink); }
+.scanner-surface video { width: 100%; height: clamp(180px, 34dvh, 340px); object-fit: contain; display: block; background: #000; }
+.scanner-surface video[hidden], .unified-scanner [hidden] { display: none !important; }
+.scanner-placeholder { min-height: clamp(160px, 28dvh, 280px); display: grid; place-items: center; text-align: center; padding: 24px; color: var(--muted); font-size: 14px; }
+.scanner-controls { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: center; gap: 12px; }
+.unified-scanner [data-shutter] { border-radius: 50%; width: 64px; height: 64px; padding: 0; font-size: 46px; line-height: 1; border: 2px solid var(--ink); }
+.unified-scanner .scanner-controls button:not([data-shutter]) { border: 0; padding: 10px 0; }
+.unified-scanner .package-scan-status:empty { display: none; }
+.unified-scanner [data-manual] { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; }
+body .food-log.is-describing-ai .packaged-food-actions { display: none !important; }
+body #manualFoodForm .packaged-food-actions button { width: auto !important; min-height: 44px !important; padding: 8px 14px !important; border: 1px solid var(--line) !important; background: transparent !important; color: var(--ink) !important; font: inherit; font-size: 12px; }
+body .food-log.is-detailing .packaged-food-actions, body .food-log.is-reviewing-scan .packaged-food-actions { display: none !important; }
+.package-scan-dialog { box-sizing: border-box; background: var(--panel); color: var(--ink); }
+.package-scan-dialog h2 { margin: 8px 0 16px; font-size: 24px; }
+.package-scan-dialog p { font-size: 13px; line-height: 1.6; color: var(--muted); }
+.package-scan-dialog button { min-height: 44px; border: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); padding: 10px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.package-scan-dialog button:disabled { opacity: .5; }
+.package-scan-dialog .package-scan-close { float: right; width: 44px; margin: -14px -10px 0 0; font-size: 24px; border: 0; }
+.package-photo-actions { display: flex; gap: 10px; margin: 20px 0; }
+.package-photo-actions button { flex: 1; }
+.package-code-label { display: grid; gap: 8px; margin: 16px 0 10px; font-size: 13px; }
+.package-code-label input { min-width: 0; width: 100%; box-sizing: border-box; padding: 12px; font: inherit; font-size: 16px; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 0; }
+.package-scan-dialog [data-find] { width: 100%; background: var(--ink); color: var(--panel); }
+.package-scan-dialog [data-label] { margin-top: 10px; width: 100%; border: 0; }
+.package-scan-status:empty { display: none; }
+.package-scan-dialog button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.privacy-controls { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.app-update-notice { position: fixed; z-index: 9000; bottom: calc(76px + env(safe-area-inset-bottom)); left: 12px; right: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.app-update-notice button { min-height: 44px; padding: 8px 12px; background: transparent; color: inherit; border: 1px solid var(--line); }
+.privacy-controls p, #adultNotice { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.data-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.data-actions button, .storage-warning button { min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.storage-warning { position: fixed; z-index: 10000; top: env(safe-area-inset-top, 0px); left: 0; right: 0; padding: 12px 20px; background: var(--paper); color: var(--ink); border: 2px solid currentColor; box-shadow: 0 4px 18px #0003; }
+.storage-warning p { margin: 0 0 8px; font-size: 14px; }
+.privacy-document { max-width: 720px; margin: auto; padding: 28px 22px 80px; line-height: 1.7; }
+.privacy-document h1, .privacy-document h2 { line-height: 1.2; margin: 28px 0 12px; }
+.privacy-document a, .privacy-controls a { color: inherit; text-decoration: underline; }
 :root {
   color-scheme: light;
   --ink: #16211f;
@@ -142,6 +189,37 @@ body.progress-page .weight-chart-panel .progress-chart {
   }
 }
 
+/* Empty scans have no meal or review controls. IDs deliberately outrank the
+   mobile review layout, which otherwise overrides the hidden attribute. */
+body .food-log.is-scan-empty #scanReview .scan-review-heading-actions[hidden] {
+  display: none !important;
+}
+body .food-log.is-scan-empty #scanReview {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 28px 0 20px !important;
+  gap: 20px !important;
+}
+body .food-log.is-scan-empty #scanReview .scan-review-heading {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+body .food-log.is-scan-empty #scanNoFood {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  gap: 24px;
+}
+body .food-log.is-scan-empty #scanNoFood .scan-no-food-mark { display: none; }
+body .food-log.is-scan-empty #scanNoFood .scan-no-food-actions {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+}
+body .food-log.is-scan-empty #manualFoodForm #scanNoFoodManual {
+  border-color: transparent !important;
+  color: var(--muted) !important;
+}
 /* A completed scan with no food is a recoverable empty result, not an error. */
 .scan-no-food[hidden],
 .scan-review-heading-actions[hidden],
@@ -244,8 +322,10 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb {
   background: #626864;
 }
 
+@media (hover: hover) and (pointer: fine) {
 html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   background: #7a817c;
+}
 }
 
 /* Food log reuse and Saved Meals */
@@ -277,11 +357,16 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   cursor: pointer;
 }
 
-.food-log-options-button:hover,
-.food-log-options-button:focus-visible,
+:where(html:not([data-intake-touch])) .food-log-options-button:focus-visible,
 .food-log-options-button[aria-expanded="true"] {
   border-color: var(--line);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.food-log-options-button:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--line);
+  outline: none;
+}
 }
 
 .food-copy-yesterday-shortcut {
@@ -297,11 +382,17 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   cursor: pointer;
 }
 
-.food-copy-yesterday-shortcut:hover,
 .food-copy-yesterday-shortcut:focus-visible {
   text-decoration: underline;
   text-underline-offset: 4px;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.food-copy-yesterday-shortcut:hover:where(:not([data-intake-touch] *)) {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  outline: none;
+}
 }
 
 .food-reuse-backdrop {
@@ -382,10 +473,8 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   grid-row: 1;
 }
 
-.food-reuse-back:hover,
-.food-reuse-close:hover,
-.food-reuse-back:focus-visible,
-.food-reuse-close:focus-visible {
+:where(html:not([data-intake-touch])) .food-reuse-back:focus-visible,
+:where(html:not([data-intake-touch])) .food-reuse-close:focus-visible {
   background: color-mix(in srgb, var(--ink) 7%, transparent);
   outline: 1px solid var(--line);
 }
@@ -435,14 +524,22 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   font-size: 0.78rem;
 }
 
-.food-reuse-action:hover,
-.food-reuse-action:focus-visible,
-.food-reuse-meal:hover,
-.food-reuse-meal:focus-visible,
-.saved-meal-card:hover,
-.saved-meal-card:focus-visible {
+:where(html:not([data-intake-touch])) .food-reuse-action:focus-visible,
+:where(html:not([data-intake-touch])) .food-reuse-meal:focus-visible,
+:where(html:not([data-intake-touch])) .saved-meal-card:focus-visible {
   background: color-mix(in srgb, var(--ink) 5%, transparent);
   outline: none;
+}
+
+/* Hover is a pointer capability, not touch feedback. A classified sheet
+   gesture also prevents a mouse/pen crossing a row from highlighting it. */
+@media (hover: hover) and (pointer: fine) {
+  :is(.food-reuse-action,.food-reuse-meal,.saved-meal-card):hover:where(:not([data-intake-touch] *)):not(:disabled):not([aria-disabled=true]):not(:where([data-sheet-gesture]:not([data-sheet-gesture=pending]) *)) {
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+  }
+  :is(.food-reuse-back,.food-reuse-close):hover:where(:not([data-intake-touch] *)):not(:where([data-sheet-gesture]:not([data-sheet-gesture=pending]) *)) {
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
 }
 
 .food-reuse-hint,
@@ -587,9 +684,7 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   }
 
   .food-reuse-backdrop {
-    background: rgb(15 15 13 / 18%);
-    opacity: 0;
-    transition: opacity 180ms ease;
+    background: rgb(0 0 0 / 40%);
   }
 
   .food-reuse-panel {
@@ -601,9 +696,6 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
     border-width: 1px 0 0;
     box-shadow: 0 -16px 45px rgb(15 15 13 / 16%);
     padding-bottom: env(safe-area-inset-bottom);
-    transform: translateY(100%);
-    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
   }
 
   .food-reuse-header {
@@ -639,17 +731,6 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
     justify-items: end;
   }
 
-  body.food-reuse-open .food-reuse-panel {
-    transform: translateY(var(--food-reuse-drag-y, 0px));
-  }
-
-  body.food-reuse-open .food-reuse-backdrop {
-    opacity: 1;
-  }
-
-  .food-reuse-panel:is(.is-preparing, .is-dragging) {
-    transition: none;
-  }
 
   .food-reuse-drag-zone {
     display: flex;
@@ -669,9 +750,6 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
     background: color-mix(in srgb, var(--muted) 62%, transparent);
   }
 
-  body.food-reuse-open {
-    overflow: hidden;
-  }
 
   .food-reuse-content {
     box-sizing: border-box;
@@ -734,7 +812,7 @@ html:has(body[data-theme="dark"])::-webkit-scrollbar-thumb:hover {
   }
 
   body[data-theme="dark"] .food-reuse-backdrop {
-    background: rgb(0 0 0 / 30%);
+    background: rgb(0 0 0 / 40%);
   }
 
   body[data-theme="dark"] .food-reuse-panel {
@@ -783,11 +861,17 @@ body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger s
   font-weight: 500;
 }
 
-body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:hover,
-body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:focus-visible {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:focus-visible {
   border-color: var(--ink);
   background: color-mix(in srgb, var(--ink) 6%, transparent);
   outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
 }
 
 body:not(.profile-landing-active) .food-ai-description {
@@ -853,7 +937,7 @@ body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput {
   box-sizing: border-box;
 }
 
-body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput:focus {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm #foodAiDescriptionInput:focus {
   border-color: var(--ink) !important;
   box-shadow: inset 0 0 0 1px var(--ink) !important;
   outline: none !important;
@@ -967,12 +1051,17 @@ body:not(.profile-landing-active) .food-ai-description-back:disabled {
   opacity: 0.38;
 }
 
-body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):hover,
-body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):focus-visible,
-body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):hover,
-body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):focus-visible {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):focus-visible {
   border-color: var(--ink);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .food-ai-description-error button:not(:disabled):hover:where(:not([data-intake-touch] *)),
+body:not(.profile-landing-active) .food-ai-description-back:not(:disabled):hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--ink);
+  outline: none;
+}
 }
 
 body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm > :is(
@@ -999,35 +1088,7 @@ body:not(.profile-landing-active) .food-log.is-describing-ai #manualFoodForm .fo
   display: grid !important;
 }
 
-@media (min-width: 921px) {
-  #desktopEditModal .desktop-add-food-content.is-browsing #manualFoodForm .food-ai-description-trigger {
-    display: flex !important;
-    grid-column: 1 / -1 !important;
-    order: 2 !important;
-  }
 
-  #desktopEditModal .desktop-add-food-content.is-browsing .food-filter-tabs {
-    order: 3 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing :is(.search-note, .suggestions) {
-    order: 4 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .manual-food-shortcut {
-    order: 5 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm > :not(.food-ai-description) {
-    display: none !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm .food-ai-description {
-    display: grid !important;
-    grid-column: 1 / -1 !important;
-    order: 1 !important;
-  }
-}
 
 @media (max-width: 640px) {
   body:not(.profile-landing-active) #manualFoodForm .food-ai-description-trigger {
@@ -1240,14 +1301,12 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
     padding-top: 0 !important;
   }
 
-  body:not(.profile-landing-active) .day-tile span,
-  body:not(.profile-landing-active) .ring-copy small,
-  body:not(.profile-landing-active) .macro-card .label,
-  body:not(.profile-landing-active) .macro-card-header .macro-amount,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .day-tile span,
+body:not(.profile-landing-active) .ring-copy small,
+body:not(.profile-landing-active) .macro-card .label,
+body:not(.profile-landing-active) .macro-card-header .macro-amount,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     color: var(--ink) !important;
     font-size: 0.75rem !important;
     font-weight: 550 !important;
@@ -1274,11 +1333,6 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
     min-height: 48px !important;
   }
 
-  body:not(.profile-landing-active) .mobile-tabbar a.is-active b {
-    border-bottom: 2px solid currentColor !important;
-    padding-bottom: 3px !important;
-    font-weight: 850 !important;
-  }
 
   body.progress-page:not(.profile-landing-active) .nutrition-range-toggle button,
   body.progress-page:not(.profile-landing-active) .nutrition-metric-tabs button,
@@ -1329,10 +1383,6 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
     font-size: 11px !important;
   }
 
-  body.assistant-page .mobile-tabbar > a[href="assistant.html"] {
-    order: 2 !important;
-    grid-column: 2 !important;
-  }
 
   body.assistant-page .assistant-empty {
     padding-bottom: 140px !important;
@@ -1353,37 +1403,11 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
     text-transform: uppercase !important;
   }
 
-  body:not(.profile-landing-active) .mobile-tabbar {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a {
-    display: grid !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    color: var(--ink) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
-    order: 1 !important;
-    grid-column: 1 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="assistant.html"] {
-    order: 2 !important;
-    grid-column: 2 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="progress.html"] {
-    order: 3 !important;
-    grid-column: 3 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="profile.html"] {
-    order: 4 !important;
-    grid-column: 4 !important;
-  }
 
   body:not(.profile-landing-active) .scan-food-button,
   body:not(.profile-landing-active) .food-filter-tabs button {
@@ -1572,7 +1596,7 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
   stroke-width: 1.5;
 }
 
-.nutrition-day-hit:focus {
+:where(html:not([data-intake-touch])) .nutrition-day-hit:focus {
   outline: none;
   stroke: var(--ink);
 }
@@ -1618,17 +1642,15 @@ body.progress-page:not(.profile-landing-active) #nutritionChart .nutrition-selec
     text-align: left !important;
   }
 
-  body:not(.profile-landing-active) .day-tile span,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .day-tile span,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     font-size: 0.72rem !important;
   }
 }
 
 @media (max-width: 920px) {
-  body.modal-open .food-log.is-adding {
+  body.modal-open .food-log.is-adding:not(.add-flow-surface) {
     position: fixed !important;
     top: 0 !important;
     right: auto !important;
@@ -1981,10 +2003,6 @@ body.progress-page .mobile-page-title {
     grid-column: 1 / -1;
   }
 
-  .mobile-tabbar,
-  .mobile-tabbar.has-fab {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
 }
 
 * {
@@ -2069,55 +2087,19 @@ body[data-theme="dark"] {
   display: none;
 }
 
-body.is-logged-out-profile {
-  min-height: 100vh;
-  padding-bottom: 0;
-}
 
-body.is-logged-out-profile .app-shell {
-  display: grid;
-  grid-template-columns: 1fr;
-  max-width: none;
-  min-height: 100vh;
-  padding: 0;
-}
 
-body.is-logged-out-profile .sidebar,
-body.is-logged-out-profile .sidebar-backdrop,
-body.is-logged-out-profile .topbar,
-body.is-logged-out-profile .mobile-tabbar {
-  display: none;
-}
 
-body.is-logged-out-profile .main-content {
-  min-width: 0;
-  padding: 0;
-}
 
-body.is-logged-out-profile .auth-shell.in-app {
-  min-height: 100vh;
-  place-items: center;
-  padding: 14px 18px;
-}
 
-body.is-logged-out-profile .auth-shell.in-app::before {
-  content: "Intake";
-  display: block;
-  margin-bottom: 14px;
-  color: var(--mint-dark);
-  font-size: 0.86rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-align: center;
-  text-transform: uppercase;
-}
 
-body.is-logged-out-profile .auth-shell.in-app .auth-panel {
-  width: min(920px, 100%);
-  min-height: 0;
-  border-radius: 8px;
-  padding: 16px;
-}
+
+
+
+
+
+
+
 
 body.profile-landing-active .auth-shell.in-app {
   display: none;
@@ -3046,7 +3028,7 @@ body[data-theme="dark"] .sidebar {
     transform 150ms ease;
 }
 
-.fab-actions button:active {
+:where(html:not([data-intake-touch])) .fab-actions button:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
   transform: scale(0.98);
 }
 
@@ -3259,9 +3241,10 @@ body[data-theme="dark"] .topbar-brand-icon {
   gap: 6px;
 }
 
+
+
 .side-nav a,
-.side-nav button,
-.logout-button {
+.side-nav button{
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3283,9 +3266,10 @@ body[data-theme="dark"] .topbar-brand-icon {
     padding 150ms ease;
 }
 
+
+
 .side-nav a span,
-.side-nav button span,
-.logout-button span {
+.side-nav button span{
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -3293,10 +3277,11 @@ body[data-theme="dark"] .topbar-brand-icon {
   color: var(--mint-dark);
 }
 
+
+
 .brand-mark strong,
 .side-nav b,
-.profile-card > div:not(.avatar),
-.logout-button b {
+.profile-card > div:not(.avatar){
   max-width: 160px;
   overflow: hidden;
   opacity: 1;
@@ -3308,37 +3293,56 @@ body[data-theme="dark"] .topbar-brand-icon {
   white-space: nowrap;
 }
 
-.side-nav a.is-active,
-.side-nav a:hover,
-.side-nav button:hover,
-.logout-button:hover {
+
+
+.side-nav a.is-active {
   background:
     linear-gradient(90deg, rgba(111, 198, 168, 0.14), rgba(90, 143, 203, 0.045)),
     rgba(255, 255, 255, 0.55);
   color: var(--ink);
 }
+@media (hover: hover) and (pointer: fine) {
+.side-nav a:hover:where(:not([data-intake-touch] *)),
+.side-nav button:hover:where(:not([data-intake-touch] *)) {
+  background:
+    linear-gradient(90deg, rgba(111, 198, 168, 0.14), rgba(90, 143, 203, 0.045)),
+    rgba(255, 255, 255, 0.55);
+  color: var(--ink);
+}
+}
+
+
 
 body[data-theme="dark"] .side-nav a,
-body[data-theme="dark"] .side-nav button,
-body[data-theme="dark"] .logout-button {
+body[data-theme="dark"] .side-nav button{
   color: #95a8a1;
 }
 
+
+
 body[data-theme="dark"] .side-nav a span,
-body[data-theme="dark"] .side-nav button span,
-body[data-theme="dark"] .logout-button span {
+body[data-theme="dark"] .side-nav button span{
   color: #83e7c4;
 }
 
-body[data-theme="dark"] .side-nav a.is-active,
-body[data-theme="dark"] .side-nav a:hover,
-body[data-theme="dark"] .side-nav button:hover,
-body[data-theme="dark"] .logout-button:hover {
+
+
+body[data-theme="dark"] .side-nav a.is-active {
   background:
     linear-gradient(90deg, rgba(126, 244, 201, 0.18), rgba(132, 184, 255, 0.08)),
     rgba(255, 255, 255, 0.035);
   color: var(--ink);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+@media (hover: hover) and (pointer: fine) {
+body[data-theme="dark"] .side-nav a:hover:where(:not([data-intake-touch] *)),
+body[data-theme="dark"] .side-nav button:hover:where(:not([data-intake-touch] *)) {
+  background:
+    linear-gradient(90deg, rgba(126, 244, 201, 0.18), rgba(132, 184, 255, 0.08)),
+    rgba(255, 255, 255, 0.035);
+  color: var(--ink);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
 }
 
 .sidebar-collapsed .sidebar {
@@ -3359,10 +3363,11 @@ body[data-theme="dark"] .logout-button:hover {
   transform: translateX(-8px);
 }
 
+
+
 .sidebar-collapsed .brand-mark strong,
 .sidebar-collapsed .side-nav b,
-.sidebar-collapsed .profile-card > div:not(.avatar),
-.sidebar-collapsed .logout-button b {
+.sidebar-collapsed .profile-card > div:not(.avatar){
   max-width: 0;
   opacity: 0;
   transform: translateX(-8px);
@@ -3372,9 +3377,10 @@ body[data-theme="dark"] .logout-button:hover {
   justify-self: center;
 }
 
+
+
 .sidebar-collapsed .side-nav a,
 .sidebar-collapsed .side-nav button,
-.sidebar-collapsed .logout-button,
 .sidebar-collapsed .profile-card {
   justify-content: center;
   padding-inline: 0;
@@ -3468,9 +3474,7 @@ body[data-theme="dark"] .logout-button:hover {
   gap: 8px;
 }
 
-.logout-button {
-  margin-top: 12px;
-}
+
 
 .text-button {
   min-height: 42px;
@@ -3834,6 +3838,12 @@ body[data-theme="dark"] .ring-track {
   transition: stroke-dashoffset 720ms cubic-bezier(0.22, 1, 0.36, 1), stroke 180ms ease;
 }
 
+/* Warm Today returns use only the shared route transition. Real log-success
+   feedback stays available; this does not suppress data-change interactions. */
+.ring-progress.is-route-return:not(.is-success-pulse) {
+  animation: none;
+}
+
 .ring-progress.is-under {
   stroke: url(#calorieRingUnderGradient);
   filter: drop-shadow(0 5px 8px rgba(90, 143, 203, 0.16));
@@ -4062,16 +4072,16 @@ body[data-theme="dark"] .today-button {
   color: var(--mint-dark);
 }
 
-body[data-theme="dark"] input:focus,
-body[data-theme="dark"] select:focus {
+:where(html:not([data-intake-touch])) body[data-theme="dark"] input:focus,
+:where(html:not([data-intake-touch])) body[data-theme="dark"] select:focus {
   border-color: rgba(126, 244, 201, 0.68);
   box-shadow:
     0 0 0 3px rgba(93, 227, 177, 0.15),
     0 0 26px rgba(93, 227, 177, 0.1);
 }
 
-input:focus,
-select:focus {
+:where(html:not([data-intake-touch])) input:focus,
+:where(html:not([data-intake-touch])) select:focus {
   border-color: var(--mint);
   background: white;
   box-shadow:
@@ -4093,16 +4103,7 @@ select:focus {
   box-shadow: 0 12px 26px rgba(24, 34, 31, 0.16);
 }
 
-.profile-page-logout {
-  width: 100%;
-  min-height: 42px;
-  border: 1px solid rgba(249, 115, 91, 0.24);
-  border-radius: 8px;
-  background: rgba(249, 115, 91, 0.08);
-  color: #b53d26;
-  padding: 9px 14px;
-  font-weight: 900;
-}
+
 
 body[data-theme="dark"] .primary-action,
 body[data-theme="dark"] .progress-form button {
@@ -4111,11 +4112,7 @@ body[data-theme="dark"] .progress-form button {
   box-shadow: 0 12px 28px rgba(93, 227, 177, 0.2);
 }
 
-body[data-theme="dark"] .profile-page-logout {
-  border-color: rgba(255, 139, 115, 0.2);
-  background: rgba(255, 139, 115, 0.1);
-  color: #ffad9c;
-}
+
 
 .macro-grid {
   grid-template-columns: 1fr;
@@ -4489,23 +4486,34 @@ body[data-theme="dark"] .day-tile.is-selected {
   transition: opacity 150ms ease, transform 150ms ease;
 }
 
-.entry-card:hover,
 .entry-card.is-selected {
   border-color: rgba(111, 198, 168, 0.42);
   box-shadow: 0 10px 22px rgba(30, 47, 41, 0.08);
 }
-
-.entry-card:hover {
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)) {
+  border-color: rgba(111, 198, 168, 0.42);
+  box-shadow: 0 10px 22px rgba(30, 47, 41, 0.08);
+}
 }
 
-.entry-card:hover::after {
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)) {
+  transform: translateY(-1px);
+}
+}
+
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *))::after {
   opacity: 1;
   transform: translateX(0);
 }
+}
 
-.entry-card:hover .entry-main.has-kcal + .entry-actions {
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)) .entry-main.has-kcal + .entry-actions {
   opacity: 1;
+}
 }
 
 .entry-card.is-selected {
@@ -4524,73 +4532,9 @@ body[data-theme="dark"] .day-tile.is-selected {
   min-height: 100%;
   background: #fbfdfb;
   padding: 10px;
-  transition: transform 180ms ease;
 }
 
-.entry-card.is-dragging .entry-surface {
-  transform: translateX(var(--swipe-x, 0));
-  transition: none;
-}
-
-.entry-card.is-dragging .entry-swipe-actions,
-.entry-card.is-swiped-right .entry-swipe-actions,
-.entry-card.is-swiped-left .entry-swipe-actions {
-  opacity: 1;
-}
-
-.entry-card.is-swiped-right .entry-surface {
-  transform: translateX(82px);
-}
-
-.entry-card.is-swiped-left .entry-surface {
-  transform: translateX(-82px);
-}
-
-.entry-swipe-actions {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  opacity: 0;
-  background:
-    linear-gradient(90deg, rgba(111, 198, 168, 0.2), rgba(111, 198, 168, 0.08) 34%, transparent 48%),
-    linear-gradient(270deg, rgba(249, 115, 91, 0.17), rgba(249, 115, 91, 0.07) 34%, transparent 48%);
-  transition: opacity 120ms ease;
-}
-
-.entry-card.has-no-save-action .entry-swipe-actions {
-  justify-content: flex-end;
-}
-
-.entry-card .entry-swipe-actions button {
-  display: grid;
-  width: 82px;
-  height: 100%;
-  place-items: center;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: 1.15rem;
-  font-weight: 900;
-}
-
-.entry-card .entry-swipe-actions .swipe-save-action {
-  color: var(--mint-dark);
-}
-
-.entry-card .entry-swipe-actions .swipe-save-action.is-saved {
-  color: var(--coral);
-}
-
-.entry-card .entry-swipe-actions .swipe-delete-action {
-  color: #c76152;
-  font-size: 1.55rem;
-}
-
-.entry-card:focus-visible {
+:where(html:not([data-intake-touch])) .entry-card:focus-visible {
   border-color: var(--mint);
   box-shadow: 0 0 0 3px rgba(111, 198, 168, 0.16);
   outline: 0;
@@ -4646,10 +4590,14 @@ body[data-theme="dark"] .day-tile.is-selected {
   transition: opacity 150ms ease;
 }
 
-.entry-card:hover .entry-actions,
 .entry-card:focus-within .entry-actions,
 .entry-card.is-selected .entry-actions {
   opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)) .entry-actions {
+  opacity: 1;
+}
 }
 
 .suggestion-card {
@@ -4768,9 +4716,11 @@ body[data-theme="dark"] .suggestion-card {
   font-weight: 900;
 }
 
-.photo-food-button:hover {
+@media (hover: hover) and (pointer: fine) {
+.photo-food-button:hover:where(:not([data-intake-touch] *)) {
   border-color: rgba(90, 143, 203, 0.3);
   background: rgba(90, 143, 203, 0.11);
+}
 }
 
 .food-log.is-editing .photo-food-tools {
@@ -5374,10 +5324,12 @@ body[data-theme="dark"] .chart-grid {
   content: none;
 }
 
-.progress-entry-card:hover {
+@media (hover: hover) and (pointer: fine) {
+.progress-entry-card:hover:where(:not([data-intake-touch] *)) {
   border-color: var(--line);
   box-shadow: none;
   transform: none;
+}
 }
 
 .progress-entry-card strong {
@@ -5619,10 +5571,10 @@ body[data-theme="dark"] .food-form-field:has(#manualFoodFat) input {
   color: var(--ink);
 }
 
-body[data-theme="dark"] .food-form-field:has(#manualFoodCalories) input:focus,
-body[data-theme="dark"] .food-form-field:has(#manualFoodProtein) input:focus,
-body[data-theme="dark"] .food-form-field:has(#manualFoodCarbs) input:focus,
-body[data-theme="dark"] .food-form-field:has(#manualFoodFat) input:focus {
+:where(html:not([data-intake-touch])) body[data-theme="dark"] .food-form-field:has(#manualFoodCalories) input:focus,
+:where(html:not([data-intake-touch])) body[data-theme="dark"] .food-form-field:has(#manualFoodProtein) input:focus,
+:where(html:not([data-intake-touch])) body[data-theme="dark"] .food-form-field:has(#manualFoodCarbs) input:focus,
+:where(html:not([data-intake-touch])) body[data-theme="dark"] .food-form-field:has(#manualFoodFat) input:focus {
   border-color: rgba(126, 244, 201, 0.58);
   background: rgba(8, 13, 13, 0.92);
 }
@@ -5711,7 +5663,7 @@ body[data-theme="dark"] .food-form-field:has(#manualFoodFat) input:focus {
     transform 160ms ease;
 }
 
-.compact-form > button:active {
+:where(html:not([data-intake-touch])) .compact-form > button:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
   transform: scale(0.9);
 }
 
@@ -5774,12 +5726,6 @@ body[data-theme="dark"] .entry-kcal {
   color: #e8f4ec;
 }
 
-body[data-theme="dark"] .entry-swipe-actions {
-  background:
-    linear-gradient(90deg, rgba(126, 244, 201, 0.18), rgba(126, 244, 201, 0.07) 34%, transparent 48%),
-    linear-gradient(270deg, rgba(255, 139, 115, 0.18), rgba(255, 139, 115, 0.07) 34%, transparent 48%);
-}
-
 body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
   animation-name: entry-success-flash-dark;
 }
@@ -5824,7 +5770,7 @@ body[data-theme="dark"] .entry-card.is-new-entry .entry-surface {
 }
 
 .undo-toast button {
-  min-height: 30px;
+  min-height: 44px;
   border: 0;
   border-left: 1px solid var(--line);
   border-radius: 0;
@@ -5944,7 +5890,7 @@ body[data-theme="dark"] .undo-toast button {
     -webkit-overflow-scrolling: touch;
   }
 
-  body[data-theme="dark"] .log-panel.is-adding {
+  body[data-theme="dark"] .log-panel.is-adding:not(.add-flow-surface) {
     background: rgba(15, 22, 21, 0.98);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
   }
@@ -6243,12 +6189,12 @@ body[data-theme="dark"] .undo-toast button {
     gap: 8px;
   }
 
+
+
   .side-nav a,
   .side-nav button,
-  .logout-button,
   .sidebar-collapsed .side-nav a,
-  .sidebar-collapsed .side-nav button,
-  .sidebar-collapsed .logout-button {
+  .sidebar-collapsed .side-nav button{
     justify-content: flex-start;
     min-height: 44px;
     gap: 10px;
@@ -6257,20 +6203,21 @@ body[data-theme="dark"] .undo-toast button {
     text-align: left;
   }
 
+
+
   .side-nav a span,
-  .side-nav button span,
-  .logout-button span {
+  .side-nav button span{
     width: 22px;
   }
+
+
 
   .brand-mark strong,
   .side-nav b,
   .profile-card > div:not(.avatar),
-  .logout-button b,
   .sidebar-collapsed .brand-mark strong,
   .sidebar-collapsed .side-nav b,
-  .sidebar-collapsed .profile-card > div:not(.avatar),
-  .sidebar-collapsed .logout-button b {
+  .sidebar-collapsed .profile-card > div:not(.avatar){
     max-width: 180px;
     opacity: 1;
     transform: none;
@@ -6514,9 +6461,7 @@ body[data-theme="dark"] .undo-toast button {
 }
 
 @media (max-width: 640px) {
-  body.is-logged-out-profile {
-    padding-bottom: 0;
-  }
+
 
   body.profile-landing-active .intro-shell {
     padding: 14px;
@@ -6594,17 +6539,11 @@ body[data-theme="dark"] .undo-toast button {
     min-height: 62px;
   }
 
-  body.is-logged-out-profile .app-shell {
-    padding: 0;
-  }
 
-  body.is-logged-out-profile .auth-shell.in-app {
-    padding: 14px;
-  }
 
-  body.is-logged-out-profile .auth-shell.in-app .auth-panel {
-    padding: 16px;
-  }
+
+
+
 
   body {
     padding-bottom: calc(78px + env(safe-area-inset-bottom));
@@ -6625,64 +6564,10 @@ body[data-theme="dark"] .undo-toast button {
     display: none;
   }
 
-  .mobile-tabbar {
-    position: fixed;
-    right: 10px;
-    bottom: max(8px, env(safe-area-inset-bottom));
-    left: 10px;
-    z-index: 50;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: center;
-    gap: 5px;
-    overflow: visible;
-    border: 0;
-    background: transparent;
-    padding: 28px 8px calc(10px + env(safe-area-inset-bottom));
-    isolation: isolate;
-  }
 
-  .mobile-tabbar::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow:
-      0 18px 44px rgba(30, 47, 41, 0.18),
-      inset 0 0 0 1px rgba(219, 229, 223, 0.9);
-    pointer-events: none;
-    backdrop-filter: blur(16px);
-  }
 
-  .mobile-tabbar.has-fab::before {
-    -webkit-mask: radial-gradient(circle 31px at 50% -5px, transparent 0 30px, #000 31px);
-    mask: radial-gradient(circle 31px at 50% -5px, transparent 0 30px, #000 31px);
-  }
 
-  body[data-theme="dark"] .mobile-tabbar::before {
-    background: rgba(15, 22, 21, 0.94);
-    box-shadow:
-      0 18px 44px rgba(0, 0, 0, 0.35),
-      inset 0 0 0 1px var(--line);
-  }
 
-  .mobile-tabbar a {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    min-width: 0;
-    min-height: 42px;
-    place-items: center;
-    gap: 3px;
-    border-radius: 8px;
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 0.68rem;
-    font-weight: 900;
-    transition: color 150ms ease;
-  }
 
   .mobile-tabbar .floating-add-button {
     position: absolute;
@@ -6714,39 +6599,10 @@ body[data-theme="dark"] .undo-toast button {
     transform: translateX(-50%) scale(0.86);
   }
 
-  .mobile-tabbar a.is-active {
-    color: var(--mint-dark);
-  }
 
-  .mobile-tabbar a.is-active::before {
-    content: "";
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    width: 34px;
-    height: 4px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--mint-dark), var(--blue));
-    box-shadow: 0 5px 12px rgba(33, 122, 98, 0.16);
-    transform: translateX(-50%);
-  }
 
-  body[data-theme="dark"] .mobile-tabbar a.is-active::before {
-    box-shadow: 0 5px 14px rgba(126, 244, 201, 0.16);
-  }
 
-  .mobile-tabbar .sidebar-icon {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    color: currentColor;
-  }
 
-  .mobile-tabbar .sidebar-icon svg {
-    width: 21px;
-    height: 21px;
-  }
 
   .fab-actions {
     bottom: calc(82px + env(safe-area-inset-bottom));
@@ -6772,9 +6628,10 @@ body[data-theme="dark"] .undo-toast button {
     gap: 8px;
   }
 
+
+
   .side-nav a,
-  .side-nav button,
-  .logout-button {
+  .side-nav button{
     justify-content: flex-start;
     min-height: 44px;
     gap: 10px;
@@ -6783,9 +6640,10 @@ body[data-theme="dark"] .undo-toast button {
     text-align: left;
   }
 
+
+
   .side-nav a span,
-  .side-nav button span,
-  .logout-button span {
+  .side-nav button span{
     width: 22px;
   }
 
@@ -6796,14 +6654,14 @@ body[data-theme="dark"] .undo-toast button {
     transform: none;
   }
 
+
+
   .brand-mark strong,
   .side-nav b,
   .profile-card > div:not(.avatar),
-  .logout-button b,
   .sidebar-collapsed .brand-mark strong,
   .sidebar-collapsed .side-nav b,
-  .sidebar-collapsed .profile-card > div:not(.avatar),
-  .sidebar-collapsed .logout-button b {
+  .sidebar-collapsed .profile-card > div:not(.avatar){
     max-width: 180px;
     opacity: 1;
     transform: none;
@@ -6831,9 +6689,10 @@ body[data-theme="dark"] .undo-toast button {
     gap: 10px;
   }
 
+
+
   .sidebar-collapsed .side-nav a,
   .sidebar-collapsed .side-nav button,
-  .sidebar-collapsed .logout-button,
   .sidebar-collapsed .profile-card {
     justify-content: flex-start;
     padding-inline: 10px;
@@ -7325,7 +7184,7 @@ body[data-theme="dark"] .undo-toast button {
     -webkit-overflow-scrolling: touch;
   }
 
-  body[data-theme="dark"] .log-panel.is-adding {
+  body[data-theme="dark"] .log-panel.is-adding:not(.add-flow-surface) {
     background: rgba(15, 22, 21, 0.98);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46);
   }
@@ -7718,8 +7577,9 @@ body[data-theme="dark"] .undo-toast button {
     display: none;
   }
 
-  .auth-shell.in-app .auth-panel,
-  body.is-logged-out-profile .auth-shell.in-app .auth-panel {
+
+
+  .auth-shell.in-app .auth-panel{
     width: min(620px, 100%);
     padding: 14px;
   }
@@ -7809,18 +7669,11 @@ body[data-theme="dark"] .undo-toast button {
     margin-top: 4px;
   }
 
-  body.is-logged-out-profile:not(.profile-landing-active) #profileSubmitButton {
-    margin-bottom: calc(92px + env(safe-area-inset-bottom));
-  }
 
-  body.is-logged-out-profile .mobile-tabbar a.is-disabled-during-setup {
-    opacity: 0.42;
-    pointer-events: none;
-  }
 
-  .profile-page-logout {
-    min-height: 46px;
-  }
+
+
+
 
   body[data-theme="dark"] #profileSubmitButton {
     box-shadow: 0 12px 28px rgba(93, 227, 177, 0.2);
@@ -8150,7 +8003,7 @@ body[data-theme="dark"] .undo-toast button {
     margin: -8px 0 10px;
   }
 
-  body[data-theme="dark"] .log-panel.is-adding {
+  body[data-theme="dark"] .log-panel.is-adding:not(.add-flow-surface) {
     border-color: var(--line);
     background: rgba(15, 22, 21, 0.98);
     box-shadow: 0 -20px 58px rgba(0, 0, 0, 0.46);
@@ -8654,9 +8507,10 @@ body:not(.profile-landing-active) .brand-mark strong::after {
   gap: 2px;
 }
 
+
+
 .side-nav a,
-.side-nav button,
-.logout-button {
+.side-nav button{
   min-height: 38px;
   border: 1px solid transparent;
   border-radius: 0;
@@ -8665,9 +8519,8 @@ body:not(.profile-landing-active) .brand-mark strong::after {
   font-weight: 500;
 }
 
-.side-nav a:hover,
-.side-nav button:hover,
-.logout-button:hover,
+
+
 .side-nav a.is-active {
   border-color: var(--line);
   background: var(--panel);
@@ -8675,9 +8528,18 @@ body:not(.profile-landing-active) .brand-mark strong::after {
   box-shadow: none;
   transform: none;
 }
+@media (hover: hover) and (pointer: fine) {
+.side-nav a:hover:where(:not([data-intake-touch] *)),
+.side-nav button:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: none;
+  transform: none;
+}
+}
 
-.side-nav a.is-active::before,
-.mobile-tabbar a.is-active::before {
+.side-nav a.is-active::before {
   content: none;
 }
 
@@ -8747,13 +8609,14 @@ body:not(.profile-landing-active) .brand-mark strong::after {
   letter-spacing: -0.02em;
 }
 
+
+
 .today-button,
 .status-pill,
 .text-button,
 .photo-food-button,
 .goal-reset-button,
 .goal-edit-button,
-.profile-page-logout,
 .primary-action,
 .progress-form button,
 .compact-form button,
@@ -9081,9 +8944,9 @@ textarea {
   box-shadow: none;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+:where(html:not([data-intake-touch])) input:focus,
+:where(html:not([data-intake-touch])) select:focus,
+:where(html:not([data-intake-touch])) textarea:focus {
   border-color: var(--ink);
   background: var(--panel);
   box-shadow: inset 0 0 0 1px var(--ink);
@@ -9157,11 +9020,17 @@ body[data-theme="dark"] .progress-stats article {
   border-bottom: 0;
 }
 
-.entry-card:hover,
 .entry-card.is-selected {
   border-color: var(--line);
   box-shadow: inset 3px 0 0 var(--ink);
   transform: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--line);
+  box-shadow: inset 3px 0 0 var(--ink);
+  transform: none;
+}
 }
 
 .entry-card::after {
@@ -9172,12 +9041,6 @@ body[data-theme="dark"] .progress-stats article {
   min-height: 58px;
   background: var(--panel);
   padding: 14px;
-}
-
-.entry-swipe-actions {
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--good) 18%, transparent), transparent 48%),
-    linear-gradient(270deg, color-mix(in srgb, var(--warn) 18%, transparent), transparent 48%);
 }
 
 .entry-card strong,
@@ -9244,36 +9107,13 @@ body[data-theme="dark"] .progress-stats article {
   color: var(--ink);
 }
 
-.edit-delete-button,
-.entry-card .entry-swipe-actions .swipe-delete-action {
+.edit-delete-button {
   color: var(--warn);
 }
 
-.entry-card .entry-swipe-actions .swipe-save-action,
-.entry-card .entry-swipe-actions .swipe-save-action.is-saved {
-  color: var(--ink);
-}
 
-.mobile-tabbar {
-  border-top: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: none;
-}
 
-.mobile-tabbar a {
-  border-radius: 0;
-  color: var(--muted);
-}
 
-.mobile-tabbar button.mobile-tab-link {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-}
-
-.mobile-tabbar a.is-active {
-  color: var(--ink);
-}
 
 .mobile-tabbar .floating-add-button {
   border: 1px solid var(--ink);
@@ -9474,42 +9314,11 @@ body[data-theme="dark"] .progress-stats article {
     padding: 16px;
   }
 
-  .mobile-tabbar {
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    max-width: 100vw;
-    overflow: hidden;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
-    padding: 0 0 env(safe-area-inset-bottom);
-  }
 
-  .mobile-tabbar.has-fab {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 
-  .mobile-tabbar::before,
-  .mobile-tabbar.has-fab::before {
-    content: none;
-  }
 
-  .mobile-tabbar a {
-    min-width: 0;
-    min-height: 60px;
-    border-right: 1px solid var(--line);
-  }
 
-  .mobile-tabbar b {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
-  .mobile-tabbar a:last-of-type {
-    border-right: 0;
-  }
 
   .mobile-tabbar .floating-add-button {
     top: -22px;
@@ -10291,41 +10100,12 @@ body[data-theme="dark"] .progress-stats article {
     font-size: 0.62rem;
   }
 
-  .mobile-tabbar,
-  .mobile-tabbar.has-fab {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    right: 0;
-    left: 0;
-    height: calc(58px + env(safe-area-inset-bottom));
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-    border-top: 1px solid var(--line);
-    background: var(--panel);
-    box-shadow: none;
-    padding: 0 0 env(safe-area-inset-bottom);
-  }
 
-  .mobile-tabbar a[href="index.html"] {
-    order: 1;
-  }
 
-  .mobile-tabbar a[href="assistant.html"] {
-    order: 2;
-  }
 
-  .mobile-tabbar a[href="progress.html"] {
-    order: 3;
-  }
 
-  .mobile-tabbar a[href="profile.html"] {
-    order: 4;
-  }
 
-  .mobile-tabbar a,
-  .mobile-tabbar .mobile-tab-link,
-  .mobile-tabbar .floating-add-button {
+.mobile-tabbar .floating-add-button {
     position: static;
     display: grid;
     min-width: 0;
@@ -10366,19 +10146,8 @@ body[data-theme="dark"] .progress-stats article {
     line-height: 1;
   }
 
-  .mobile-tabbar a.is-active {
-    color: var(--ink);
-    font-weight: 700;
-  }
 
-  .mobile-tabbar .sidebar-icon {
-    display: none;
-  }
 
-  .mobile-tabbar b {
-    display: block;
-    font: inherit;
-  }
 
   body.modal-open .floating-add-button,
   body.modal-open .floating-scan-button {
@@ -10901,22 +10670,11 @@ body.profile-landing-active .intro-shell {
 }
 
 @media (max-width: 640px) {
-  body.is-logged-out-profile .app-shell {
-    display: block;
-    min-height: 100dvh;
-  }
 
-  body.is-logged-out-profile .sidebar,
-  body.is-logged-out-profile .sidebar-backdrop,
-  body.is-logged-out-profile .topbar,
-  body.is-logged-out-profile .mobile-tabbar {
-    display: none !important;
-  }
 
-  body.is-logged-out-profile .main-content {
-    width: 100%;
-    padding: 0;
-  }
+
+
+
 
   body.profile-landing-active .intro-shell {
     display: grid !important;
@@ -11211,19 +10969,7 @@ body.profile-landing-active .intro-shell {
     transform: scale(0.92);
   }
 
-  .mobile-tabbar,
-  .mobile-tabbar.has-fab {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    width: min(390px, 100vw) !important;
-    max-width: 100vw !important;
-  }
 
-  .mobile-tabbar a,
-  .mobile-tabbar .mobile-tab-link {
-    width: 100%;
-    justify-items: center;
-    text-align: center;
-  }
 }
 
 .food-search-row {
@@ -11933,28 +11679,8 @@ body.progress-page .weight-chart-panel .progress-chart {
     margin-top: 5px !important;
   }
 
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    right: auto !important;
-    left: 50% !important;
-    width: min(430px, 100vw) !important;
-    max-width: 100vw !important;
-    transform: translateX(-50%) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar a,
-  body:not(.profile-landing-active) .mobile-tabbar .mobile-tab-link {
-    display: grid !important;
-    place-items: center;
-    width: 100%;
-    min-width: 0;
-    text-align: center;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar b {
-    display: block !important;
-    width: 100%;
-  }
 
   body:not(.profile-landing-active) .mobile-profile-chip {
     right: auto;
@@ -12476,11 +12202,13 @@ body.progress-page .weight-chart-panel .progress-chart {
     box-shadow: none;
   }
 
-  .entry-card:hover,
-  .suggestion-card:hover {
+  @media (hover: hover) and (pointer: fine) {
+.entry-card:hover:where(:not([data-intake-touch] *)),
+.suggestion-card:hover:where(:not([data-intake-touch] *)) {
     box-shadow: inset 3px 0 0 var(--ink);
     transform: none;
   }
+}
 
   .entry-surface {
     background: transparent;
@@ -12830,10 +12558,10 @@ body:not(.profile-landing-active) .theme-control select {
   letter-spacing: 0;
 }
 
-body:not(.profile-landing-active) .profile-fields input:focus,
-body:not(.profile-landing-active) .profile-fields select:focus,
-body:not(.profile-landing-active) .goal-grid input:focus,
-body:not(.profile-landing-active) .theme-control select:focus {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .profile-fields input:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .profile-fields select:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .goal-grid input:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .theme-control select:focus {
   border-color: var(--ink);
   box-shadow: inset 0 -2px 0 var(--ink);
   outline: none;
@@ -12931,9 +12659,10 @@ body:not(.profile-landing-active) .goal-editor-actions {
   gap: 10px;
 }
 
+
+
 body:not(.profile-landing-active) .goal-reset-button,
-body:not(.profile-landing-active) .goal-edit-button,
-body:not(.profile-landing-active) .profile-page-logout {
+body:not(.profile-landing-active) .goal-edit-button{
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 0;
@@ -12947,13 +12676,16 @@ body:not(.profile-landing-active) .profile-page-logout {
   text-transform: uppercase;
 }
 
-body:not(.profile-landing-active) .goal-reset-button:hover,
-body:not(.profile-landing-active) .goal-edit-button:hover,
-body:not(.profile-landing-active) .profile-page-logout:hover {
+
+
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .goal-reset-button:hover:where(:not([data-intake-touch] *)),
+body:not(.profile-landing-active) .goal-edit-button:hover:where(:not([data-intake-touch] *)) {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--background);
   transform: none;
+}
 }
 
 body:not(.profile-landing-active) .custom-targets {
@@ -12977,25 +12709,35 @@ body:not(.profile-landing-active) #profileSubmitButton {
   text-transform: uppercase;
 }
 
-body:not(.profile-landing-active) #profileSubmitButton:hover:not(:disabled),
-body:not(.profile-landing-active) #profileSubmitButton:focus-visible:not(:disabled) {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #profileSubmitButton:focus-visible:not(:disabled) {
   border-color: var(--mint-dark);
   background: color-mix(in srgb, var(--ink) 88%, var(--mint) 12%);
   color: var(--paper);
   box-shadow: inset 0 -3px 0 var(--mint);
 }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) #profileSubmitButton:hover:where(:not([data-intake-touch] *)):not(:disabled) {
+  border-color: var(--mint-dark);
+  background: color-mix(in srgb, var(--ink) 88%, var(--mint) 12%);
+  color: var(--paper);
+  box-shadow: inset 0 -3px 0 var(--mint);
+}
+}
 
-body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:hover:not(:disabled),
-body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:focus-visible:not(:disabled) {
+:where(html:not([data-intake-touch])) body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:focus-visible:not(:disabled) {
   border-color: var(--mint) !important;
   background: color-mix(in srgb, var(--ink) 92%, var(--mint) 8%) !important;
   color: var(--paper) !important;
 }
-
-body:not(.profile-landing-active) .profile-page-logout {
-  width: 100%;
-  margin-top: 12px;
+@media (hover: hover) and (pointer: fine) {
+body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:hover:where(:not([data-intake-touch] *)):not(:disabled) {
+  border-color: var(--mint) !important;
+  background: color-mix(in srgb, var(--ink) 92%, var(--mint) 8%) !important;
+  color: var(--paper) !important;
 }
+}
+
+
 
 body[data-theme="dark"]:not(.profile-landing-active) .profile-fields input,
 body[data-theme="dark"]:not(.profile-landing-active) .profile-fields select,
@@ -13100,9 +12842,11 @@ body[data-theme="dark"]:not(.profile-landing-active) .recommended-summary {
   text-decoration: none;
 }
 
-.topbar-home-link:hover {
+@media (hover: hover) and (pointer: fine) {
+.topbar-home-link:hover:where(:not([data-intake-touch] *)) {
   background: transparent;
   color: var(--muted);
+}
 }
 
 body.progress-page .topbar::before {
@@ -13340,10 +13084,10 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
   padding: 0;
 }
 
-.food-log.is-editing #manualFoodForm input:focus,
-.food-log.is-editing #manualFoodForm select:focus,
-.food-log.is-detailing #manualFoodForm input:focus,
-.food-log.is-detailing #manualFoodForm select:focus {
+:where(html:not([data-intake-touch])) .food-log.is-editing #manualFoodForm input:focus,
+:where(html:not([data-intake-touch])) .food-log.is-editing #manualFoodForm select:focus,
+:where(html:not([data-intake-touch])) .food-log.is-detailing #manualFoodForm input:focus,
+:where(html:not([data-intake-touch])) .food-log.is-detailing #manualFoodForm select:focus {
   outline: none;
   box-shadow: inset 0 -2px 0 var(--ink) !important;
 }
@@ -13375,10 +13119,12 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
   box-shadow: none;
 }
 
-.food-log.is-editing .edit-modal-actions button:hover {
+@media (hover: hover) and (pointer: fine) {
+.food-log.is-editing .edit-modal-actions button:hover:where(:not([data-intake-touch] *)) {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--panel);
+}
 }
 
 @media (max-width: 920px) {
@@ -13474,8 +13220,10 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
   line-height: 1;
 }
 
-.day-tile.is-selected:hover {
+@media (hover: hover) and (pointer: fine) {
+.day-tile.is-selected:hover:where(:not([data-intake-touch] *)) {
   background: var(--ink) !important;
+}
 }
 
 @media (max-width: 640px) {
@@ -13532,19 +13280,22 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
     background: transparent;
   }
 
-  .app-shell.sidebar-collapsed .sidebar-toggle:hover {
+  @media (hover: hover) and (pointer: fine) {
+.app-shell.sidebar-collapsed .sidebar-toggle:hover:where(:not([data-intake-touch] *)) {
     background: transparent;
     color: var(--muted);
   }
+}
 
   .app-shell.sidebar-collapsed .side-nav {
     gap: 0;
     margin-top: 30px;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a,
-  .app-shell.sidebar-collapsed .side-nav button,
-  .app-shell.sidebar-collapsed .logout-button {
+  .app-shell.sidebar-collapsed .side-nav button{
     width: 100%;
     min-height: 52px;
     justify-content: center;
@@ -13553,16 +13304,15 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
     padding: 0;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a span,
-  .app-shell.sidebar-collapsed .side-nav button span,
-  .app-shell.sidebar-collapsed .logout-button span {
+  .app-shell.sidebar-collapsed .side-nav button span{
     width: 100%;
     justify-content: center;
   }
 
-  .app-shell.sidebar-collapsed .logout-button {
-    margin-top: 38px;
-  }
+
 
   .today-button {
     min-height: auto;
@@ -13577,10 +13327,12 @@ body:not(.profile-landing-active) .topbar:has(.topbar-home-link) .topbar-heading
     line-height: 1;
   }
 
-  .today-button:hover:not(:disabled) {
+  @media (hover: hover) and (pointer: fine) {
+.today-button:hover:where(:not([data-intake-touch] *)):not(:disabled) {
     color: var(--muted);
     background: transparent;
   }
+}
 
   .today-button:disabled {
     opacity: 0.34;
@@ -14027,7 +13779,6 @@ body[data-theme="dark"] {
 body[data-theme="dark"]:not(.profile-landing-active) .app-shell,
 body[data-theme="dark"]:not(.profile-landing-active) .main-content,
 body[data-theme="dark"]:not(.profile-landing-active) .sidebar,
-body[data-theme="dark"]:not(.profile-landing-active) .mobile-tabbar,
 body[data-theme="dark"]:not(.profile-landing-active) .goal-panel,
 body[data-theme="dark"]:not(.profile-landing-active) .log-panel,
 body[data-theme="dark"]:not(.profile-landing-active) .progress-panel,
@@ -14100,7 +13851,6 @@ body[data-theme="dark"]:not(.profile-landing-active) .chart-line {
   background: var(--ink) !important;
 }
 
-body[data-theme="dark"]:not(.profile-landing-active) .mobile-tabbar::before,
 body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
   background: color-mix(in srgb, var(--paper) 72%, transparent) !important;
 }
@@ -14368,10 +14118,10 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     padding: 0 6px !important;
   }
 
-  .food-form-field input:focus,
-  .food-form-field select:focus,
-  .exercise-form select:focus,
-  .exercise-form input:focus {
+  :where(html:not([data-intake-touch])) .food-form-field input:focus,
+:where(html:not([data-intake-touch])) .food-form-field select:focus,
+:where(html:not([data-intake-touch])) .exercise-form select:focus,
+:where(html:not([data-intake-touch])) .exercise-form input:focus {
     outline: none;
     border-bottom-color: var(--ink) !important;
     box-shadow: inset 0 -1px 0 var(--ink) !important;
@@ -14453,15 +14203,17 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     justify-self: center;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a,
-  .app-shell.sidebar-collapsed .side-nav button,
-  .app-shell.sidebar-collapsed .logout-button {
+  .app-shell.sidebar-collapsed .side-nav button{
     min-height: 50px;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a span,
-  .app-shell.sidebar-collapsed .side-nav button span,
-  .app-shell.sidebar-collapsed .logout-button span {
+  .app-shell.sidebar-collapsed .side-nav button span{
     width: 58px;
   }
 
@@ -14712,9 +14464,11 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     border-bottom: 0 !important;
   }
 
-  .food-log .suggestion-card:hover {
+  @media (hover: hover) and (pointer: fine) {
+.food-log .suggestion-card:hover:where(:not([data-intake-touch] *)) {
     box-shadow: inset 2px 0 0 var(--ink);
   }
+}
 
   .food-log .suggestion-card strong {
     color: var(--ink);
@@ -14737,8 +14491,8 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
 }
 
 @media (min-width: 701px) {
-  .app-shell.sidebar-collapsed .side-nav,
-  .app-shell.sidebar-collapsed .logout-button {
+
+  .app-shell.sidebar-collapsed .side-nav{
     width: 58px !important;
   }
 
@@ -14747,9 +14501,10 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     gap: 8px !important;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a,
-  .app-shell.sidebar-collapsed .side-nav button,
-  .app-shell.sidebar-collapsed .logout-button {
+  .app-shell.sidebar-collapsed .side-nav button{
     display: grid !important;
     grid-template-columns: 1fr !important;
     width: 44px !important;
@@ -14761,9 +14516,10 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     padding: 0 !important;
   }
 
+
+
   .app-shell.sidebar-collapsed .side-nav a span,
-  .app-shell.sidebar-collapsed .side-nav button span,
-  .app-shell.sidebar-collapsed .logout-button span {
+  .app-shell.sidebar-collapsed .side-nav button span{
     display: grid !important;
     width: 44px !important;
     height: 44px !important;
@@ -14842,20 +14598,29 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     padding: 24px 30px 30px !important;
   }
 
-  body.progress-page .weight-entry-list .progress-entry-card,
-  body.progress-page .weight-entry-list .progress-entry-card:hover {
+  body.progress-page .weight-entry-list .progress-entry-card {
     box-shadow: none !important;
     transform: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body.progress-page .weight-entry-list .progress-entry-card:hover:where(:not([data-intake-touch] *)) {
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
 
-  body.progress-page .weight-entry-list .progress-entry-card:hover::before,
-  body.progress-page .weight-entry-list .progress-entry-card:hover::after {
+  @media (hover: hover) and (pointer: fine) {
+body.progress-page .weight-entry-list .progress-entry-card:hover:where(:not([data-intake-touch] *))::before,
+body.progress-page .weight-entry-list .progress-entry-card:hover:where(:not([data-intake-touch] *))::after {
     content: none !important;
   }
+}
 
-  body.progress-page .weight-entry-list .progress-entry-card:hover strong {
+  @media (hover: hover) and (pointer: fine) {
+body.progress-page .weight-entry-list .progress-entry-card:hover:where(:not([data-intake-touch] *)) strong {
     color: var(--ink);
   }
+}
 }
 
 @media (max-width: 640px) {
@@ -14923,28 +14688,37 @@ body[data-theme="dark"]:not(.profile-landing-active) .fab-overlay.is-open {
     stroke-width: 1.9 !important;
   }
 
+
+
   body[data-theme="dark"]:not(.profile-landing-active) .side-nav a,
-  body[data-theme="dark"]:not(.profile-landing-active) .side-nav button,
-  body[data-theme="dark"]:not(.profile-landing-active) .logout-button {
+  body[data-theme="dark"]:not(.profile-landing-active) .side-nav button{
     color: var(--muted) !important;
     background: transparent !important;
     box-shadow: none !important;
   }
 
+
+
   body[data-theme="dark"]:not(.profile-landing-active) .side-nav a span,
-  body[data-theme="dark"]:not(.profile-landing-active) .side-nav button span,
-  body[data-theme="dark"]:not(.profile-landing-active) .logout-button span {
+  body[data-theme="dark"]:not(.profile-landing-active) .side-nav button span{
     color: var(--ink) !important;
   }
 
-  body[data-theme="dark"]:not(.profile-landing-active) .side-nav a.is-active,
-  body[data-theme="dark"]:not(.profile-landing-active) .side-nav a:hover,
-  body[data-theme="dark"]:not(.profile-landing-active) .side-nav button:hover,
-  body[data-theme="dark"]:not(.profile-landing-active) .logout-button:hover {
+
+
+  body[data-theme="dark"]:not(.profile-landing-active) .side-nav a.is-active {
     color: var(--ink) !important;
     background: transparent !important;
     box-shadow: inset 2px 0 0 var(--line) !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body[data-theme="dark"]:not(.profile-landing-active) .side-nav a:hover:where(:not([data-intake-touch] *)),
+body[data-theme="dark"]:not(.profile-landing-active) .side-nav button:hover:where(:not([data-intake-touch] *)) {
+    color: var(--ink) !important;
+    background: transparent !important;
+    box-shadow: inset 2px 0 0 var(--line) !important;
+  }
+}
 
   body[data-theme="dark"]:not(.profile-landing-active) .topbar,
   body[data-theme="dark"]:not(.profile-landing-active) .calendar-panel,
@@ -15138,9 +14912,11 @@ body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-ent
   content: none !important;
 }
 
-body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card:hover {
+@media (hover: hover) and (pointer: fine) {
+body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card:hover:where(:not([data-intake-touch] *)) {
   transform: none !important;
   background: transparent !important;
+}
 }
 
 body.progress-page:not(.profile-landing-active) .weight-entry-list .progress-entry-card p small {
@@ -15271,36 +15047,11 @@ body[data-theme="dark"]:not(.profile-landing-active) .saved-food-surface {
 }
 
 @media (max-width: 920px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
-    order: 1 !important;
-    grid-column: 1 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="assistant.html"] {
-    order: 2 !important;
-    grid-column: 2 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > #mobileFoodsTab {
-    order: 2 !important;
-    grid-column: 2 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="progress.html"] {
-    order: 3 !important;
-    grid-column: 3 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="profile.html"] {
-    order: 4 !important;
-    grid-column: 4 !important;
-  }
 
   body:not(.profile-landing-active) .food-log.is-editing .edit-modal-actions,
   body:not(.profile-landing-active) .food-log.is-adding.is-editing .edit-modal-actions {
@@ -15375,55 +15126,7 @@ body[data-theme="dark"]:not(.profile-landing-active) .status-pill.is-success-pul
   }
 }
 
-@media (max-width: 920px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    position: fixed !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: calc(58px + env(safe-area-inset-bottom)) !important;
-    padding: 0 0 env(safe-area-inset-bottom) !important;
-    transform: none !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html"] {
-    order: 1 !important;
-    grid-column: 1 !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar > #mobileFoodsTab,
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="index.html#foods"] {
-    order: 2 !important;
-    grid-column: 2 !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="progress.html"] {
-    order: 3 !important;
-    grid-column: 3 !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar > a[href="profile.html"] {
-    order: 4 !important;
-    grid-column: 4 !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    position: relative !important;
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    place-items: center !important;
-    text-align: center !important;
-  }
-}
 
 body.profile-landing-active .app-shell {
   display: block !important;
@@ -15432,27 +15135,11 @@ body.profile-landing-active .app-shell {
   overflow-x: hidden !important;
 }
 
-body.is-logged-out-profile:not(.profile-landing-active) .app-shell,
-body.is-logged-out-profile:not(.profile-landing-active) .app-shell.sidebar-collapsed {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 100vh !important;
-  padding: 0 !important;
-}
 
-body.is-logged-out-profile:not(.profile-landing-active) .main-content {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-}
 
-body.is-logged-out-profile:not(.profile-landing-active) .auth-shell.in-app {
-  width: min(1180px, calc(100vw - 36px)) !important;
-  justify-self: center !important;
-}
+
+
+
 
 body.profile-landing-active .intro-shell {
   display: grid !important;
@@ -15793,46 +15480,7 @@ body.profile-landing-active .app-screenshot-preview picture {
   line-height: 1.45;
 }
 
-@media (max-width: 700px) {
-  body.is-logged-out-profile:not(.profile-landing-active) .auth-shell.in-app::before {
-    content: none !important;
-    display: none !important;
-  }
 
-  body.is-logged-out-profile:not(.profile-landing-active) .topbar-home-link {
-    width: 44px !important;
-    height: 44px !important;
-    margin-left: 0 !important;
-  }
-
-  body.is-logged-out-profile:not(.profile-landing-active) .topbar:has(.topbar-home-link) {
-    grid-template-columns: 44px minmax(0, 1fr) !important;
-    gap: 0 !important;
-  }
-
-  body.is-logged-out-profile:not(.profile-landing-active) .auth-shell.in-app {
-    padding-top: 0 !important;
-    padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important;
-  }
-
-  body.is-logged-out-profile:not(.profile-landing-active) .mobile-tabbar {
-    display: none !important;
-  }
-
-  body.is-logged-out-profile:not(.profile-landing-active) .profile-fields label,
-  body.is-logged-out-profile:not(.profile-landing-active) .goal-grid label,
-  body.is-logged-out-profile:not(.profile-landing-active) .theme-control,
-  body.is-logged-out-profile:not(.profile-landing-active) .section-heading span {
-    font-size: 0.66rem !important;
-    font-weight: 650 !important;
-  }
-
-  body.is-logged-out-profile:not(.profile-landing-active) .profile-fields input,
-  body.is-logged-out-profile:not(.profile-landing-active) .profile-fields select,
-  body.is-logged-out-profile:not(.profile-landing-active) .theme-control select {
-    border-color: color-mix(in srgb, var(--ink) 26%, var(--line)) !important;
-  }
-}
 
 @media (max-width: 640px) {
   body.profile-landing-active .intro-stats span,
@@ -15859,10 +15507,6 @@ body.profile-landing-active .app-screenshot-preview picture {
     font-size: 0.68rem !important;
   }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    font-size: 0.66rem !important;
-  }
 
   body:not(.profile-landing-active) .calendar-panel {
     grid-template-columns: 44px minmax(0, 1fr) 44px !important;
@@ -16017,8 +15661,8 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
     padding: 0 6px !important;
   }
 
-  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm input:focus,
-  body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm select:focus {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm input:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-editing #manualFoodForm select:focus {
     border-bottom-color: var(--ink) !important;
     box-shadow: inset 0 -1px 0 var(--ink) !important;
     outline: none !important;
@@ -16174,8 +15818,8 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
     padding: 0 6px !important;
   }
 
-  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm input:focus,
-  body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm select:focus {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm input:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-detailing #manualFoodForm select:focus {
     border-bottom-color: var(--ink) !important;
     box-shadow: inset 0 -1px 0 var(--ink) !important;
     outline: none !important;
@@ -16227,7 +15871,7 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
 }
 
 @media (max-width: 640px) {
-  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing) {
+  body:not(.profile-landing-active) .food-log.is-adding:not(.is-detailing):not(.is-editing):not(.add-flow-surface) {
     padding: 18px 22px calc(76px + env(safe-area-inset-bottom)) !important;
   }
 
@@ -16413,12 +16057,19 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
   padding: 0 14px !important;
 }
 
-.exercise-log.is-editing .edit-delete-button:hover,
-.exercise-log.is-editing .edit-delete-button:focus-visible {
+:where(html:not([data-intake-touch])) .exercise-log.is-editing .edit-delete-button:focus-visible {
   border-color: #a64232 !important;
   background: #a64232 !important;
   color: var(--panel) !important;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.exercise-log.is-editing .edit-delete-button:hover:where(:not([data-intake-touch] *)) {
+  border-color: #a64232 !important;
+  background: #a64232 !important;
+  color: var(--panel) !important;
+  outline: none;
+}
 }
 
 @media (min-width: 701px) {
@@ -16430,7 +16081,7 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
 }
 
 @media (max-width: 920px) {
-  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing {
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing:not(.add-flow-surface) {
     grid-template-rows: auto auto auto auto;
     overflow-y: auto;
   }
@@ -16455,7 +16106,8 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
 }
 
 @media (max-width: 920px) {
-  body:not(.profile-landing-active).modal-open .log-panel.is-adding {
+  /* Tablet legacy sheet only; mobile Add is owned by add-flow.css. */
+  body:not(.profile-landing-active).modal-open .log-panel.is-adding:not(.add-flow-surface) {
     position: fixed !important;
     top: 0 !important;
     right: auto !important;
@@ -16474,7 +16126,7 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
     overflow-y: auto !important;
   }
 
-  body:not(.profile-landing-active) .log-panel.is-adding {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.add-flow-surface) {
     grid-template-rows: auto auto auto auto !important;
   }
 
@@ -16488,7 +16140,7 @@ body.progress-page:not(.profile-landing-active) .weight-y-label {
   }
 
   body:not(.profile-landing-active) .log-panel.is-adding.is-editing .add-mode-switch,
-  body:not(.profile-landing-active) .food-log.is-adding.is-detailing .add-mode-switch,
+  body:not(.profile-landing-active) .food-log.is-adding.is-detailing:not(.add-flow-surface) .add-mode-switch,
   body:not(.profile-landing-active) .food-log.is-adding.is-viewing-saved .add-mode-switch {
     display: none !important;
   }
@@ -16668,7 +16320,7 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
 }
 
 @media (max-width: 1120px) {
-  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) {
+  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing):not(.add-flow-surface) {
     align-content: start !important;
     gap: 0 !important;
     padding: 18px 22px calc(76px + env(safe-area-inset-bottom)) !important;
@@ -16777,9 +16429,9 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
     padding: 0 16px !important;
   }
 
-  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseType:focus,
-  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseMinutes:focus,
-  body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseCalories:focus {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseType:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseMinutes:focus,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .exercise-log.is-adding:not(.is-editing) #exerciseCalories:focus {
     border-color: var(--ink) !important;
     box-shadow: none !important;
     outline: none !important;
@@ -16805,7 +16457,7 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
 }
 
 @media (max-width: 920px) {
-  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved) {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-editing):not(.is-detailing):not(.is-viewing-saved):not(.add-flow-surface) {
     align-content: start !important;
     gap: 0 !important;
     padding: 16px 26px calc(72px + env(safe-area-inset-bottom)) !important;
@@ -16927,12 +16579,19 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
   padding: 0 14px !important;
 }
 
-.food-log.is-editing #deleteFoodEdit:hover,
-.food-log.is-editing #deleteFoodEdit:focus-visible {
+:where(html:not([data-intake-touch])) .food-log.is-editing #deleteFoodEdit:focus-visible {
   border-color: var(--warn) !important;
   background: var(--warn) !important;
   color: var(--panel) !important;
   outline: none !important;
+}
+@media (hover: hover) and (pointer: fine) {
+.food-log.is-editing #deleteFoodEdit:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--warn) !important;
+  background: var(--warn) !important;
+  color: var(--panel) !important;
+  outline: none !important;
+}
 }
 
 @media (min-width: 701px) {
@@ -17001,12 +16660,19 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
   padding: 0 14px !important;
 }
 
-.log-panel.is-editing .edit-delete-button:hover,
-.log-panel.is-editing .edit-delete-button:focus-visible {
+:where(html:not([data-intake-touch])) .log-panel.is-editing .edit-delete-button:focus-visible {
   border-color: var(--warn) !important;
   background: var(--warn) !important;
   color: var(--panel) !important;
   outline: none !important;
+}
+@media (hover: hover) and (pointer: fine) {
+.log-panel.is-editing .edit-delete-button:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--warn) !important;
+  background: var(--warn) !important;
+  color: var(--panel) !important;
+  outline: none !important;
+}
 }
 
 .exercise-log.is-editing #exerciseForm {
@@ -17032,9 +16698,9 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
   font-weight: 520 !important;
 }
 
-.exercise-log.is-editing #exerciseType:focus,
-.exercise-log.is-editing #exerciseMinutes:focus,
-.exercise-log.is-editing #exerciseCalories:focus {
+:where(html:not([data-intake-touch])) .exercise-log.is-editing #exerciseType:focus,
+:where(html:not([data-intake-touch])) .exercise-log.is-editing #exerciseMinutes:focus,
+:where(html:not([data-intake-touch])) .exercise-log.is-editing #exerciseCalories:focus {
   border-bottom-color: var(--ink) !important;
   box-shadow: inset 0 -1px 0 var(--ink) !important;
   outline: none !important;
@@ -17084,7 +16750,7 @@ body:not(.profile-landing-active) .exercise-log.log-panel.is-adding::after {
 }
 
 @media (max-width: 920px) {
-  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing {
+  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing:not(.add-flow-surface) {
     align-content: start !important;
     gap: 0 !important;
     padding: 16px 26px calc(72px + env(safe-area-inset-bottom)) !important;
@@ -17234,10 +16900,6 @@ body:not(.profile-landing-active) .exercise-log .entry-card p {
   margin: 0 !important;
 }
 
-body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .entry-swipe-actions {
-  background: linear-gradient(270deg, color-mix(in srgb, var(--warn) 18%, transparent), transparent 48%) !important;
-}
-
 @media (max-width: 920px) {
   body:not(.profile-landing-active) .exercise-log .entry-list {
     border: 1px solid var(--line) !important;
@@ -17254,30 +16916,26 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
   }
 }
 
-@media (hover: none), (pointer: coarse) {
-  body:not(.profile-landing-active) .entry-card:hover {
+@media (max-width: 920px) {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .entry-card:focus:not(:focus-visible) {
     border-color: var(--line) !important;
     box-shadow: none !important;
     transform: none !important;
   }
-
-  body:not(.profile-landing-active) .entry-card:hover .entry-actions {
-    opacity: 0.58 !important;
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .entry-card:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--line) !important;
+    box-shadow: none !important;
+    transform: none !important;
   }
 }
 
-@media (max-width: 920px) {
-  body:not(.profile-landing-active) .entry-card:hover,
-  body:not(.profile-landing-active) .entry-card:focus:not(:focus-visible) {
-    border-color: var(--line) !important;
-    box-shadow: none !important;
-    transform: none !important;
-  }
-
-  body:not(.profile-landing-active) .entry-card:hover::after {
+  @media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .entry-card:hover:where(:not([data-intake-touch] *))::after {
     opacity: 0 !important;
     transform: translateX(4px) !important;
   }
+}
 
   body:not(.profile-landing-active) .entry-card.is-selected {
     box-shadow: inset 3px 0 0 var(--ink) !important;
@@ -17334,20 +16992,33 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
     color: var(--warn) !important;
   }
 
-  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:hover,
-  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:focus-visible {
     border-color: var(--ink) !important;
     background: var(--ink) !important;
     color: var(--panel) !important;
     outline: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--panel) !important;
+    outline: none !important;
+  }
+}
 
-  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:hover,
-  body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:focus-visible {
     border-color: var(--warn) !important;
     background: var(--warn) !important;
     color: var(--panel) !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .food-log.is-editing .edit-favorite-button.is-saved:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--warn) !important;
+    background: var(--warn) !important;
+    color: var(--panel) !important;
+  }
+}
 
   body:not(.profile-landing-active) .food-log.is-editing #deleteFoodEdit {
     width: 140px !important;
@@ -17404,77 +17075,9 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
   }
 }
 
-@media (max-width: 700px) {
-  .mobile-tabbar,
-  .mobile-tabbar.has-fab,
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    grid-auto-flow: column !important;
-    grid-auto-rows: 1fr !important;
-    align-items: stretch !important;
-    justify-items: stretch !important;
-    gap: 0 !important;
-    overflow: hidden !important;
-  }
 
-  .mobile-tabbar a,
-  .mobile-tabbar .mobile-tab-link,
-  body:not(.profile-landing-active) .mobile-tabbar a,
-  body:not(.profile-landing-active) .mobile-tabbar .mobile-tab-link {
-    display: grid !important;
-    grid-template-rows: 1fr !important;
-    place-items: center !important;
-    min-width: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-  }
 
-  .mobile-tabbar b,
-  body:not(.profile-landing-active) .mobile-tabbar b {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-align: center !important;
-    text-overflow: clip !important;
-    white-space: nowrap !important;
-  }
-}
 
-@media (max-width: 640px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    height: calc(60px + env(safe-area-inset-bottom)) !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    grid-template-rows: 19px auto !important;
-    align-content: center !important;
-    gap: 3px !important;
-    height: 60px !important;
-    min-height: 60px !important;
-    padding: 5px 3px 4px !important;
-    font-size: 0.5625rem !important;
-    letter-spacing: 0.06em !important;
-    line-height: 1 !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar .sidebar-icon {
-    display: grid !important;
-    width: 18px !important;
-    height: 18px !important;
-  }
-
-  body:not(.profile-landing-active) .mobile-tabbar .sidebar-icon svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
-}
 
 .food-suggestions-more {
   width: 100%;
@@ -17489,9 +17092,13 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
   cursor: pointer;
 }
 
-.food-suggestions-more:hover,
-.food-suggestions-more:focus-visible {
+:where(html:not([data-intake-touch])) .food-suggestions-more:focus-visible {
   background: var(--soft);
+}
+@media (hover: hover) and (pointer: fine) {
+.food-suggestions-more:hover:where(:not([data-intake-touch] *)) {
+  background: var(--soft);
+}
 }
 
 .recent-foods-heading {
@@ -17522,9 +17129,13 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
   text-transform: uppercase;
 }
 
-.recent-foods-heading button:hover,
-.recent-foods-heading button:focus-visible {
+:where(html:not([data-intake-touch])) .recent-foods-heading button:focus-visible {
   color: var(--muted);
+}
+@media (hover: hover) and (pointer: fine) {
+.recent-foods-heading button:hover:where(:not([data-intake-touch] *)) {
+  color: var(--muted);
+}
 }
 
 @media (max-width: 700px) {
@@ -17959,9 +17570,9 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
     transform: none !important;
     order: 2;
     display: grid !important;
-    width: 52px !important;
-    height: 52px !important;
-    min-height: 52px !important;
+    width: var(--today-fab-size) !important;
+    height: var(--today-fab-size) !important;
+    min-height: var(--today-fab-size) !important;
     place-items: center !important;
     padding: 0 !important;
   }
@@ -18007,18 +17618,23 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
 }
 
 @media (max-width: 920px) {
+
   body.progress-page,
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) {
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) {
     padding-bottom: 0 !important;
   }
 
+
+
   body.progress-page .app-shell,
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .app-shell {
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) .app-shell {
     min-height: 100dvh !important;
   }
 
+
+
   body.progress-page .main-content,
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .main-content {
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) .main-content {
     padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   }
 }
@@ -18161,7 +17777,7 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
     display: none !important;
   }
 
-  body:not(.profile-landing-active) .log-panel.is-adding {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.add-flow-surface) {
     grid-column: 1 / -1 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -18183,7 +17799,7 @@ body:not(.profile-landing-active) .exercise-log .entry-card.has-no-save-action .
 }
 
 @media (min-width: 921px) and (max-width: 1120px) {
-  body:not(.profile-landing-active) .log-panel.is-adding {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.add-flow-surface) {
     position: relative !important;
     inset: auto !important;
     z-index: auto !important;
@@ -18753,11 +18369,16 @@ body[data-theme="dark"].progress-page:not(.profile-landing-active) .nutrition-ba
     padding: 0;
   }
 
-  body:not(.profile-landing-active) .calendar-panel .icon-button:hover,
-  body:not(.profile-landing-active) .calendar-panel .icon-button:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .calendar-panel .icon-button:focus-visible {
     color: var(--ink) !important;
     background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .calendar-panel .icon-button:hover:where(:not([data-intake-touch] *)) {
+    color: var(--ink) !important;
+    background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
+  }
+}
 
   body:not(.profile-landing-active) .calendar-strip {
     min-width: 0;
@@ -18841,14 +18462,21 @@ body[data-theme="dark"].progress-page:not(.profile-landing-active) .nutrition-ba
   text-transform: uppercase;
 }
 
-.assistant-clear:hover,
-.assistant-clear:focus-visible,
-.assistant-history-open:hover,
-.assistant-history-open:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-clear:focus-visible,
+:where(html:not([data-intake-touch])) .assistant-history-open:focus-visible {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--panel);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-clear:hover:where(:not([data-intake-touch] *)),
+.assistant-history-open:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+  outline: none;
+}
 }
 
 .assistant-clear:disabled,
@@ -18931,10 +18559,15 @@ body[data-theme="dark"] .assistant-history {
   line-height: 1;
 }
 
-.assistant-history-close:hover,
-.assistant-history-close:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-history-close:focus-visible {
   border-color: var(--ink);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-history-close:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--ink);
+  outline: none;
+}
 }
 
 .assistant-history-list {
@@ -18983,10 +18616,15 @@ body[data-theme="dark"] .assistant-history {
   text-transform: uppercase;
 }
 
-.assistant-history-select:hover,
-.assistant-history-select:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-history-select:focus-visible {
   background: color-mix(in srgb, var(--ink) 4%, transparent);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-history-select:hover:where(:not([data-intake-touch] *)) {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  outline: none;
+}
 }
 
 .assistant-history-delete {
@@ -18999,11 +18637,17 @@ body[data-theme="dark"] .assistant-history {
   font-size: 1.1rem;
 }
 
-.assistant-history-delete:hover,
-.assistant-history-delete:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-history-delete:focus-visible {
   background: rgba(190, 76, 62, 0.08);
   color: #a13e32;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-history-delete:hover:where(:not([data-intake-touch] *)) {
+  background: rgba(190, 76, 62, 0.08);
+  color: #a13e32;
+  outline: none;
+}
 }
 
 .assistant-history-empty {
@@ -19042,10 +18686,15 @@ body[data-theme="dark"] .assistant-history {
   text-transform: uppercase;
 }
 
-.assistant-history-delete-all:hover,
-.assistant-history-delete-all:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-history-delete-all:focus-visible {
   color: #a13e32;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-history-delete-all:hover:where(:not([data-intake-touch] *)) {
+  color: #a13e32;
+  outline: none;
+}
 }
 
 .assistant-history-delete-all:disabled {
@@ -19246,11 +18895,17 @@ body[data-theme="dark"] .assistant-history {
   text-align: left;
 }
 
-.assistant-starters button:hover,
-.assistant-starters button:focus-visible {
+:where(html:not([data-intake-touch])) .assistant-starters button:focus-visible {
   border-color: var(--ink);
   background: color-mix(in srgb, var(--ink) 4%, transparent);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.assistant-starters button:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  outline: none;
+}
 }
 
 .assistant-messages {
@@ -19361,7 +19016,7 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   padding: 12px 13px;
 }
 
-.assistant-composer textarea:focus {
+:where(html:not([data-intake-touch])) .assistant-composer textarea:focus {
   border-color: var(--ink);
   outline: none;
 }
@@ -19608,12 +19263,19 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   text-transform: uppercase;
 }
 
-.food-edit-summary .scan-review-option:hover,
-.food-edit-summary .scan-review-option:focus-visible {
+:where(html:not([data-intake-touch])) .food-edit-summary .scan-review-option:focus-visible {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--panel);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.food-edit-summary .scan-review-option:hover:where(:not([data-intake-touch] *)) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+  outline: none;
+}
 }
 
 .scan-review[hidden] {
@@ -19694,11 +19356,17 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   text-transform: uppercase;
 }
 
-#manualFoodForm .scan-simple-view:hover,
-#manualFoodForm .scan-simple-view:focus-visible {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-simple-view:focus-visible {
   border-bottom-color: var(--ink) !important;
   color: var(--ink) !important;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+#manualFoodForm .scan-simple-view:hover:where(:not([data-intake-touch] *)) {
+  border-bottom-color: var(--ink) !important;
+  color: var(--ink) !important;
+  outline: none;
+}
 }
 
 #manualFoodForm .scan-review-meal,
@@ -19740,9 +19408,9 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   padding: 0 4px !important;
 }
 
-#manualFoodForm .scan-review-meal select:focus,
-#manualFoodForm .scan-item-field input:focus,
-#manualFoodForm .scan-item-field select:focus {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-review-meal select:focus,
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-item-field input:focus,
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-item-field select:focus {
   border-bottom-color: var(--ink) !important;
   box-shadow: inset 0 -1px 0 var(--ink) !important;
   outline: none;
@@ -19838,14 +19506,21 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   text-transform: uppercase;
 }
 
-#manualFoodForm .scan-food-remove:hover,
-#manualFoodForm .scan-food-remove:focus-visible,
-#manualFoodForm .scan-food-correct:hover,
-#manualFoodForm .scan-food-correct:focus-visible {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-food-remove:focus-visible,
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-food-correct:focus-visible {
   color: var(--ink) !important;
   outline: none;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+@media (hover: hover) and (pointer: fine) {
+#manualFoodForm .scan-food-remove:hover:where(:not([data-intake-touch] *)),
+#manualFoodForm .scan-food-correct:hover:where(:not([data-intake-touch] *)) {
+  color: var(--ink) !important;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
 }
 
 #manualFoodForm .scan-food-details-toggle {
@@ -19867,11 +19542,17 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   text-transform: uppercase;
 }
 
-#manualFoodForm .scan-food-details-toggle:hover,
-#manualFoodForm .scan-food-details-toggle:focus-visible {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-food-details-toggle:focus-visible {
   border-bottom-color: var(--ink) !important;
   color: var(--ink) !important;
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+#manualFoodForm .scan-food-details-toggle:hover:where(:not([data-intake-touch] *)) {
+  border-bottom-color: var(--ink) !important;
+  color: var(--ink) !important;
+  outline: none;
+}
 }
 
 .scan-food-correction {
@@ -19914,7 +19595,7 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   padding: 0 3px !important;
 }
 
-#manualFoodForm .scan-food-correction input:focus {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-food-correction input:focus {
   box-shadow: inset 0 -1px 0 var(--ink) !important;
   outline: none;
 }
@@ -20079,13 +19760,20 @@ body[data-theme="dark"] .assistant-message.is-error > p {
   cursor: pointer;
 }
 
-#manualFoodForm .scan-save-as-meal:is(:hover, :focus-visible) {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-save-as-meal:focus-visible {
   text-decoration-color: currentColor;
   outline: 1px solid var(--line);
   outline-offset: -5px;
 }
+@media (hover: hover) and (pointer: fine) {
+#manualFoodForm .scan-save-as-meal:hover:where(:not([data-intake-touch] *)) {
+  text-decoration-color: currentColor;
+  outline: 1px solid var(--line);
+  outline-offset: -5px;
+}
+}
 
-#manualFoodForm .scan-save-as-meal:active {
+:where(html:not([data-intake-touch])) #manualFoodForm .scan-save-as-meal:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
   background: color-mix(in srgb, var(--ink) 7%, transparent) !important;
 }
 
@@ -20296,17 +19984,7 @@ body:not(.profile-landing-active) .goal-editor.is-editing-custom .recommended-su
 }
 
 @media (max-width: 640px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    border-top-color: #d9d4c9 !important;
-    background: #f3f0e8 !important;
-  }
 
-  body[data-theme="dark"]:not(.profile-landing-active) .mobile-tabbar,
-  body[data-theme="dark"]:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    border-top-color: var(--line) !important;
-    background: color-mix(in srgb, var(--panel) 92%, white) !important;
-  }
 
   body:not(.profile-landing-active) .topbar {
     position: relative !important;
@@ -20413,22 +20091,8 @@ body:not(.profile-landing-active) .goal-editor.is-editing-custom .recommended-su
 }
 
 @media (max-width: 700px) {
-  html:has(body.assistant-page),
-  body.assistant-page {
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
   body.assistant-page {
     padding-bottom: 0 !important;
-  }
-
-  body.assistant-page .app-shell {
-    height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
-    min-height: 0 !important;
-    max-height: calc(100dvh - 60px - env(safe-area-inset-bottom)) !important;
-    overflow: hidden !important;
   }
 
   body.assistant-page .assistant-main-content {
@@ -20538,14 +20202,7 @@ body:not(.profile-landing-active) .goal-editor.is-editing-custom .recommended-su
     object-position: 50% 17% !important;
   }
 
-  body.is-logged-out-profile:not(.profile-landing-active) .profile-fields label,
-  body.is-logged-out-profile:not(.profile-landing-active) .goal-grid label,
-  body.is-logged-out-profile:not(.profile-landing-active) .theme-control,
-  body.is-logged-out-profile:not(.profile-landing-active) .section-heading span,
-  body.is-logged-out-profile:not(.profile-landing-active) .profile-required-note {
-    font-size: 0.7rem !important;
-    line-height: 1.45 !important;
-  }
+
 
   body:not(.profile-landing-active) .day-tile span,
   body:not(.profile-landing-active) .ring-copy::before,
@@ -20571,10 +20228,6 @@ body:not(.profile-landing-active) .goal-editor.is-editing-custom .recommended-su
     font-size: 0.72rem !important;
   }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    font-size: 0.66rem !important;
-  }
 
   body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding)::after {
     right: 68px !important;
@@ -20701,9 +20354,11 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     text-align: right !important;
   }
 
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .auth-shell.in-app {
+
+
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) .auth-shell.in-app {
     /* The main content already reserves room for the fixed mobile tab bar.
-       A second large reserve here created an empty scrollable tail after Log out. */
+       A second large reserve here created an empty scrollable tail after the settings. */
     padding-bottom: 0 !important;
   }
 
@@ -20821,11 +20476,9 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     font-size: 0.78rem !important;
   }
 
-  body:not(.profile-landing-active) .macro-card .label,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .macro-card .label,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     font-size: 0.7rem !important;
   }
 
@@ -20881,9 +20534,9 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     position: static !important;
     inset: auto !important;
     display: grid !important;
-    width: 52px !important;
-    height: 52px !important;
-    min-height: 52px !important;
+    width: var(--today-fab-size) !important;
+    height: var(--today-fab-size) !important;
+    min-height: var(--today-fab-size) !important;
     border-radius: 50% !important;
     place-items: center !important;
     transform: none !important;
@@ -20902,11 +20555,9 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     text-align: left !important;
   }
 
-  body:not(.profile-landing-active) .day-tile span,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .day-tile span,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     font-size: 0.72rem !important;
   }
 
@@ -21040,21 +20691,19 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     font-size: 0.78rem !important;
   }
 
-  body:not(.profile-landing-active) .eyebrow,
-  body:not(.profile-landing-active) .day-tile span,
-  body:not(.profile-landing-active) .ring-copy::before,
-  body:not(.profile-landing-active) .ring-copy small,
-  body:not(.profile-landing-active) .calorie-insights span,
-  body:not(.profile-landing-active) .macro-card .label,
-  body:not(.profile-landing-active) .macro-card-header .macro-amount,
-  body:not(.profile-landing-active) .mobile-diary-stats span,
-  body:not(.profile-landing-active) .mobile-diary-stats small,
-  body:not(.profile-landing-active) .mobile-diary-stats em,
-  body:not(.profile-landing-active) .logged-list-heading .label,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .eyebrow,
+body:not(.profile-landing-active) .day-tile span,
+body:not(.profile-landing-active) .ring-copy::before,
+body:not(.profile-landing-active) .ring-copy small,
+body:not(.profile-landing-active) .calorie-insights span,
+body:not(.profile-landing-active) .macro-card .label,
+body:not(.profile-landing-active) .macro-card-header .macro-amount,
+body:not(.profile-landing-active) .mobile-diary-stats span,
+body:not(.profile-landing-active) .mobile-diary-stats small,
+body:not(.profile-landing-active) .mobile-diary-stats em,
+body:not(.profile-landing-active) .logged-list-heading .label,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     color: var(--ink) !important;
     font-size: 0.8rem !important;
     font-weight: 600 !important;
@@ -21096,19 +20745,17 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     display: none !important;
   }
 
-  body:not(.profile-landing-active) .eyebrow,
-  body:not(.profile-landing-active) .ring-copy::before,
-  body:not(.profile-landing-active) .ring-copy small,
-  body:not(.profile-landing-active) .calorie-insights span,
-  body:not(.profile-landing-active) .macro-card .label,
-  body:not(.profile-landing-active) .mobile-diary-stats span,
-  body:not(.profile-landing-active) .mobile-diary-stats small,
-  body:not(.profile-landing-active) .mobile-diary-stats em,
-  body:not(.profile-landing-active) .logged-list-heading .label,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .eyebrow,
+body:not(.profile-landing-active) .ring-copy::before,
+body:not(.profile-landing-active) .ring-copy small,
+body:not(.profile-landing-active) .calorie-insights span,
+body:not(.profile-landing-active) .macro-card .label,
+body:not(.profile-landing-active) .mobile-diary-stats span,
+body:not(.profile-landing-active) .mobile-diary-stats small,
+body:not(.profile-landing-active) .mobile-diary-stats em,
+body:not(.profile-landing-active) .logged-list-heading .label,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     letter-spacing: 0.035em !important;
     line-height: 1.3 !important;
   }
@@ -21118,59 +20765,27 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     --font-mono: var(--font-ui);
   }
 
-  body:not(.profile-landing-active) .label,
-  body:not(.profile-landing-active) .eyebrow,
-  body:not(.profile-landing-active) .day-tile span,
-  body:not(.profile-landing-active) .ring-copy::before,
-  body:not(.profile-landing-active) .ring-copy small,
-  body:not(.profile-landing-active) .calorie-insights span,
-  body:not(.profile-landing-active) .calorie-insights small,
-  body:not(.profile-landing-active) .macro-card .label,
-  body:not(.profile-landing-active) .mobile-diary-stats span,
-  body:not(.profile-landing-active) .mobile-diary-stats small,
-  body:not(.profile-landing-active) .mobile-diary-stats em,
-  body:not(.profile-landing-active) .logged-list-heading .label,
-  body:not(.profile-landing-active) .food-log .entry-card p,
-  body:not(.profile-landing-active) .exercise-log .entry-card p,
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
+body:not(.profile-landing-active) .label,
+body:not(.profile-landing-active) .eyebrow,
+body:not(.profile-landing-active) .day-tile span,
+body:not(.profile-landing-active) .ring-copy::before,
+body:not(.profile-landing-active) .ring-copy small,
+body:not(.profile-landing-active) .calorie-insights span,
+body:not(.profile-landing-active) .calorie-insights small,
+body:not(.profile-landing-active) .macro-card .label,
+body:not(.profile-landing-active) .mobile-diary-stats span,
+body:not(.profile-landing-active) .mobile-diary-stats small,
+body:not(.profile-landing-active) .mobile-diary-stats em,
+body:not(.profile-landing-active) .logged-list-heading .label,
+body:not(.profile-landing-active) .food-log .entry-card p,
+body:not(.profile-landing-active) .exercise-log .entry-card p {
     font-family: var(--font-ui) !important;
     letter-spacing: 0.01em !important;
   }
 
-  /* Keep navigation present, but let the diary content stay visually primary. */
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    height: calc(56px + env(safe-area-inset-bottom)) !important;
-    border-top-color: color-mix(in srgb, var(--line) 72%, transparent) !important;
-    background: var(--panel) !important;
-    box-shadow: none !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    grid-template-rows: 17px auto !important;
-    gap: 2px !important;
-    height: 56px !important;
-    min-height: 56px !important;
-    padding: 5px 3px 3px !important;
-    color: var(--muted) !important;
-    font-size: 0.66rem !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.01em !important;
-    line-height: 1.1 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar .sidebar-icon,
-  body:not(.profile-landing-active) .mobile-tabbar .sidebar-icon svg {
-    width: 16px !important;
-    height: 16px !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a.is-active,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link.is-active {
-    color: var(--ink) !important;
-  }
 
   body:not(.profile-landing-active) .eyebrow,
   body:not(.profile-landing-active) .ring-copy::before,
@@ -21387,7 +21002,8 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
 /* Shared phone header geometry. Route headers and full-screen entry flows use
    the same 44px control column and title baseline on every screen. */
 @media (max-width: 700px) {
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .main-content,
+
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) .main-content,
   body.assistant-page .main-content,
   body.progress-page .main-content {
     padding-top: max(14px, env(safe-area-inset-top)) !important;
@@ -21450,7 +21066,7 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     padding: 0 !important;
   }
 
-  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-viewing-saved) {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.is-viewing-saved):not(.add-flow-surface) {
     padding-top: max(14px, env(safe-area-inset-top)) !important;
   }
 
@@ -21488,7 +21104,7 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     display: none !important;
   }
 
-  body:not(.profile-landing-active) .food-log.is-adding.is-viewing-saved {
+  body:not(.profile-landing-active) .food-log.is-adding.is-viewing-saved:not(.add-flow-surface) {
     padding-top: max(14px, env(safe-area-inset-top)) !important;
   }
 
@@ -21747,14 +21363,14 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
     color: var(--panel) !important;
   }
 
-  body:not(.profile-landing-active) #foodSection.is-adding.is-searching .food-search-row {
+  body:not(.profile-landing-active) #foodSection.is-adding.is-searching:not(.add-flow-surface) .food-search-row {
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: 50px !important;
     gap: 0 !important;
     height: 50px !important;
   }
 
-  body:not(.profile-landing-active) #foodSection.is-adding.is-searching .food-filter-tabs {
+  body:not(.profile-landing-active) #foodSection.is-adding.is-searching:not(.add-flow-surface) .food-filter-tabs {
     gap: 5px !important;
     margin-top: 2px !important;
   }
@@ -21868,9 +21484,9 @@ body.progress-page:not(.profile-landing-active) .nutrition-value-label {
 @media (max-width: 640px) {
   body[data-theme="dark"]:not(.profile-landing-active) .logged-list-heading .floating-add-button,
   body[data-theme="dark"]:not(.profile-landing-active) .logged-list-heading .floating-add-button.is-open {
-    width: 52px !important;
-    height: 52px !important;
-    min-height: 52px !important;
+    width: var(--today-fab-size) !important;
+    height: var(--today-fab-size) !important;
+    min-height: var(--today-fab-size) !important;
     padding: 0 !important;
     border: 1px solid var(--ink) !important;
     background: var(--ink) !important;
@@ -22074,25 +21690,29 @@ body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:disabl
 /* Touch browsers can retain :hover after a tap. Edit/Done has no submit
    meaning, so keep it visually neutral on phones in either mode. */
 @media (max-width: 700px) {
-  body:not(.profile-landing-active) .goal-reset-button:hover,
-  body:not(.profile-landing-active) .goal-edit-button:hover,
-  body:not(.profile-landing-active) .profile-page-logout:hover {
+
+  @media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .goal-reset-button:hover:where(:not([data-intake-touch] *)),
+body:not(.profile-landing-active) .goal-edit-button:hover:where(:not([data-intake-touch] *)) {
     border-color: var(--line) !important;
     background: transparent !important;
     color: var(--ink) !important;
   }
+}
 
-  body:not(.profile-landing-active) .goal-edit-button:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .goal-edit-button:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
     background: transparent !important;
     color: var(--ink) !important;
   }
 
-  body:not(.profile-landing-active) .calendar-panel .icon-button:hover {
+  @media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .calendar-panel .icon-button:hover:where(:not([data-intake-touch] *)) {
     background: transparent !important;
     color: var(--muted) !important;
   }
+}
 
   /* Both calendar arrows use the same 28px track. An earlier touch-target
      minimum otherwise widened only the controls and offset the strip. */
@@ -22100,7 +21720,7 @@ body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:disabl
     min-width: 28px !important;
   }
 
-  body:not(.profile-landing-active) .calendar-panel .icon-button:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .calendar-panel .icon-button:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: -2px;
     background: transparent !important;
@@ -22116,81 +21736,15 @@ body[data-theme="dark"]:not(.profile-landing-active) #profileSubmitButton:disabl
   }
 }
 
-/* Cohesive root-tab polish: text-led navigation and a shared mobile rhythm. */
+/* Shared mobile rhythm for the four peer screens. */
 @media (max-width: 700px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    height: calc(56px + env(safe-area-inset-bottom)) !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
-    border-top: 1px solid color-mix(in srgb, var(--line) 78%, transparent) !important;
-    background: var(--panel) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    position: relative !important;
-    display: grid !important;
-    grid-template-rows: 1fr !important;
-    align-content: stretch !important;
-    place-items: center !important;
-    gap: 0 !important;
-    height: 56px !important;
-    min-height: 56px !important;
-    padding: 0 4px !important;
-    color: var(--muted) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 0.62rem !important;
-    font-weight: 650 !important;
-    letter-spacing: 0.1em !important;
-    line-height: 1 !important;
-    text-align: center !important;
-    text-transform: uppercase !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a::before,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link::before {
-    content: none !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a::after,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link::after {
-    content: "";
-    position: absolute;
-    right: 50%;
-    bottom: 7px;
-    width: 24px;
-    height: 1px;
-    background: currentColor;
-    opacity: 0;
-    transform: translateX(50%);
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a.is-active,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link.is-active {
-    color: var(--ink) !important;
-    font-weight: 800 !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a.is-active::after,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link.is-active::after {
-    opacity: 1;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar b {
-    display: block !important;
-    width: auto !important;
-    overflow: visible !important;
-    border: 0 !important;
-    padding: 0 0 6px !important;
-    font: inherit !important;
-    text-overflow: clip !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a.is-active b,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link.is-active b {
-    border-bottom: 0 !important;
-  }
 
   /* Assistant, Progress, and Profile are peers in the tab bar, not nested pages. */
   body.assistant-page .assistant-topbar,
@@ -22597,9 +22151,13 @@ body.assistant-page .assistant-history-delete {
   opacity: 0.55;
 }
 
-body.assistant-page .assistant-history-delete:hover,
 body.assistant-page .assistant-history-delete:focus-visible {
   opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+body.assistant-page .assistant-history-delete:hover:where(:not([data-intake-touch] *)) {
+  opacity: 1;
+}
 }
 
 body.assistant-page .assistant-history-delete-all {
@@ -22618,9 +22176,13 @@ body.assistant-page .assistant-history-delete-all {
   text-transform: none !important;
 }
 
-body.assistant-page .assistant-history-delete-all:hover,
-body.assistant-page .assistant-history-delete-all:focus-visible {
+:where(html:not([data-intake-touch])) body.assistant-page .assistant-history-delete-all:focus-visible {
   color: var(--warn) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+body.assistant-page .assistant-history-delete-all:hover:where(:not([data-intake-touch] *)) {
+  color: var(--warn) !important;
+}
 }
 
 /* Food search rows make the portion the first secondary cue and keep the
@@ -22731,10 +22293,15 @@ body:not(.profile-landing-active) .exercise-calories-edit {
   padding: 0;
 }
 
-body:not(.profile-landing-active) .exercise-calories-edit:hover,
-body:not(.profile-landing-active) .exercise-calories-edit:focus-visible {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .exercise-calories-edit:focus-visible {
   color: var(--ink);
   outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .exercise-calories-edit:hover:where(:not([data-intake-touch] *)) {
+  color: var(--ink);
+  outline: none;
+}
 }
 
 body:not(.profile-landing-active) .exercise-calories-field {
@@ -22779,17 +22346,6 @@ body:not(.profile-landing-active) .exercise-manual-estimate-note[hidden] {
   display: none !important;
 }
 
-/* A one-time, in-flow hint reveals the existing swipe actions without
-   competing with the food entry itself. */
-body:not(.profile-landing-active) .entry-swipe-hint {
-  margin: -2px 0 8px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  font-weight: 550;
-  letter-spacing: 0.045em;
-}
-
 /* Assistant hierarchy: saved conversations are available but secondary to
    starting a fresh question. The controls retain their existing behaviour. */
 body.assistant-page .assistant-clear {
@@ -22810,11 +22366,17 @@ body.assistant-page .assistant-history-open {
   text-transform: none !important;
 }
 
-body.assistant-page .assistant-history-open:hover,
-body.assistant-page .assistant-history-open:focus-visible {
+:where(html:not([data-intake-touch])) body.assistant-page .assistant-history-open:focus-visible {
   border-color: transparent !important;
   background: transparent !important;
   color: var(--ink) !important;
+}
+@media (hover: hover) and (pointer: fine) {
+body.assistant-page .assistant-history-open:hover:where(:not([data-intake-touch] *)) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+}
 }
 
 @media (max-width: 700px) {
@@ -22861,10 +22423,10 @@ body.assistant-page .assistant-history-open:focus-visible {
 /* The wider tablet dashboard is two-column; phones keep the ring centred in
    its own row instead of inheriting that layout. */
 @media (max-width: 640px) {
-  /* Today already renders inside the app frame, so an additional safe-area
-     top margin only pushes the entire daily view down. */
+  /* The phone frame has ordinary spacing, not a top safe-area inset. Keep
+     Today's heading and profile control below the painted status-bar area. */
   body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.profile-landing-active) .topbar {
-    margin-top: 0 !important;
+    margin-top: env(safe-area-inset-top, 0px) !important;
   }
 
   /* Keep the daily summary compact enough that the streak and weight cards
@@ -23185,47 +22747,6 @@ body:not(.profile-landing-active) .entry-card .entry-surface {
   background: var(--panel) !important;
 }
 
-body:not(.profile-landing-active) .entry-card .entry-swipe-actions {
-  opacity: 0 !important;
-  background: transparent !important;
-  pointer-events: none;
-}
-
-body:not(.profile-landing-active) .entry-card .entry-swipe-actions button {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 100ms ease;
-}
-
-body:not(.profile-landing-active) .entry-card.is-revealing-right .entry-swipe-actions,
-body:not(.profile-landing-active) .entry-card.is-swiped-right .entry-swipe-actions,
-body:not(.profile-landing-active) .entry-card.is-revealing-left .entry-swipe-actions,
-body:not(.profile-landing-active) .entry-card.is-swiped-left .entry-swipe-actions {
-  opacity: 1 !important;
-}
-
-body:not(.profile-landing-active) .entry-card.is-revealing-right .swipe-save-action,
-body:not(.profile-landing-active) .entry-card.is-swiped-right .swipe-save-action {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  background: color-mix(in srgb, var(--mint-dark) 14%, var(--panel));
-}
-
-body:not(.profile-landing-active) .entry-card.is-revealing-left .swipe-delete-action,
-body:not(.profile-landing-active) .entry-card.is-swiped-left .swipe-delete-action {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  background: color-mix(in srgb, var(--warn) 14%, var(--panel));
-}
-
-body:not(.profile-landing-active) #foodSection.is-adding #foodSwipeHint,
-body:not(.profile-landing-active) #foodSwipeHint[hidden] {
-  display: none !important;
-}
-
 /* Today diary rows share one flat list language for food and exercise. */
 body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-list {
   display: grid !important;
@@ -23350,15 +22871,20 @@ body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.i
   white-space: nowrap !important;
 }
 
+/* Today reserves the fixed navigation (safe area included) and FAB once. */
+:root {
+  --today-fab-size: 52px;
+  --today-fab-nav-gap: 6px;
+  --today-end-gap: 24px;
+  --today-bottom-clearance: calc(var(--mobile-nav-height) + var(--today-fab-size) + var(--today-fab-nav-gap) + var(--today-end-gap));
+}
 @media (max-width: 640px) {
-  /* The main content already reserves the 56px navigation height. Keep only
-     a normal final-section pad here, coordinated with the independently fixed FAB. */
-  body:not(.profile-landing-active):not(.modal-open) .exercise-log.log-panel:not(.is-adding) {
-    padding-bottom: 60px !important;
+  body:not(.profile-landing-active) .exercise-log.log-panel:not(.is-adding) {
+    padding-bottom: 0 !important;
   }
 
   body:not(.profile-landing-active) .logged-list-heading .floating-action-stack {
-    bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(var(--mobile-nav-height) + var(--today-fab-nav-gap)) !important;
   }
 }
 
@@ -23379,7 +22905,7 @@ body:not(.profile-landing-active) .food-log.is-detailing.is-nutrition-editing :i
   cursor: text;
 }
 
-body:not(.profile-landing-active) .food-log.is-detailing.is-nutrition-editing :is(
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-detailing.is-nutrition-editing :is(
   #manualFoodCalories,
   #manualFoodProtein,
   #manualFoodCarbs,
@@ -23455,13 +22981,21 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   text-transform: none !important;
 }
 
-body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodEdit:hover,
-body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodEdit:focus-visible {
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodEdit:focus-visible {
   background: transparent !important;
   color: var(--warn) !important;
   text-decoration: underline;
   text-underline-offset: 3px;
   outline: none !important;
+}
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodEdit:hover:where(:not([data-intake-touch] *)) {
+  background: transparent !important;
+  color: var(--warn) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  outline: none !important;
+}
 }
 
 /* Edit Exercise is a mobile-first vertical form. Its calories input remains
@@ -23609,8 +23143,7 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     white-space: nowrap !important;
   }
 
-  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #deleteExerciseEdit:hover,
-  body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #deleteExerciseEdit:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #deleteExerciseEdit:focus-visible {
     border: 0 !important;
     background: transparent !important;
     color: var(--warn) !important;
@@ -23618,6 +23151,16 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     text-underline-offset: 3px;
     outline: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .exercise-log.is-adding.is-editing #deleteExerciseEdit:hover:where(:not([data-intake-touch] *)) {
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--warn) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    outline: none !important;
+  }
+}
 }
 
 /* The two diary groups stay distinct without the older oversized panel gap.
@@ -23742,7 +23285,7 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     overflow: auto;
   }
 
-  body:not(.profile-landing-active) .log-panel.is-adding {
+  body:not(.profile-landing-active) .log-panel.is-adding:not(.add-flow-surface) {
     position: static !important;
     inset: auto !important;
     z-index: auto !important;
@@ -24015,59 +23558,29 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     margin: 18px 24px 24px;
   }
 
-  body.profile-page:not(.profile-landing-active) .profile-page-logout {
-    display: none !important;
-  }
+
 }
 
-/* One shared phone footer geometry: controls stay above the iOS gesture area,
-   while every route ends exactly at the tab bar instead of adding its own gap. */
+/* Screen clearance uses the geometry owned by bottom-navigation.css. */
 @media (max-width: 700px) {
   body:not(.profile-landing-active) {
     padding-bottom: 0 !important;
   }
 
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .profile-page-logout {
-    margin-bottom: 16px !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    height: calc(58px + env(safe-area-inset-bottom)) !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link {
-    height: 58px !important;
-    min-height: 58px !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar > a::after,
-  body:not(.profile-landing-active) .mobile-tabbar > .mobile-tab-link::after {
-    top: 0 !important;
-    right: 0 !important;
-    bottom: auto !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 2px !important;
-    transform: none !important;
-  }
 
-  body:not(.profile-landing-active) .mobile-tabbar b {
-    padding-bottom: 0 !important;
-  }
+
+
+
 
   body:not(.profile-page):not(.progress-page):not(.assistant-page):not(.modal-open) .main-content,
   body.progress-page:not(.profile-landing-active) .main-content,
-  body.profile-page:not(.profile-landing-active):not(.is-logged-out-profile) .main-content {
-    padding-bottom: calc(58px + env(safe-area-inset-bottom)) !important;
+  body.profile-page:not(.profile-landing-active):not(.profile-landing-active) .main-content {
+    padding-bottom: var(--mobile-nav-height) !important;
   }
 
-  body.assistant-page .app-shell {
-    height: calc(100dvh - 58px - env(safe-area-inset-bottom)) !important;
-    max-height: calc(100dvh - 58px - env(safe-area-inset-bottom)) !important;
-  }
 }
 
 @container app-content (max-width: 1050px) {
@@ -24368,347 +23881,7 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
 
 /* Desktop entry editing is a true dialog. The original panels remain in the
    page behind it, while the existing form is temporarily hosted here. */
-@media (min-width: 921px) {
-  body:not(.profile-landing-active).desktop-edit-modal-open {
-    overflow: hidden !important;
-  }
 
-  body:not(.profile-landing-active).desktop-edit-modal-open::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 899;
-    background: rgba(29, 27, 23, 0.18);
-    pointer-events: auto;
-  }
-
-  body[data-theme="dark"]:not(.profile-landing-active).desktop-edit-modal-open::before {
-    background: rgba(0, 0, 0, 0.52) !important;
-  }
-
-  .desktop-edit-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 900;
-    display: grid;
-    place-items: center;
-    padding: 28px;
-    pointer-events: none;
-  }
-
-  .desktop-edit-modal[hidden] {
-    display: none !important;
-  }
-
-  .desktop-edit-dialog {
-    position: relative;
-    isolation: isolate;
-    display: grid;
-    width: min(100%, 780px);
-    max-height: min(88vh, 900px);
-    overflow: hidden;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    box-shadow: 0 18px 54px rgba(25, 23, 19, 0.16);
-    pointer-events: auto;
-  }
-
-  .desktop-edit-modal-close {
-    position: absolute;
-    top: 14px;
-    right: 16px;
-    z-index: 1;
-    display: grid;
-    width: 42px;
-    height: 42px;
-    min-height: 42px;
-    place-items: center;
-    border: 1px solid var(--line);
-    border-radius: 0;
-    background: var(--panel);
-    color: var(--ink);
-    font-size: 1.25rem;
-    line-height: 1;
-  }
-
-  .desktop-edit-modal-close:hover,
-  .desktop-edit-modal-close:focus-visible {
-    border-color: var(--ink);
-    background: var(--ink);
-    color: var(--panel);
-    outline: none;
-  }
-
-  .desktop-edit-modal-body {
-    position: relative;
-    z-index: 0;
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior: contain;
-  }
-
-  .desktop-edit-modal-content {
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0;
-    margin: 0 !important;
-    padding: 26px !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    box-sizing: border-box;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content [hidden] {
-    display: none !important;
-  }
-
-  .desktop-edit-modal-content .entry-mode-header {
-    display: flex !important;
-    min-height: 0 !important;
-    margin: 0 56px 20px 0 !important;
-    padding: 0 0 14px !important;
-    border: 0 !important;
-    border-bottom: 1px solid var(--line) !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .entry-mode-header {
-    display: flex !important;
-  }
-
-  .desktop-edit-modal-content .entry-mode-header .label {
-    display: block !important;
-    margin: 0 0 5px !important;
-    color: var(--muted) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 0.62rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .entry-mode-header .label {
-    display: block !important;
-  }
-
-  .desktop-edit-modal-content .entry-mode-header strong {
-    display: block !important;
-    color: var(--ink) !important;
-    font-size: 1.35rem !important;
-    font-weight: 560 !important;
-    line-height: 1.05 !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .entry-mode-header strong {
-    display: block !important;
-  }
-
-  .desktop-edit-modal-content .food-cancel-edit,
-  .desktop-edit-modal-content .exercise-cancel-edit {
-    display: none !important;
-  }
-
-  .desktop-edit-modal-content #manualFoodForm {
-    display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: 16px !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
-  }
-
-  .desktop-edit-modal-content #manualFoodForm :is(
-    .food-search-row,
-    .food-filter-tabs,
-    .search-note,
-    .suggestions,
-    .manual-food-shortcut,
-    .scan-review
-  ) {
-    display: none !important;
-  }
-
-  .desktop-edit-modal-content .food-edit-summary {
-    display: grid !important;
-    grid-column: 1 / -1 !important;
-    order: 1 !important;
-    gap: 5px !important;
-    margin: 0 !important;
-    padding: 0 0 16px !important;
-    border: 0 !important;
-    border-bottom: 1px solid var(--line) !important;
-    background: transparent !important;
-  }
-
-  .desktop-edit-modal-content .food-edit-summary > span {
-    color: var(--muted) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 0.6rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-  }
-
-  .desktop-edit-modal-content .food-edit-summary > strong {
-    color: var(--ink) !important;
-    font-size: 1.05rem !important;
-    font-weight: 560 !important;
-  }
-
-  .desktop-edit-modal-content .food-edit-summary > small {
-    color: var(--muted) !important;
-    font-size: 0.78rem !important;
-    line-height: 1.4 !important;
-  }
-
-  .desktop-edit-modal-content label[for="foodAmount"] { grid-column: span 2 !important; order: 2 !important; }
-  .desktop-edit-modal-content label[for="foodUnit"] { grid-column: span 2 !important; order: 2 !important; }
-  .desktop-edit-modal-content label[for="foodMeal"] { grid-column: span 2 !important; order: 2 !important; }
-
-  .desktop-edit-modal-content .food-nutrition-summary {
-    display: block !important;
-    grid-column: 1 / -1 !important;
-    order: 3 !important;
-    margin: 0 !important;
-    padding: 16px 0 !important;
-    border-top: 1px solid var(--line) !important;
-    border-bottom: 1px solid var(--line) !important;
-    background: transparent !important;
-  }
-
-  .desktop-edit-modal-content .food-nutrition-summary-heading {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    margin-bottom: 14px !important;
-  }
-
-  .desktop-edit-modal-content .food-nutrition-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 14px 28px !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .food-nutrition-grid[hidden] {
-    display: none !important;
-  }
-
-  .desktop-edit-modal-content label[for="manualFoodCalories"],
-  .desktop-edit-modal-content label[for="manualFoodProtein"],
-  .desktop-edit-modal-content label[for="manualFoodCarbs"],
-  .desktop-edit-modal-content label[for="manualFoodFat"] {
-    grid-column: span 3 !important;
-    display: grid !important;
-    order: 4 !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content label[for="manualFoodCalories"][hidden],
-  #desktopEditModal .desktop-edit-modal-content label[for="manualFoodProtein"][hidden],
-  #desktopEditModal .desktop-edit-modal-content label[for="manualFoodCarbs"][hidden],
-  #desktopEditModal .desktop-edit-modal-content label[for="manualFoodFat"][hidden] {
-    display: none !important;
-  }
-
-  .desktop-edit-modal-content #manualFoodSubmit {
-    grid-column: 1 / -1 !important;
-    order: 5 !important;
-    width: 100% !important;
-    min-height: 50px !important;
-    margin: 2px 0 0 !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .food-edit-summary { order: 1 !important; }
-  #desktopEditModal .desktop-edit-modal-content :is(label[for="foodAmount"], label[for="foodUnit"], label[for="foodMeal"]) { order: 2 !important; }
-  #desktopEditModal .desktop-edit-modal-content .food-nutrition-summary { order: 3 !important; }
-  #desktopEditModal .desktop-edit-modal-content :is(label[for="manualFoodCalories"], label[for="manualFoodProtein"], label[for="manualFoodCarbs"], label[for="manualFoodFat"]) { order: 4 !important; }
-  #desktopEditModal .desktop-edit-modal-content #manualFoodSubmit { order: 5 !important; }
-
-  .desktop-edit-modal-content .edit-modal-actions {
-    display: flex !important;
-    width: 100% !important;
-    margin: 4px 0 0 !important;
-    padding: 0 !important;
-    justify-content: flex-start !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .edit-modal-actions {
-    display: flex !important;
-    justify-content: flex-start !important;
-  }
-
-  .desktop-edit-modal-content #deleteFoodEdit,
-  .desktop-edit-modal-content #deleteExerciseEdit {
-    width: auto !important;
-    min-width: 0 !important;
-    min-height: 40px !important;
-    padding: 0 12px !important;
-    border: 0 !important;
-    background: transparent !important;
-    color: var(--warn) !important;
-    font-size: 0.75rem !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content #deleteFoodEdit,
-  #desktopEditModal .desktop-edit-modal-content #deleteExerciseEdit {
-    display: inline-flex !important;
-    align-items: center !important;
-  }
-
-  .desktop-edit-modal-content #exerciseForm {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 16px !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .exercise-form-field > span {
-    display: block !important;
-  }
-
-  .desktop-edit-modal-content .exercise-type-field,
-  .desktop-edit-modal-content .exercise-estimate,
-  .desktop-edit-modal-content #exerciseSubmit {
-    grid-column: 1 / -1 !important;
-  }
-
-  .desktop-edit-modal-content .exercise-estimate {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    gap: 12px !important;
-    margin: 0 !important;
-    padding: 14px 0 !important;
-    border-top: 1px solid var(--line) !important;
-    border-bottom: 1px solid var(--line) !important;
-    background: transparent !important;
-  }
-
-  .desktop-edit-modal-content .exercise-calories-field {
-    grid-column: 1 / -1 !important;
-  }
-
-  .desktop-edit-modal-content #exerciseSubmit {
-    width: 100% !important;
-    min-height: 50px !important;
-    margin: 2px 0 0 !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content #exerciseSubmit {
-    display: grid !important;
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 50px !important;
-    justify-self: stretch !important;
-    place-items: center !important;
-  }
-}
 
 /* Macro overages are information first. Only fat overages share the muted
    calorie warning tone; protein and carbs stay neutral on desktop. */
@@ -24894,243 +24067,7 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
   }
 }
 
-/* Food-row swipes are a touch affordance. Fine-pointer layouts use the row
-   exclusively as the clean entry point to the desktop editor. */
-@media (pointer: fine) {
-  body:not(.profile-landing-active) .entry-card {
-    touch-action: auto;
-  }
 
-  body:not(.profile-landing-active) .entry-card .entry-swipe-actions,
-  body:not(.profile-landing-active) .entry-swipe-hint {
-    display: none !important;
-  }
-
-  body:not(.profile-landing-active) .entry-card .entry-surface {
-    transform: none !important;
-  }
-}
-
-@media (min-width: 921px) {
-  #desktopEditModal .desktop-edit-modal-content .food-mode-header {
-    align-items: center !important;
-    gap: 12px !important;
-  }
-
-  #desktopEditModal .desktop-edit-modal-content .food-mode-header > div {
-    margin-right: auto;
-  }
-
-  #desktopEditModal .desktop-saved-food-toggle {
-    display: inline-flex;
-    min-height: 30px;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    border-radius: 0;
-    background: transparent;
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 650;
-    letter-spacing: 0.05em;
-    line-height: 1;
-    padding: 0 6px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  #desktopEditModal .desktop-saved-food-toggle.is-saved {
-    border-bottom-color: var(--ink);
-  }
-
-  #desktopEditModal .desktop-saved-food-toggle:hover,
-  #desktopEditModal .desktop-saved-food-toggle:focus-visible {
-    border-color: var(--ink);
-    background: transparent;
-    color: var(--ink);
-    outline: none;
-  }
-
-  /* Add Food uses the editor dialog too, but begins as a focused browse
-     state. The logging form appears only after a source or manual entry is
-     chosen. */
-  #desktopEditModal .desktop-add-food-content.is-browsing #manualFoodForm {
-    display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: 14px !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing #manualFoodForm :is(
-    .food-edit-summary,
-    .food-nutrition-summary,
-    label[for="foodAmount"],
-    label[for="foodUnit"],
-    label[for="foodMeal"],
-    label[for="manualFoodCalories"],
-    label[for="manualFoodProtein"],
-    label[for="manualFoodCarbs"],
-    label[for="manualFoodFat"],
-    #manualFoodSubmit,
-    .scan-review
-  ) {
-    display: none !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing #manualFoodForm .food-search-row {
-    display: grid !important;
-    grid-column: 1 / -1 !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    gap: 10px !important;
-    order: 1 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .food-search-row :is(.gallery-food-button, #foodGalleryShortcut) {
-    display: none !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .food-search-row .scan-food-button {
-    display: inline-flex !important;
-    width: auto !important;
-    min-width: 0 !important;
-    min-height: 44px !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: var(--ink) !important;
-    padding: 0 14px !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .food-filter-tabs {
-    display: grid !important;
-    grid-column: 1 / -1 !important;
-    grid-template-columns: repeat(4, minmax(0, max-content)) !important;
-    justify-content: start !important;
-    gap: 6px !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0 !important;
-    order: 2 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .food-filter-tabs button {
-    display: inline-flex !important;
-    width: auto !important;
-    min-width: 0 !important;
-    min-height: 34px !important;
-    padding: 0 10px !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing :is(.search-note, .suggestions, .manual-food-shortcut) {
-    display: block !important;
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .search-note,
-  #desktopEditModal .desktop-add-food-content.is-browsing .suggestions {
-    order: 3 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .suggestions {
-    min-height: 0 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .manual-food-shortcut {
-    justify-self: start !important;
-    width: auto !important;
-    min-width: 0 !important;
-    min-height: 34px !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: var(--ink) !important;
-    font-family: var(--font-mono) !important;
-    font-size: 0.64rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.06em !important;
-    padding: 0 10px !important;
-    text-transform: uppercase !important;
-    order: 4 !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-browsing .manual-food-shortcut:hover,
-  #desktopEditModal .desktop-add-food-content.is-browsing .manual-food-shortcut:focus-visible {
-    border-color: var(--ink) !important;
-    background: var(--ink) !important;
-    color: var(--panel) !important;
-    outline: none !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content .desktop-add-food-back {
-    display: inline-flex;
-    min-height: 34px;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
-    border: 0;
-    border-bottom: 1px solid transparent;
-    border-radius: 0;
-    background: transparent;
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.055em;
-    padding: 0 2px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  #desktopEditModal .desktop-add-food-content .desktop-add-food-back:hover,
-  #desktopEditModal .desktop-add-food-content .desktop-add-food-back:focus-visible {
-    border-bottom-color: var(--ink);
-    outline: none;
-  }
-
-  #desktopEditModal .desktop-add-food-content .desktop-add-food-back[hidden] {
-    display: none !important;
-  }
-
-  #desktopEditModal .desktop-add-food-content.is-detailing .food-edit-summary { order: 1 !important; }
-  #desktopEditModal .desktop-add-food-content.is-detailing :is(label[for="foodAmount"], label[for="foodUnit"], label[for="foodMeal"]) { order: 2 !important; }
-  #desktopEditModal .desktop-add-food-content.is-detailing .food-nutrition-summary { order: 3 !important; }
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-detailing #manualFoodForm :is(label[for="manualFoodCalories"], label[for="manualFoodProtein"], label[for="manualFoodCarbs"], label[for="manualFoodFat"]) {
-    grid-column: span 3 !important;
-    grid-row: auto !important;
-    order: 4 !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-detailing #manualFoodSubmit {
-    grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-    order: 5 !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-detailing .scan-simple-save-actions {
-    grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-    order: 6 !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-reviewing-scan #manualFoodForm {
-    display: block !important;
-    padding: 0 !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-reviewing-scan #manualFoodForm > :not(.scan-review) {
-    display: none !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-reviewing-scan .scan-review {
-    display: grid !important;
-  }
-
-  body:not(.profile-landing-active) #desktopEditModal .desktop-add-food-content.is-reviewing-scan .desktop-add-food-back {
-    display: none !important;
-  }
-}
 
 /* Keep the three weight summary stats aligned on narrower desktop shells.
    Mobile retains its existing two-column summary flow. */
@@ -25147,13 +24084,20 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
   }
 
-  body.progress-page:not(.profile-landing-active) .weight-log-jump:hover,
-  body.progress-page:not(.profile-landing-active) .weight-log-jump:focus-visible {
+  :where(html:not([data-intake-touch])) body.progress-page:not(.profile-landing-active) .weight-log-jump:focus-visible {
     border-color: var(--ink);
     background: var(--ink);
     color: var(--panel);
     outline: none;
   }
+@media (hover: hover) and (pointer: fine) {
+body.progress-page:not(.profile-landing-active) .weight-log-jump:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--panel);
+    outline: none;
+  }
+}
 
   @container app-content (max-width: 760px) {
     body.progress-page:not(.profile-landing-active) .weight-current-panel {
@@ -25391,38 +24335,51 @@ body:not(.profile-landing-active) .food-log.is-editing.is-detailing #deleteFoodE
     transform: rotate(225deg);
   }
 
-  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:hover,
-  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:focus-visible,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:hover,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:focus-visible,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:hover,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:focus-visible {
     border-color: var(--ink) !important;
     background: color-mix(in srgb, var(--ink) 8%, transparent) !important;
     color: var(--ink) !important;
     outline: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:hover:where(:not([data-intake-touch] *)),
+body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:hover:where(:not([data-intake-touch] *)),
+body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink) !important;
+    background: color-mix(in srgb, var(--ink) 8%, transparent) !important;
+    color: var(--ink) !important;
+    outline: none !important;
+  }
+}
 
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:hover,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:focus-visible {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:focus-visible {
     border-color: var(--warn) !important;
     color: var(--warn) !important;
     outline: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--warn) !important;
+    color: var(--warn) !important;
+    outline: none !important;
+  }
+}
 
-  body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:active,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:active,
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:active {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-simple-view:active:where(:not([data-intake-touch] *),[data-touch-pressed]),
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-correct:active:where(:not([data-intake-touch] *),[data-touch-pressed]),
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-details-toggle:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
     background: var(--ink) !important;
     color: var(--panel) !important;
   }
 
-  body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:active {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-food-remove:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
     background: var(--warn) !important;
     color: var(--panel) !important;
   }
 
-  body:not(.profile-landing-active) #manualFoodForm .scan-review-meal:focus-within {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #manualFoodForm .scan-review-meal:focus-within {
     border-color: var(--ink) !important;
     box-shadow: inset 0 0 0 1px var(--ink) !important;
   }
@@ -25471,16 +24428,7 @@ body[data-theme="dark"]:not(.profile-landing-active) .macro-card-header .label {
   }
 }
 
-@media (min-width: 769px) {
-  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm > :not(.food-ai-description) {
-    display: none !important;
-  }
 
-  #desktopEditModal .desktop-add-food-content.is-describing-ai #manualFoodForm .food-ai-description {
-    display: grid !important;
-    order: 1;
-  }
-}
 
 /* Weight history uses discrete mobile periods; desktop keeps its current chart. */
 body.progress-page:not(.profile-landing-active) .weight-mobile-chart-controls,
@@ -25649,14 +24597,21 @@ body.progress-page:not(.profile-landing-active) .weight-period-navigation {
     white-space: nowrap;
   }
 
-  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:hover,
-  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:focus-visible,
-  body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:active {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
     border: 0 !important;
     background: color-mix(in srgb, var(--ink) 7%, transparent) !important;
     color: var(--ink) !important;
     outline: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body:not(.profile-landing-active) .food-log.is-reviewing-scan #manualFoodForm .scan-simple-view:hover:where(:not([data-intake-touch] *)) {
+    border: 0 !important;
+    background: color-mix(in srgb, var(--ink) 7%, transparent) !important;
+    color: var(--ink) !important;
+    outline: none !important;
+  }
+}
 }
 
 @media (max-width: 360px) {
@@ -25906,19 +24861,25 @@ body.progress-page:not(.profile-landing-active) .weight-target-legend b {
     font-weight: 750 !important;
   }
 
-  body.assistant-page .assistant-mobile-conversation-actions > button:hover,
-  body.assistant-page .assistant-mobile-conversation-actions > button:focus-visible {
+  :where(html:not([data-intake-touch])) body.assistant-page .assistant-mobile-conversation-actions > button:focus-visible {
     border-color: var(--ink) !important;
     background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
     outline: none;
   }
+@media (hover: hover) and (pointer: fine) {
+body.assistant-page .assistant-mobile-conversation-actions > button:hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink) !important;
+    background: color-mix(in srgb, var(--ink) 6%, transparent) !important;
+    outline: none;
+  }
+}
 
   body.assistant-page .assistant-mobile-conversation-actions > button:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;
   }
 
-  body.assistant-page .assistant-mobile-conversation-actions > button:active {
+  :where(html:not([data-intake-touch])) body.assistant-page .assistant-mobile-conversation-actions > button:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
     background: color-mix(in srgb, var(--ink) 10%, transparent) !important;
     transform: translateY(1px);
   }
@@ -26045,8 +25006,8 @@ body.progress-page:not(.profile-landing-active) .weight-target-legend b {
 /* Dark editorial theme cleanup: an earlier neon/mint theme used stronger
    selectors for focused controls and CTA shadows. Keep semantic `good`
    colors available for data states, but make interaction chrome neutral. */
-body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus,
-body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus-visible {
+:where(html:not([data-intake-touch])) body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus,
+:where(html:not([data-intake-touch])) body[data-theme="dark"]:not(.profile-landing-active) :is(input, select, textarea):focus-visible {
   border-color: var(--ink) !important;
   outline: none !important;
   background: color-mix(in srgb, var(--panel) 94%, #000) !important;
@@ -26146,18 +25107,32 @@ body[data-theme="dark"]:not(.profile-landing-active) :is(.brand-icon, .topbar-br
     box-shadow: none !important;
   }
 
-  body[data-theme="dark"]:not(.profile-landing-active) :is(
+  :where(html:not([data-intake-touch])) body[data-theme="dark"]:not(.profile-landing-active) :is(
     .primary-action,
     .progress-form button,
     #profileSubmitButton,
     #manualFoodSubmit,
     #exerciseSubmit
-  ):is(:hover, :focus-visible) {
+  ):focus-visible {
     border-color: var(--ink) !important;
     background: var(--ink) !important;
     color: var(--paper) !important;
     box-shadow: none !important;
   }
+@media (hover: hover) and (pointer: fine) {
+body[data-theme="dark"]:not(.profile-landing-active) :is(
+    .primary-action,
+    .progress-form button,
+    #profileSubmitButton,
+    #manualFoodSubmit,
+    #exerciseSubmit
+  ):hover:where(:not([data-intake-touch] *)) {
+    border-color: var(--ink) !important;
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+    box-shadow: none !important;
+  }
+}
 
   body[data-theme="dark"] .goal-edit-button.is-active {
     border-color: var(--line) !important;
@@ -26370,8 +25345,8 @@ body.progress-page:not(.profile-landing-active) .weight-log-panel {
     background: transparent;
   }
 
-  body:not(.profile-landing-active) #foodSection:not(.is-adding) .food-log-options-button:is(:active, :focus-visible),
-  body:not(.profile-landing-active) #foodSection:not(.is-adding) .food-log-options-button[aria-expanded="true"] {
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) #foodSection:not(.is-adding) .food-log-options-button:is(:active:where(:not([data-intake-touch] *),[data-touch-pressed]), :focus-visible),
+body:not(.profile-landing-active) #foodSection:not(.is-adding) .food-log-options-button[aria-expanded="true"] {
     border-color: var(--line);
     background: color-mix(in srgb, var(--ink) 4%, transparent);
   }
@@ -26451,8 +25426,13 @@ body.profile-page:not(.profile-landing-active) .meal-schedule-reset {
   text-transform: uppercase;
 }
 
-body.profile-page:not(.profile-landing-active) .meal-schedule-reset:is(:hover, :focus-visible):not(:disabled) {
+:where(html:not([data-intake-touch])) body.profile-page:not(.profile-landing-active) .meal-schedule-reset:focus-visible:not(:disabled) {
   border-color: var(--ink);
+}
+@media (hover: hover) and (pointer: fine) {
+body.profile-page:not(.profile-landing-active) .meal-schedule-reset:hover:where(:not([data-intake-touch] *)):not(:disabled) {
+  border-color: var(--ink);
+}
 }
 
 body.profile-page:not(.profile-landing-active) .meal-schedule-reset:disabled {
@@ -26652,10 +25632,6 @@ body[data-theme="dark"].profile-page:not(.profile-landing-active) .meal-schedule
    the tablet UI (from 701px). Device scaling commonly lands in this band, so
    it must not mix a hidden sidebar with desktop-only content geometry. */
 @media (min-width: 641px) and (max-width: 700px) {
-  body:not(.profile-landing-active) .mobile-tabbar,
-  body:not(.profile-landing-active) .mobile-tabbar.has-fab {
-    display: grid !important;
-  }
 
   body:not(.profile-landing-active) .mobile-menu-button {
     display: none !important;
@@ -27038,5 +26014,323 @@ body[data-theme="dark"].profile-page:not(.profile-landing-active) .meal-schedule
 
   body.profile-page:not(.profile-landing-active) .profile-section:last-child .profile-fields {
     max-width: 420px !important;
+  }
+}
+.calendar-panel { touch-action: pan-y; }
+/* Preserve the original visual language; only correct mobile flow and add
+   restrained feedback. No palette, type, card-shape or navigation redesign. */
+@media (max-width: 700px) {
+  body:has(#dashboardSection) .calendar-panel {
+    margin-bottom: 0 !important;
+  }
+
+  body .main-content:has(#dashboardSection) {
+    /* Same clearance for empty and populated diaries; no final-section spacer. */
+    padding-bottom: var(--today-bottom-clearance) !important;
+  }
+
+  body #dashboardSection {
+    gap: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  body #dashboardSection .goal-panel {
+    margin: 0 !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  body #dashboardSection .calorie-dashboard {
+    padding: 20px 18px 0 !important;
+    gap: 24px !important;
+  }
+
+  body #dashboardSection .calorie-ring {
+    transform: none !important;
+  }
+
+  body #dashboardSection .calorie-insights {
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  body #dashboardSection #macroGrid {
+    margin-top: 14px !important;
+  }
+
+  body #dashboardSection .mobile-diary-stats {
+    transform: none !important;
+    margin-top: 16px !important;
+  }
+
+  body #dashboardSection + .workspace {
+    margin-top: 16px !important;
+  }
+}
+
+.undo-toast[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :is(.entry-actions-toggle, .scan-amount-step) {
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+
+  .entry-inline-actions:not([hidden]) {
+    animation: intake-actions-reveal 160ms ease-out;
+  }
+
+  @keyframes intake-actions-reveal {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+
+/* Visible contextual actions accompany the row primary action. */
+.entry-actions-toggle,
+.entry-inline-actions {
+  display: none !important;
+}
+
+@media (max-width: 920px) {
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-card .entry-surface {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    column-gap: 8px !important;
+    align-items: center !important;
+  }
+
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-card .entry-actions-toggle {
+    display: inline-grid !important;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-card .entry-actions-toggle:focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-card .entry-actions-toggle:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
+    background: color-mix(in srgb, var(--ink) 9%, transparent);
+    color: var(--ink);
+    outline: none;
+  }
+
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log).log-panel:not(.is-adding) .entry-card.is-actions-open > .entry-inline-actions:not([hidden]) {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: none;
+    justify-content: end;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    padding: 0 12px 4px;
+  }
+
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log) .entry-card .entry-inline-actions button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    min-width: 60px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 12px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.59rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  body:not(.profile-landing-active) :is(.food-log, .exercise-log) .entry-card .entry-inline-actions .entry-inline-delete {
+    color: var(--warn);
+  }
+
+  :where(html:not([data-intake-touch])) body:not(.profile-landing-active) :is(.food-log, .exercise-log) .entry-card .entry-inline-actions button:focus-visible,
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) :is(.food-log, .exercise-log) .entry-card .entry-inline-actions button:active:where(:not([data-intake-touch] *),[data-touch-pressed]) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--panel);
+    outline: none;
+  }
+}
+
+/* Portion buttons avoid reopening the mobile keyboard for routine scan fixes. */
+.scan-amount-adjuster {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  width: min(260px, 100%);
+  margin-left: 42px;
+  border: 1px solid var(--line);
+}
+
+.scan-amount-adjuster output {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0 10px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scan-amount-step {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  color: var(--ink);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.scan-amount-step:first-child {
+  border-right: 1px solid var(--line);
+}
+
+.scan-amount-step:last-child {
+  border-left: 1px solid var(--line);
+}
+
+:where(html:not([data-intake-touch])) .scan-amount-step:focus-visible:not(:disabled),
+:where(html:not([data-intake-touch])) .scan-amount-step:active:where(:not([data-intake-touch] *),[data-touch-pressed]):not(:disabled) {
+  background: var(--ink);
+  color: var(--panel);
+  outline: none;
+}
+@media (hover: hover) and (pointer: fine) {
+.scan-amount-step:hover:where(:not([data-intake-touch] *)):not(:disabled) {
+  background: var(--ink);
+  color: var(--panel);
+  outline: none;
+}
+}
+
+.scan-amount-step:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.food-portion-note,
+.scan-food-nutrition-basis {
+  margin: -2px 0 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.food-portion-note {
+  display: none;
+}
+
+body:not(.profile-landing-active) .food-log.is-detailing .food-portion-note {
+  display: block;
+}
+
+body:not(.profile-landing-active) .food-log.is-reviewing-scan .food-portion-note {
+  display: none;
+}
+
+.scan-food-nutrition-basis {
+  margin: 0;
+  padding: 0 2px;
+}
+
+/* Keep the long Profile form scannable on ordinary phones without hiding any
+   setting. Compact pairs reduce scrolling while 320px layouts remain single-column. */
+@media (min-width: 360px) and (max-width: 640px) {
+  body.profile-page:not(.profile-landing-active) .profile-section-basics .compact-profile-fields,
+  body.profile-page:not(.profile-landing-active) .profile-section-goal .profile-fields,
+  body.profile-page:not(.profile-landing-active) .recommended-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body.profile-page:not(.profile-landing-active) .profile-section-basics .wide-field,
+  body.profile-page:not(.profile-landing-active) .profile-section-goal .profile-fields label:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .food-log.is-reviewing-scan .scan-review-footer {
+    position: sticky;
+    z-index: 6;
+    bottom: 0;
+    border-top: 1px solid var(--line);
+    background: var(--panel);
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 640px) {
+
+
+  body:not(.profile-landing-active) .scan-amount-adjuster {
+    width: calc(100% - 30px);
+    margin-left: 30px;
+  }
+}
+
+/* Preserve the current visual system. Feedback is brief, interruptible and
+   never required to reveal a committed value or enable the next action. */
+.saved-library-hint { display: none; }
+body .food-log.is-detailing .food-search-row::before {
+  content: none !important;
+}
+body .food-log.is-detailing .food-portion-note {
+  grid-column: 1 / -1 !important;
+}
+@media (max-width: 700px) {
+  body #foodSection .food-filter-tabs button { min-height: 44px !important; }
+}
+body .food-log.is-adding:not(.is-detailing):not(.is-editing):not(.is-describing-ai) .saved-library-hint:not([hidden]) {
+  display: block;
+  grid-column: 1 / -1;
+  order: 4;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .entry-card.is-new-entry {
+    animation-duration: 220ms;
+  }
+  .entry-card.is-new-entry .entry-surface {
+    animation-duration: 360ms;
+  }
+  :is(.food-filter-tabs button, .progress-view-switch button, .add-mode-switch button) {
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  body *, body *::before, body *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

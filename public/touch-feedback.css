@@ -1,0 +1,22 @@
+/* Every listed control gets an intentional, owned touch press. Native text
+   editing, selects, sliders and the rest of the page retain native feedback. */
+html[data-touch-feedback-ready] :is(button,a[href],[role="button"],[role="tab"],summary,input,textarea,select,label:has(input[type="checkbox"]),label:has(input[type="radio"])) {
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-intake-touch] [data-touch-pressed]:not(:disabled):not([aria-disabled="true"]) {
+  opacity: .8 !important;
+}
+/* Native WebKit can transfer :focus-visible from a dialog heading to its
+   restored trigger after a touch edge Back. Logical focus is preserved. Only
+   actual touch modality suppresses its visual ring; Tab/keyboard clears that
+   modality before focus moves. Layered importance wins over old screen rules. */
+@layer intake-touch-focus {
+  html[data-intake-touch] :is(button,a[href],[role="button"],[role="tab"],summary,input,textarea,select,[tabindex]):not([aria-invalid=true]):is(:focus,:focus-visible) {
+    outline: none !important;
+  }
+}
+/* Press release is immediate even if a component normally transitions opacity.
+   This changes feedback, never layout, selected colors or keyboard outlines. */
+html[data-intake-touch] :is(button,a[href],[role="button"],[role="tab"],summary) {
+  transition-property: background-color,border-color,color,box-shadow,transform !important;
+}

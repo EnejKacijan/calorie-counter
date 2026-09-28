@@ -1,4 +1,4 @@
-const cacheName = "intake-v28";
+const cacheName = "intake-v169";
 const appShellFiles = [
   "/",
   "/index.html",
@@ -6,13 +6,86 @@ const appShellFiles = [
   "/profile.html",
   "/assistant.html",
   "/styles.css",
+  "/scroll-surfaces.css",
+  "/form-focus.css",
+  "/profile-polish.css",
+  "/profile-validation.js",
+  "/onboarding.js",
+  "/onboarding.css",
+  "/onboarding-viewport.js",
+  "/onboarding-pace.js",
+  "/onboarding-swipe.js",
+  "/onboarding-completion.js",
+  "/target-validation.js",
+  "/local-record-id.js",
+  "/startup.css",
+  "/startup-theme.js",
+  "/modern-ux.css",
+  "/bottom-navigation.css",
+  "/bottom-navigation.js",
+  "/mobile-surface.js",
+  "/semantic-back.js",
+  "/back-preview.js",
+  "/nested-page.js",
+  "/pwa.js",
+  "/app-router.js",
+  "/route-focus.js",
+  "/app-start.js",
+  "/page-lifecycle.js",
+  "/data-safety.js",
+  "/privacy-controls.js",
+  "/privacy.html",
+  "/runtime-config.js",
+  "/package-scan.js",
+  "/scanner-photo.js",
+  "/scanned-meal-group.js",
+  "/disclosure-reveal.js",
+  "/touch-feedback.js",
+  "/touch-feedback.css",
+  "/package-scan.css",
+  "/scanner-camera.js",
+  "/barcode.js",
+  "/vendor/zxing-browser-0.2.1.min.js",
   "/app.js",
+  "/add-entry.js",
+  "/add-surface.js",
+  "/add-presentation.js",
+  "/add-flow.css",
+  "/today-diary.js",
+  "/diary-row-swipe.js",
+  "/today-diary.css",
+  "/food-search.js",
+  "/food-display-name.js",
+  "/food-search.css",
+  "/motion.js",
+  "/peer-tabs.js",
+  "/calendar-swipe.js",
+  "/calendar-swipe.css",
   "/meal-schedule.js",
   "/food-persistence.js",
   "/food-reuse.js",
+  "/food-reuse.css",
+  "/scanned-food.js",
   "/progress.js",
+  "/progress.css",
   "/profile.js",
+  "/profile-settings.js",
+  "/profile-surface.js",
+  "/profile-settings.css",
+  "/appearance.js",
   "/assistant.js",
+  "/assistant-scroll.js",
+  "/assistant-message-actions.js",
+  "/diary-context-focus.js",
+  "/food-media.js",
+  "/plate-capture.js",
+  "/food-media-runtime.js",
+  "/food-media-backup.js",
+  "/food-photo-ui.js",
+  "/food-photo-motion.js",
+  "/photo-dismiss.js",
+  "/food-photos.css",
+  "/assistant-usability.css",
   "/favicon.svg",
   "/app-icon-180.png",
   "/app-icon-192.png",
@@ -32,7 +105,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== cacheName).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("intake-v") && key !== cacheName).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -49,26 +122,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.mode === "navigate") {
-    const refreshed = fetchAndCache(request);
-    event.waitUntil(refreshed.catch(() => undefined));
-    event.respondWith(
-      caches.match(request, { ignoreSearch: true }).then((cached) => {
-        if (cached) return cached;
-        return refreshed.catch(() => caches.match("/index.html"));
-      }),
-    );
+    serveShell(event, request, true);
     return;
   }
 
   if (isVersionedAppAsset(url.pathname)) {
-    const refreshed = fetchAndCache(request);
-    event.waitUntil(refreshed.catch(() => undefined));
-    event.respondWith(
-      caches.match(request, { ignoreSearch: true }).then((cached) => {
-        if (cached) return cached;
-        return refreshed;
-      }),
-    );
+    serveShell(event, request, false);
     return;
   }
 
@@ -84,6 +143,31 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
+
+function serveShell(event, request, navigation) {
+  // Serve warm tabs immediately; refresh in the background. Exact asset keys
+  // ensure a new ?v= never silently receives a different online version.
+  const refreshed = fetchAndCache(request);
+  event.waitUntil(refreshed.catch(() => undefined));
+  event.respondWith(caches.open(cacheName).then(async (cache) => {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    try {
+      const response = await refreshed;
+      if (response?.ok) return response;
+      const fallback = await cache.match(request, { ignoreSearch: true });
+      return fallback || response;
+    } catch (error) {
+      const fallback = await cache.match(request, { ignoreSearch: true });
+      if (fallback) return fallback;
+      if (navigation) {
+        const home = await cache.match("/index.html");
+        if (home) return home;
+      }
+      throw error;
+    }
+  }));
+}
 
 function isVersionedAppAsset(pathname) {
   return appShellFiles.includes(pathname) || [".css", ".js", ".webmanifest"].some((extension) => pathname.endsWith(extension));

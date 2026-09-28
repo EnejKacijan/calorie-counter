@@ -1,0 +1,186 @@
+/* Add surface ownership; the mobile task is the canonical presentation. */
+body .add-entry-error, body .add-entry-status { color: #a73327; font: 14px/1.4 var(--font-ui); text-transform: none; letter-spacing: normal; }
+body[data-theme=dark] :is(.add-entry-error,.add-entry-status) { color: #ff9e8e; }
+body :is(.add-entry-error,.add-entry-status)[hidden], body #foodPortionNote[hidden] { display: none !important; }
+body .add-entry-error { display:block; margin-top:6px; }
+body #foodDetailCalories { display: none; }
+/* Mobile is the single Add/Edit presentation, also used for development. */
+  /* Shared touch ownership supplies neutral feedback; genuine keyboard
+     focus remains separate from programmatic touch restoration. */
+  body :is(#floatingAddButton,#addFoodToggle,#addExerciseToggle,[data-empty-food-action=add]),
+  body .add-flow-surface .modal-close-button { -webkit-tap-highlight-color:transparent; }
+  /* Preserve the ordinary Today geometry underneath this presentation. The
+     legacy .modal-open rules were written for an instantly opaque overlay. */
+  body.add-flow-open .main-content { padding-top:14px!important; }
+  body.add-flow-open .workspace { row-gap:6px!important; }
+  body.add-flow-open .workspace > :is(#foodSection,#exerciseSection) { display:none!important; }
+  body.add-flow-open .fab-overlay { display:none!important; }
+  body [data-add-diary]::before,body [data-add-diary]::after,
+  body .add-flow-diary-food .logged-list-heading::before,body .add-flow-diary-food .logged-list-heading::after,
+  body .add-flow-diary-food .entry-list::before,body .add-flow-diary-food .entry-list::after,
+  body .add-flow-diary-food .log-heading-actions::before,body .add-flow-diary-food .log-heading-actions::after { content:none!important; }
+  body .add-flow-diary-food .log-title-meta { display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;min-width:0; }
+  body .add-flow-diary-food .log-title-meta > .label { position:static;inset:auto;display:inline;width:auto;margin:0; }
+  body .add-flow-diary-food #foodEntryCount { display:inline!important;position:static!important;color:var(--muted);font:12px/1.4 var(--font-ui);white-space:nowrap;order:1; }
+  body .add-flow-diary-food .log-heading-actions { margin-left:auto;width:auto!important;flex:0 0 auto;min-width:0; }
+  body .add-flow-diary-food #foodLogOptionsButton { display:inline-flex;align-items:center;justify-content:center;flex:none;width:auto;min-width:44px;min-height:44px;height:auto;margin:0;padding:8px 10px;border:0;background:transparent;color:var(--ink);font:500 13px/1.3 var(--font-ui);letter-spacing:0;text-transform:none;text-decoration:underline;text-underline-offset:3px;order:2; }
+  /* One opaque full-screen backing moves with Food or Exercise and reveals
+     the stationary Today parent during horizontal Back. */
+  .add-flow-host { position:fixed;inset:0;width:100%;height:100dvh;overflow:clip;z-index:1170;background:var(--panel); }
+  .add-flow-backdrop { position:absolute;inset:0;background:var(--panel); }
+  body:not(.profile-landing-active) :is(#foodSection,#exerciseSection).add-flow-surface {
+    position:fixed!important;inset:auto 0 auto!important;top:var(--add-top,0px)!important;transform:none!important;
+    width:100%!important;max-width:none!important;height:var(--add-height,100dvh)!important;max-height:none!important;
+    margin:0!important;padding:max(16px,env(safe-area-inset-top)) 22px 0!important;border:0!important;border-radius:0!important;
+    display:flex!important;flex-direction:column!important;gap:0!important;overflow:clip!important;background:var(--panel)!important;z-index:1180!important;
+  }
+  body .add-flow-surface::before,body .add-flow-surface::after { content:none!important; }
+  body .add-flow-surface > :not(.add-flow-header,.add-flow-content,.add-flow-footer,#undoToast) { display:none!important; }
+  body .add-flow-surface > #undoToast { position:static;transform:none;flex:none;order:2;width:100%;max-width:none;margin:0 0 12px; }
+  body .add-flow-surface .add-flow-header { flex:none;order:0;position:relative;background:var(--panel); }
+  body.add-flow-open :is(#foodSection,#exerciseSection).add-flow-surface.is-adding .panel-title { position:static!important;display:grid!important;grid-template-columns:44px minmax(0,1fr)!important;align-items:center;gap:8px!important;width:100%!important;min-height:44px!important;height:44px!important;margin:0 0 12px!important;padding:0!important;border:0!important; }
+  body .add-flow-surface .panel-title > div,body .add-flow-surface .quick-add-button { display:none!important; }
+  body.add-flow-open :is(#foodSection,#exerciseSection).add-flow-surface.is-adding .modal-close-button { position:relative!important;inset:auto!important;display:flex!important;align-items:center;justify-content:center;flex:0 0 44px;width:44px!important;height:44px!important;margin:0!important;padding:0!important;transform:none!important;order:0!important; }
+  body.add-flow-open :is(#foodSection,#exerciseSection).add-flow-surface .modal-close-button::before { content:none!important; }
+  body .add-flow-surface .add-back-icon { display:block;width:20px;height:20px;flex:none;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;pointer-events:none; }
+  body.add-flow-open :is(#foodSection,#exerciseSection).add-flow-surface .entry-mobile-title { position:static!important;display:block!important;font-size:20px!important;line-height:24px!important;order:1!important; }
+  body .add-flow-surface .add-mode-switch { flex:none;display:grid!important;grid-template-columns:1fr 1fr!important;margin:14px 0 0!important;padding:0!important;border:1px solid var(--line)!important; }
+  body .add-flow-surface .add-mode-switch[hidden] { display:none!important; }
+  body #foodSection.add-flow-surface.is-detailing .add-flow-header .add-mode-switch { display:none!important; }
+  body :is(#foodSection,#exerciseSection).add-flow-surface .add-mode-switch { position:relative;isolation:isolate; }
+  body .add-flow-surface .add-mode-indicator { position:absolute;inset:0 auto 0 0;width:50%;background:var(--ink);pointer-events:none;z-index:-1; }
+  /* Both mode instances own the same label geometry. Legacy Food-only utility
+     tracking must not change word widths when Exercise becomes the surface. */
+  body :is(#foodSection,#exerciseSection).add-flow-surface .add-mode-switch button {
+    height:46px!important;min-height:46px!important;
+    font:700 14px/normal var(--font-ui)!important;
+    font-variation-settings:normal!important;letter-spacing:.01em!important;text-transform:uppercase!important;
+    background:transparent!important;color:var(--muted)!important;
+  }
+  body :is(#foodSection,#exerciseSection).add-flow-surface .add-mode-switch button[aria-selected=true] { color:var(--panel)!important; }
+  body .add-flow-surface .add-flow-content { order:1;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin;padding:20px 2px 24px; }
+  /* Put the scrollbar outside the common 22px content gutter. No reserved
+     navigation/commit footer in browse; safe-area padding scrolls with content. */
+  body #foodSection.add-flow-surface:not(.is-detailing):not(.is-editing):not(.is-reviewing-scan):not(.is-describing-ai) .add-flow-content { min-width:0;margin-inline:-8px;padding:20px 8px max(16px,env(safe-area-inset-bottom)); }
+  body .add-flow-surface .add-flow-footer { order:3;flex:none;display:grid;gap:8px;border-top:1px solid var(--line);padding:12px 0 max(16px,env(safe-area-inset-bottom));background:var(--panel); }
+  body .add-flow-surface .add-flow-footer[hidden] { display:none!important; }
+  body .add-flow-surface[data-keyboard=true] .add-flow-footer { padding-bottom:12px; }
+  body .add-flow-surface .add-flow-footer > button { position:static!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;width:100%!important;height:auto!important;min-height:48px!important;margin:0!important;padding:12px 16px!important;border:1px solid var(--ink)!important;background:var(--ink)!important;color:var(--panel)!important;font:600 16px/1.4 var(--font-ui)!important;text-align:center!important; }
+  body .add-flow-surface .add-flow-footer .add-entry-status { margin:0; }
+  body .add-flow-surface :is(input,select,textarea) { font-size:18px!important;min-height:48px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm,body .add-flow-surface#exerciseSection #exerciseForm { width:100%!important;max-width:none!important;height:auto!important;max-height:none!important;overflow:visible!important;border:0!important;margin:0!important;padding:0!important; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail]) { display:flex!important;gap:0!important; }
+  body .add-flow-surface#foodSection .food-search-row { display:grid!important;height:auto!important;min-height:0!important;flex:none!important;grid-template-rows:auto auto!important;grid-template-columns:1fr!important;gap:10px!important;margin:0!important;padding:0!important;border:0!important; }
+  body .add-flow-surface#foodSection .food-name-field { padding:0!important; }
+  body .add-flow-surface#foodSection #manualFoodForm #manualFoodName { width:100%!important;font-size:18px!important;min-height:52px!important;border:1px solid var(--line)!important;padding:12px 48px 12px 12px!important; }
+  body .add-flow-surface#foodSection #foodScanButton { display:flex!important;justify-content:center;gap:8px;width:100%!important;min-height:44px!important;font-size:14px!important;border:1px solid var(--line)!important; }
+  body .add-flow-surface#foodSection #foodScanButton b { display:inline!important; }
+  body .add-flow-surface#foodSection :is(.manual-food-shortcut,.food-ai-description-trigger) { min-height:44px!important;border:0!important;padding:10px 0!important;font-size:14px!important;letter-spacing:0!important;text-transform:none!important; }
+  /* Native iOS hover can outlive the FAB touch. Only an actual pointerdown
+     inside these action rows owns touch feedback; keyboard focus is separate. */
+  body .add-flow-surface#foodSection :is(.manual-food-shortcut,.food-ai-description-trigger) {
+    -webkit-tap-highlight-color:transparent;transition:none;transform:none!important;
+  }
+  :where(html:not([data-intake-touch])) body .add-flow-surface#foodSection :is(.manual-food-shortcut,.food-ai-description-trigger)[data-add-pressed] {
+    background:color-mix(in srgb,var(--ink) 6%,transparent)!important;
+  }
+  body .add-flow-surface#foodSection :is(.manual-food-shortcut,.food-ai-description-trigger):focus-visible {
+    outline:2px solid var(--ink)!important;outline-offset:-2px;
+  }
+  body #foodSection.add-flow-surface #manualFoodForm .food-filter-pane:has(.food-search-fallbacks,.food-search-error) .manual-food-shortcut { display:none!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) { display:grid!important;grid-template-columns:1fr 1fr!important;gap:16px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) > * { order:initial!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) .food-edit-summary { grid-column:1/-1;order:0!important;padding:0!important;border:0!important;margin:0 0 6px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) #foodDetailCalories { display:block!important;margin-top:12px;font-size:36px!important;font-weight:500!important;line-height:1.2; }
+  body .add-flow-surface#foodSection.is-detailing:not(.is-manual-entry) .food-search-row { display:none!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail=manual] :is(.food-edit-summary,#foodScanButton) { display:none!important; }
+  body .add-flow-surface#foodSection.is-manual-entry .food-search-row { grid-column:1/-1;order:0!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) > label { padding:0!important;border:0!important;font-size:13px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm[data-food-detail]:not([data-food-detail=scan]) :is(#foodAmount,#foodUnit,#foodMeal) { padding:8px 10px!important;border:1px solid var(--line)!important;font-size:20px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm :is(label[for=foodAmount],label[for=foodUnit]) { order:1!important; }
+  body .add-flow-surface#foodSection #foodPortionNote { order:2!important;grid-column:1/-1!important;font:13px/1.4 var(--font-ui);color:var(--muted);margin:-8px 0 0!important; }
+  body .add-flow-surface#foodSection #manualFoodForm label[for=foodMeal] { order:3!important;grid-column:1/-1!important; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail=scan]) #foodNutritionSummary:not([hidden]) { order:4!important;grid-column:1/-1!important;display:flex!important;flex-direction:column;gap:10px;padding:12px 0 0!important;border:0!important;margin:0!important; }
+  body .add-flow-surface#foodSection #foodNutritionSummary[hidden] { display:none!important; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail=scan]) .food-nutrition-grid:not([hidden]) { order:0;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail=scan]) .food-nutrition-grid > div:first-child { display:none!important; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail=scan]) .food-nutrition-summary-heading { order:1; }
+  body .add-flow-surface#foodSection #manualFoodForm:not([data-food-detail=scan]) .food-nutrition-summary-heading > span { display:none; }
+  body .add-flow-surface#foodSection #editFoodNutrition { min-height:44px;font-size:14px!important; }
+  body .add-flow-surface#foodSection #manualFoodForm :is(label[for=manualFoodCalories],label[for=manualFoodProtein],label[for=manualFoodCarbs],label[for=manualFoodFat]) { order:5!important; }
+  body .add-flow-surface#foodSection #manualFoodForm [hidden] { display:none!important; }
+  body .add-flow-surface#exerciseSection #exerciseForm { display:grid!important;grid-template-columns:1fr!important;gap:20px!important; }
+  body .add-flow-surface#exerciseSection #exerciseForm > * { grid-column:1/-1!important; }
+  body .add-flow-surface#exerciseSection #exerciseForm label { padding:0!important; }
+  body .add-flow-surface#exerciseSection #exerciseForm :is(input,select) { font-size:18px!important;width:100%;padding:10px 12px!important;border:1px solid var(--line)!important; }
+
+/* A centered phone-width development fallback, not another presentation.
+   The host still owns motion and its absolute child never double-centers. */
+@media (min-width:431px) {
+  body .add-flow-host { left:calc((100vw - 430px)/2);right:auto;width:430px; }
+  body:not(.profile-landing-active) :is(#foodSection,#exerciseSection).add-flow-surface { position:absolute!important; }
+}
+
+/* One inline Nutrition section in Edit Food only. Other Add flows retain
+   their original fields, styling and disclosure copy. */
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionSummary:not([hidden]) {
+  display:flex!important;flex-direction:column;gap:0!important;grid-column:1/-1;
+  padding:0!important;margin:0!important;border:0!important;border-top:1px solid var(--line)!important;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .food-nutrition-summary-heading {
+  display:block!important;order:0!important;margin:0!important;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .food-nutrition-summary-heading > span { display:none!important; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition {
+  display:flex!important;align-items:center;gap:10px;width:100%;min-width:0;min-height:48px!important;height:auto!important;
+  box-sizing:border-box;padding:12px 2px!important;margin:0!important;border:0!important;border-radius:0;
+  background:transparent;color:var(--ink);font:600 1rem/1.4 var(--font-ui)!important;letter-spacing:0;text-transform:none;text-align:left;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition .nutrition-section-title {
+  display:block!important;font:inherit!important;letter-spacing:0;text-transform:none;overflow-wrap:anywhere;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionAction {
+  margin-left:auto;font:500 .8125rem/1.4 var(--font-ui)!important;color:var(--muted);letter-spacing:0;text-transform:none;text-align:right;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition::after {
+  content:"";width:7px;height:7px;flex:none;margin:0 4px 3px 0;
+  border-bottom:1.5px solid currentColor;border-right:1.5px solid currentColor;transform:rotate(45deg);
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition[aria-expanded=true]::after { transform:rotate(225deg);margin-top:5px; }
+:where(html:not([data-intake-touch])) body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition:is(:active:where(:not([data-intake-touch] *),[data-touch-pressed]),.is-pressed):not(:disabled) { background:color-mix(in srgb,var(--ink) 8%,var(--panel))!important; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #editFoodNutrition:focus-visible { outline:2px solid var(--ink)!important;outline-offset:-2px; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionGrid:not([hidden]) {
+  display:grid!important;order:1!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;padding:8px 0 12px!important;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionGrid > div:first-child { display:none!important; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionEditor:not([hidden]) { display:block!important;order:1;container:nutrition-editor / inline-size; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionBasis {
+  display:block!important;margin:0 0 14px!important;font:400 .8125rem/1.4 var(--font-ui)!important;color:var(--muted);letter-spacing:0;text-transform:none;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-editor-fields {
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px;padding:0 0 4px;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-editor-fields > label {
+  display:flex;flex-direction:column;gap:6px;min-width:0;padding:0!important;margin:0!important;border:0!important;
+  font:.8125rem/1.4 var(--font-ui)!important;letter-spacing:0;text-transform:none;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-editor-fields > label > span:first-child {
+  font:500 .8125rem/1.4 var(--font-ui)!important;letter-spacing:0;text-transform:none;color:var(--muted);overflow-wrap:anywhere;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-input-value { display:block;position:relative;min-width:0; }
+body #foodSection #manualFoodForm[data-food-detail=edit] #foodNutritionEditor .nutrition-input-value input {
+  box-sizing:border-box!important;display:block!important;width:100%!important;min-width:0!important;min-height:48px!important;height:auto!important;
+  padding:8px 2.5rem 8px 10px!important;border:1px solid var(--line)!important;border-radius:0;background:transparent;color:var(--ink);
+  font:520 1.25rem/1.4 "Courier New",ui-monospace,monospace!important;letter-spacing:0!important;font-variant-numeric:tabular-nums;box-shadow:none!important;
+}
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-input-unit {
+  position:absolute;inset-inline-end:10px;top:50%;transform:translateY(-50%);pointer-events:none;
+  font:400 .8125rem/1.4 var(--font-ui)!important;color:var(--muted);letter-spacing:0;text-transform:none;
+}
+:where(html:not([data-intake-touch])) body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-input-value input:focus { border-color:var(--ink)!important; }
+body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-input-value input[aria-invalid=true] { border-color:var(--danger,#a73327)!important; }
+body #foodSection #manualFoodForm[data-food-detail=edit] :is(#foodNutritionGrid,#foodNutritionEditor)[hidden] { display:none!important; }
+@container nutrition-editor (max-width:16rem) {
+  body #foodSection #manualFoodForm[data-food-detail=edit] .nutrition-editor-fields { grid-template-columns:minmax(0,1fr); }
+}

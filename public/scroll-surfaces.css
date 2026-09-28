@@ -1,0 +1,33 @@
+/* App-owned scroll chrome only. Keep overflow, dimensions, touch arbitration,
+   focus and scroll positions with their existing surface owners.
+   Fine-pointer browser windows retain their conventional scrollbar styling;
+   coarse-pointer devices and installed PWAs use the mobile presentation.
+   Explicit primitives avoid native select/picker internals and photo pan/zoom. */
+@media (pointer: coarse), (display-mode: standalone) {
+  :is(
+    html, body, .main-content, .sidebar,
+    .log-panel.is-adding, .add-flow-content,
+    .suggestions, .food-filter-tabs, .package-scan-dialog, .scanner-body,
+    .food-reuse-content, .assistant-conversation, .assistant-history-list,
+    .assistant-context-body, .assistant-context-controls, textarea,
+    .settings-editor-scroll, #deleteDataConfirm,
+    #progressList, #weightSheetContent, .progress-stats, .onboarding-content
+  ) {
+    /* Override the existing per-feature thin scrollbar, not its scroll logic. */
+    scrollbar-width: none !important;
+  }
+
+  :is(
+    html, body, .main-content, .sidebar,
+    .log-panel.is-adding, .add-flow-content,
+    .suggestions, .food-filter-tabs, .package-scan-dialog, .scanner-body,
+    .food-reuse-content, .assistant-conversation, .assistant-history-list,
+    .assistant-context-body, .assistant-context-controls, textarea,
+    .settings-editor-scroll, #deleteDataConfirm,
+    #progressList, #weightSheetContent, .progress-stats, .onboarding-content
+  )::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+}

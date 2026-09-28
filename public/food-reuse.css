@@ -1,0 +1,60 @@
+/* Reuse surfaces only; preserve Today, Add search ranking and the shared shell. */
+@media (max-width: 640px) {
+  body:not(.profile-landing-active) .app-shell .main-content .saved-foods-panel { display: none !important; }
+}
+body #manualFoodForm .reuse-food-row { min-width: 0; width: 100%; border-bottom: 1px solid var(--line); }
+body #manualFoodForm .reuse-food-row .suggestion-card { border-bottom: 0 !important; }
+body #manualFoodForm .reuse-food-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 0 8px 8px; }
+body #manualFoodForm .reuse-food-actions button,
+body #manualFoodForm .reuse-empty button { min-height: 44px; min-width: 44px; padding: 8px 10px; margin: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 14px var(--font-ui); text-transform: none; letter-spacing: 0; }
+body #manualFoodForm .reuse-food-actions button[aria-pressed=true] { color: var(--ink); }
+/* All's preview is selection-only. Management stays on the full Recent list,
+   using its visible overflow and the food-reuse sheet. */
+body #manualFoodForm .recent-foods-heading button { min-height:44px; min-width:44px; display:inline-flex; align-items:center; white-space:nowrap; }
+body #manualFoodForm .reuse-food-row.is-recent { touch-action:pan-y; }
+body #manualFoodForm .reuse-food-surface { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 44px; align-items:stretch; background:var(--panel); }
+body #manualFoodForm .reuse-food-surface .suggestion-card { width:100%; min-width:0; }
+body #foodSection #manualFoodForm .reuse-food-row:is(.is-recent,.is-recent-preview) .suggestion-card { border-bottom:0!important; }
+body #manualFoodForm .reuse-food-row:is(.is-recent,.is-recent-preview) .suggestion-meta { width:auto!important; max-width:100%; }
+body #manualFoodForm .reuse-food-overflow { flex:0 0 44px; width:44px; min-height:44px; padding:0; margin:0; border:0; background:transparent; color:var(--muted); font:600 20px var(--font-ui); letter-spacing:0; }
+body #manualFoodForm :is(.reuse-food-overflow,.recent-foods-heading button,.reuse-food-row:is(.is-recent,.is-recent-preview) .suggestion-card):focus-visible { outline:2px solid var(--ink)!important; outline-offset:-2px; }
+body #manualFoodForm .reuse-empty { padding: 12px 10px 20px; }
+body #manualFoodForm .reuse-empty p { font: 14px/1.5 var(--font-ui); color: var(--muted); margin: 0; }
+body #manualFoodForm .reuse-empty button { padding-left: 0; text-decoration: underline; color: var(--ink); }
+body #manualFoodForm :is(.saved-meal-card,.food-suggestion-section-label) { width: 100%; min-width: 0; }
+body #manualFoodForm .saved-meal-card strong,
+body #foodReusePanel .saved-meal-card strong { font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; white-space: normal; }
+body #foodReusePanel .food-reuse-header { flex: 0 0 auto; min-width: 0; }
+body #foodReusePanel .food-reuse-header > div { min-width: 0; }
+body #foodReusePanel #foodReuseTitle { overflow-wrap: anywhere; white-space: normal; }
+body #foodReusePanel .food-reuse-content { min-height: 0; overscroll-behavior: contain; }
+body #foodReusePanel .saved-meal-review-foods > div { min-width: 0; gap: 12px; }
+body #foodReusePanel .saved-meal-review-foods span { min-width: 0; overflow-wrap: anywhere; }
+body #foodReusePanel .saved-meal-review-foods small { flex: 0 0 auto; }
+body #foodReusePanel .food-reuse-field :is(input,select) { font-size: 16px; min-width: 0; max-width: 100%; box-sizing: border-box; }
+body #foodReusePanel .food-reuse-management { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+body #foodReusePanel .food-reuse-management button { min-height: 46px; margin: 0 !important; padding: 10px; font-size: 14px; white-space: normal; }
+body #foodReusePanel .food-reuse-status { flex: 0 0 auto; overflow-wrap: anywhere; }
+body #foodReusePanel .food-reuse-status:empty { display: none; }
+body #foodReusePanel > #undoToast { position: static; flex: 0 0 auto; max-width: none; margin: 0 18px 12px; }
+body #foodSection > #undoToast { z-index: 1300; }
+body #foodReusePanel [aria-invalid=true] { outline: 1px solid #b04030; border-color: #b04030; }
+body #foodReusePanel .food-reuse-field:has([aria-invalid=true]) { color: #b04030; }
+body[data-theme=dark] #foodReusePanel .food-reuse-field:has([aria-invalid=true]) { color: #ffad9f; }
+@media (max-width: 640px) {
+  body #foodReusePanel .food-reuse-content { padding-bottom: 12px; }
+  body:not(.profile-landing-active) #foodSection:not(.is-adding) .logged-list-heading .log-heading-actions { width: auto !important; flex: 0 0 auto; min-width: 0; }
+}
+body:not(.profile-landing-active) #foodSection:not(.is-adding) #foodLogOptionsButton { display: inline-flex; align-items: center; justify-content: center; flex: none; width: auto; min-width: 44px; min-height: 44px; height: auto; margin: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--ink); font: 500 13px/1.3 var(--font-ui); letter-spacing: 0; text-transform: none; text-decoration:underline; text-underline-offset:3px; }
+body #foodLogOptionsButton[hidden] { display:none!important; }
+/* This surface supplies its own tap-intent feedback and visible keyboard
+   focus. No sticky touch hover, UA tap flash or fading press during a drag. */
+body #foodReusePanel :is(.food-reuse-action,.food-reuse-meal,.saved-meal-card,.food-reuse-back,.food-reuse-close) { -webkit-tap-highlight-color:transparent; transition:none; }
+:where(html:not([data-intake-touch])) body #foodReusePanel [data-sheet-pressed]:not(:disabled) { background:color-mix(in srgb,var(--ink) 5%,transparent); }
+body #foodReusePanel :is(.food-reuse-action,.food-reuse-meal,.saved-meal-card):focus-visible { outline:2px solid var(--ink); outline-offset:-2px; }
+@media (hover:hover) and (pointer:fine) {
+  :where(html:not([data-intake-touch])) body #foodReusePanel:not([data-sheet-gesture]:not([data-sheet-gesture=pending])) :is(.food-reuse-action,.food-reuse-meal,.saved-meal-card,.food-reuse-back,.food-reuse-close):active:where(:not([data-intake-touch] *),[data-touch-pressed]):not(:disabled) { background:color-mix(in srgb,var(--ink) 5%,transparent); }
+}
+:where(html:not([data-intake-touch])) body:not(.profile-landing-active) #foodSection:not(.is-adding) #foodLogOptionsButton:active:where(:not([data-intake-touch] *),[data-touch-pressed]),
+body:not(.profile-landing-active) #foodSection:not(.is-adding) #foodLogOptionsButton[aria-expanded=true] { background: color-mix(in srgb,var(--ink) 8%,var(--panel)); }
+body:not(.profile-landing-active) #foodSection:not(.is-adding) #foodLogOptionsButton:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }

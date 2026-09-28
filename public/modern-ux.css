@@ -1,0 +1,62 @@
+/* Scoped interaction layer; no typography, ring or tab-layout redesign. */
+/* Router-owned, non-interactive page announcement only. Do not suppress
+   :focus-visible on links, buttons, inputs, or any keyboard-reachable control. */
+body h1[data-intake-route-focus="heading"][tabindex="-1"]:not([role]):not([contenteditable]):focus { outline: none; }
+body #foodReusePanel { overflow: clip; }
+body #foodReuseTitle:focus { outline: none; }
+body .intake-sheet[data-sheet-state=closing] { pointer-events: none; }
+body dialog.intake-sheet::backdrop { background: rgb(0 0 0 / 40%); animation: intake-sheet-dim 200ms ease-out; }
+body dialog.intake-sheet[data-sheet-state=closing]::backdrop { animation: intake-sheet-undim 200ms ease-in forwards; }
+@keyframes intake-sheet-dim { from { opacity: 0; } to { opacity: 1; } }
+@keyframes intake-sheet-undim { from { opacity: 1; } to { opacity: 0; } }
+/* One sheet model at every width; wide viewports are development only. */
+  body .mobile-surface { max-height: calc(var(--surface-height, 100dvh) - 16px) !important; bottom: var(--surface-bottom, 0px) !important; }
+  body dialog.mobile-surface { top: var(--surface-top, 0px); margin-block: auto; }
+  body.assistant-page #assistantHistory.mobile-surface { top: var(--surface-top, 0px); }
+  body .mobile-surface .food-reuse-content { min-height: 0; overflow-y: auto; }
+  body .intake-sheet :is(.food-reuse-content,.assistant-context-body) { overscroll-behavior-y: contain; }
+  body .ux-sheet-handle { display: flex; width: 100%; min-height: 44px; flex: 0 0 44px; border: 0; align-items: center; justify-content: center; padding: 0; touch-action: none; background: transparent; color: var(--muted); cursor: grab; }
+  .ux-sheet-handle span { display: block; width: 36px; height: 4px; border-radius: 2px; background: currentColor; pointer-events: none; }
+  body #foodReusePanel.intake-sheet,
+  body.assistant-page #appShell dialog#assistantContextControls.intake-sheet { inset: auto 0 0; top: auto; bottom: var(--surface-bottom,0px) !important; translate: none; width: 100%; max-height: min(82dvh,calc(var(--surface-height,100dvh) - env(safe-area-inset-top) - 12px)) !important; background: var(--panel); padding-bottom: var(--surface-safe-bottom,env(safe-area-inset-bottom)); }
+  body.assistant-page #appShell dialog#assistantContextControls.intake-sheet { padding-top: 0; padding-bottom: max(16px,var(--surface-safe-bottom,env(safe-area-inset-bottom))); overflow: clip; }
+/* Wider development/touch viewports retain the phone sheet, not a centered
+   desktop dialog with its own animation or interaction lifecycle. */
+body .intake-sheet { max-width:430px!important;margin-inline:auto!important; }
+body .food-name-field { position: relative; }
+body #manualFoodForm #manualFoodName { padding-right: 48px !important; font-size: max(16px, 1em); }
+body #manualFoodForm .ux-search-clear { position: absolute; right: 0; bottom: 0; width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--ink); font-size: 22px; }
+body #manualFoodForm .ux-search-clear[hidden] { display: none !important; }
+body #manualFoodName::-webkit-search-cancel-button { -webkit-appearance: none; }
+body :is(.suggestion-card,.food-reuse-action,.assistant-history-select,.scanner-modes button,.ux-search-clear) { transition: opacity 100ms ease, background-color 100ms ease; }
+/* The track is ONE viewport wide, not 200% wide. Each sibling overflows it at
+   full width; only the track transform moves, never the row layout. */
+.peer-pane-track { display: flex; width: 100%; align-items: flex-start; will-change: transform; }
+.peer-pane-track > .food-filter-pane { flex: 0 0 100%; min-width: 100%; max-width: 100%; }
+body :is(.suggestion-card,.assistant-history-select,.scanner-modes button,.ux-search-clear):active:where(:not([data-intake-touch] *),[data-touch-pressed]):not(:disabled) { opacity: .68; }
+body .ux-sheet-handle:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) {
+  body dialog.intake-sheet::backdrop { animation: none; }
+  body :is(.suggestion-card,.food-reuse-action,.assistant-history-select,.scanner-modes button,.ux-search-clear) { transition: none; }
+}
+/* Readiness, not a splash: keep the current screen visible but unavailable. */
+body[data-app-loading] [data-startup-surface] :is(button,input,textarea,select,a) { opacity: .45; cursor: progress; }
+#appStartupStatus { position: fixed; z-index: 3000; top: env(safe-area-inset-top,0px); left: 0; right: 0; margin: 0; padding: 8px 16px; background: var(--panel,#fbfaf6); color: var(--ink,#171714); border-bottom: 1px solid var(--line,#ddd); font: 14px/1.5 sans-serif; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#appStartupStatus button { min-width: 64px; min-height: 44px; font-size: 14px; }
+#appStartupStatus button[hidden] { display: none; }
+/* Shared selection motion. Layout/ARIA commit first; only this decorative
+   indicator travels. Original selected styles remain the no-JS fallback. */
+body [data-motion-selection] { position: relative; isolation: isolate; }
+body [data-motion-selection] > .motion-selection {
+  position: absolute; inset: 0 auto 0 0; z-index: -1;
+  background: var(--ink); pointer-events: none;
+}
+body.progress-page :is(.progress-view-switch,.weight-range-toggle,.nutrition-range-toggle,.nutrition-metric-tabs)[data-motion-selection] > button {
+  background: transparent !important;
+}
+body [data-motion-selection=underline] > .motion-selection { top: auto; bottom: 0; height: 2px; z-index: 1; }
+body #foodSection #manualFoodForm:not([data-food-detail]) .food-filter-tabs[data-motion-selection=underline] > button.is-active {
+  border-bottom-color: transparent !important;
+}
+/* Immediate press feedback, without moving the fixed Add target or diary. */
+body #floatingAddButton:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { opacity: .74 !important; }

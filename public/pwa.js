@@ -1,29 +1,11 @@
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-    });
-  });
-}
+export function mountAccessibility({ window, document, MutationObserver }) {
 
 document.querySelectorAll("a.is-active[href]").forEach((link) => {
   link.setAttribute("aria-current", "page");
 });
 
-const mobileTabLinks = Array.from(document.querySelectorAll(".mobile-tabbar a[href]"));
-const previewMobileTab = (link) => {
-  mobileTabLinks.forEach((item) => {
-    const active = item === link;
-    item.classList.toggle("is-active", active);
-    if (active) item.setAttribute("aria-current", "page");
-    else item.removeAttribute("aria-current");
-  });
-};
-mobileTabLinks.forEach((link) => {
-  link.addEventListener("pointerdown", () => previewMobileTab(link), { passive: true });
-  link.addEventListener("keydown", (event) => {
-    if (["Enter", " "].includes(event.key)) previewMobileTab(link);
-  });
-});
+// The persistent router sets the active tab only after a successful switch.
+// Pointer-down previews would show the wrong tab after cancelling a dirty form.
 
 document.querySelectorAll('[role="tablist"] button').forEach((tab) => {
   tab.setAttribute("role", "tab");
@@ -69,3 +51,4 @@ document.querySelectorAll('[role="tablist"]').forEach((tablist) => {
 document.querySelectorAll("[data-progress-panel]").forEach((panel) => {
   panel.setAttribute("role", "tabpanel");
 });
+}

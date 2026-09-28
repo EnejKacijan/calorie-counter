@@ -12,6 +12,8 @@ When diary context is provided:
 
 Health boundaries:
 - You are not a doctor and must not diagnose conditions.
+- This app is for adults aged 18 and over. If a user says they are under 18, do not provide calorie targets, weight-loss plans or restrictive dieting instructions; suggest discussing nutrition with a qualified professional and trusted adult.
+- Do not prescribe personalized calorie deficits for pregnancy, breastfeeding, an eating disorder or a condition requiring a therapeutic diet. Encourage qualified professional support rather than treating the app's estimates as medically appropriate.
 - For bloating, acne, digestion, energy, or similar symptoms, offer a short list of plausible food-related and non-food-related factors, ask focused follow-up questions, and suggest cautious tracking rather than certainty.
 - Do not tell the user to stop prescribed medicine or begin medication or supplements.
 - Avoid extreme restriction. Prefer one small, reversible change at a time and encourage adequate nutrition.
@@ -27,6 +29,7 @@ Conversation style:
 export async function askNutritionAssistant(payload, options = {}) {
   const openAiApiKey = options.openAiApiKey || process.env.OPENAI_API_KEY;
   const model = options.model || process.env.OPENAI_ASSISTANT_MODEL || process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const fetchFn = options.fetchFn || fetch;
 
   if (!openAiApiKey) {
     const error = new Error("OPENAI_API_KEY is not configured.");
@@ -62,7 +65,7 @@ export async function askNutritionAssistant(payload, options = {}) {
   const safetyIdentifier = normalizeSafetyIdentifier(payload?.safetyIdentifier);
   if (safetyIdentifier) requestBody.safety_identifier = safetyIdentifier;
 
-  const response = await fetch(openAiResponsesUrl, {
+  const response = await fetchFn(openAiResponsesUrl, {
     method: "POST",
     signal: AbortSignal.timeout(60_000),
     headers: {

@@ -1,0 +1,141 @@
+/* Diary-only hierarchy. No selectors target the ring, dashboard or navigation. */
+/* Keep the existing 1px clipped live region at its natural document anchor.
+   Default paragraph margins must not add another 16px of blank scroll range. */
+body #diaryFeedback { margin:0; }
+body #foodSection .logged-list-heading .log-title-meta { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px; min-width:0; }
+body #foodSection .logged-list-heading .log-title-meta > .label { position:static; inset:auto; display:inline; width:auto; margin:0; }
+body #foodSection .logged-list-heading #foodEntryCount { display:inline!important; position:static!important; color:var(--muted); font:12px/1.4 var(--font-ui); white-space:nowrap; }
+body #foodEntryCount::before { content:'·'; margin-right:6px; }
+/* Override legacy explicit display rules as well as the default hidden style. */
+body #foodSection .logged-list-heading #foodEntryCount[hidden],
+body #exerciseSection .logged-list-heading #exerciseEntryCount[hidden],
+body :is(.food-log,.exercise-log).log-panel:not(.is-adding) .logged-list-heading :is(#foodEntryCount,#exerciseEntryCount)[hidden] { display:none!important; }
+body #foodSection .logged-list-heading .log-heading-actions::before,
+body #foodSection .logged-list-heading .log-heading-actions::after { content:none!important; }
+body #foodList .diary-meal-group { min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; }
+body #foodList .diary-meal-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 12px 9px; border-bottom: 1px solid var(--line); }
+body #foodList .diary-meal-heading h3 { margin: 0; color: var(--ink); font-family: var(--font-ui); font-size: 13px; font-weight: 650; line-height: 1.4; }
+body #foodList .diary-meal-heading > span { color: var(--muted); font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
+body #foodList .diary-meal-entries { min-width: 0; }
+body #foodList .diary-meal-entries .entry-main p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body :is(#foodList,#exerciseList) > .diary-empty { display: block !important; padding: 18px 12px !important; min-height: 0 !important; text-align: left !important; background: transparent !important; }
+body :is(#foodList,#exerciseList) .diary-empty > p { font:400 13px/1.5 var(--font-ui); color: var(--muted); margin: 0 0 14px; }
+body #foodList .diary-empty-actions { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+body #foodList .diary-empty button { min-width: 0; min-height: 44px; padding: 10px 12px; margin: 0; border: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font-family: var(--font-ui); font-size: 12px; line-height: 1.4; cursor: pointer; }
+body #foodList .diary-empty button[data-empty-food-action="add"] { background: var(--ink); color: var(--panel); border-color: var(--ink); font-weight: 650; }
+body :is(#foodList,#exerciseList) .diary-empty .diary-empty-action {
+  display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-width:0;min-height:44px;
+  padding:10px 0;margin:4px 0 0;border:0;border-radius:0;background:transparent;color:var(--muted);
+  font:500 12px/1.4 var(--font-ui);letter-spacing:0;text-transform:none;text-decoration:none;text-align:left;cursor:pointer;
+}
+body :is(#foodList,#exerciseList) .diary-empty-action > [aria-hidden] { flex:none;font:20px/1 var(--font-ui); }
+:where(html:not([data-intake-touch])) body :is(#foodList,#exerciseList) .diary-empty-action:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink); }
+body :is(#foodList,#exerciseList) .diary-empty button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* Row overflow stays separate from the log-level Reuse food button. */
+:where(html:not([data-intake-touch])) body #foodList .entry-main:focus-visible,
+:where(html:not([data-intake-touch])) body #foodList .entry-actions-toggle:focus-visible { outline:2px solid var(--ink)!important;outline-offset:-2px!important;box-shadow:none!important; }
+body #foodList .entry-main { cursor:pointer; }
+/* Scanned children keep their left indent, but share the same trailing gutter
+   as ordinary/reused diary rows. Neither the name nor kcal owns the dots. */
+body #foodList .entry-card .entry-surface { --diary-row-inset:12px;display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;gap:8px!important;align-items:first baseline!important;padding-block:var(--diary-row-inset)!important;padding-right:12px!important;min-height:0!important; }
+body #foodList .entry-card .entry-main.has-kcal { display:grid!important;grid-template-columns:minmax(0,1fr) max-content!important;grid-template-rows:auto auto!important;align-items:first baseline!important;min-height:0!important;min-width:0!important;width:100%!important; }
+body #foodList .entry-card .entry-main strong { grid-column:1;grid-row:1;align-self:first baseline!important;white-space:normal!important;overflow-wrap:anywhere; }
+body #foodList .entry-card .entry-main .entry-kcal { grid-column:2;grid-row:1;align-self:first baseline!important;white-space:nowrap!important;justify-self:end!important;text-align:right!important;font-variant-numeric:tabular-nums; }
+body #foodList .entry-card .entry-main p { grid-column:1;grid-row:2;align-self:start; }
+/* The glyph participates in first-baseline alignment, not a top-aligned 44px
+   spacer. The shared inset lets the full hit box use the row's padding without
+   extending into its neighbour or pushing the metadata away from the divider. */
+body #foodList .entry-card .entry-actions-toggle { display:flex!important;align-items:flex-start!important;justify-content:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:var(--diary-row-inset) 0 0!important;margin-block:calc(-1 * var(--diary-row-inset))!important;border:0;background:transparent;color:var(--muted);font:700 13px/1.2 var(--font-mono); }
+body #foodList .entry-card .food-overflow-glyph { display:block;line-height:inherit; }
+body #foodList .entry-card .entry-surface.has-food-photo { display:grid!important;grid-template-columns:48px minmax(0,1fr) 44px!important;align-items:first baseline!important; }
+body #foodList .entry-card .entry-surface.has-food-photo > .food-photo-thumb { align-self:start; }
+@media(max-width:350px) { body #foodList .entry-card .entry-surface.has-food-photo { grid-template-columns:44px minmax(0,1fr) 44px!important; } }
+/* Contextual food actions sit underneath only the independently editable row.
+   The foreground carries the photo, kcal and overflow as one live surface. */
+body #foodList .entry-card[data-food-entry-id] { position:relative; overflow:hidden; overflow:clip; touch-action:pan-y; }
+body #foodList .entry-card[data-food-entry-id] > .entry-surface {
+  position:relative; z-index:1;
+}
+body #foodList .entry-card[data-food-entry-id]:is(.is-swipe-dragging,.is-swipe-open,.is-swipe-settling) > .entry-surface {
+  transform:translate3d(var(--diary-swipe-x,0px),0,0);
+}
+body #foodList .entry-card[data-food-entry-id].is-swipe-settling > .entry-surface {
+  transition:transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+body #foodList .entry-card[data-food-entry-id] > .diary-row-swipe-actions {
+  position:absolute; inset:0 0 0 auto; z-index:0;
+  display:grid; grid-template-columns:repeat(2,66px); width:132px;
+  border-left:1px solid var(--line); box-sizing:border-box;
+  background:var(--panel); pointer-events:none;
+}
+body #foodList .entry-card.is-swipe-open > .diary-row-swipe-actions { pointer-events:auto; }
+body #foodList .diary-row-swipe-actions button {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  width:66px; min-width:66px; min-height:44px; padding:4px 2px;
+  border:0; border-radius:0; background:transparent; box-shadow:none;
+  color:var(--ink); font:600 10px/1.2 var(--font-ui); cursor:pointer;
+  opacity:calc(.35 + var(--diary-reveal-progress,0) * .65);
+  transform:scale(calc(.96 + var(--diary-reveal-progress,0) * .04));
+}
+body #foodList .diary-row-swipe-actions button + button { border-left:1px solid var(--line); }
+body #foodList .diary-row-swipe-actions .diary-row-swipe-delete {
+  color:var(--warn); background:color-mix(in srgb,var(--warn) 5%,var(--panel));
+}
+body #foodList .diary-row-swipe-actions svg {
+  display:block; width:18px; height:18px; fill:none; stroke:currentColor;
+  stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round;
+}
+:where(html:not([data-intake-touch])) body #foodList .diary-row-swipe-actions button:focus-visible {
+  outline:2px solid var(--ink); outline-offset:-3px;
+}
+@media (prefers-reduced-motion:reduce) {
+  body #foodList .entry-card[data-food-entry-id].is-swipe-settling > .entry-surface { transition:none; }
+  body #foodList .diary-row-swipe-actions button { opacity:1; transform:none; }
+}
+body #foodReusePanel[data-reuse-view=row-actions] .food-reuse-action { min-height:48px!important;padding:10px 0!important; }
+body #foodReusePanel[data-reuse-view=row-actions] .food-reuse-action strong { font:500 15px/1.4 var(--font-ui)!important; }
+body #foodReusePanel [data-entry-action=delete] { color:var(--warn)!important; }
+@media (max-width:640px) {
+  /* An empty diary already offers Add/Scan in its own row. Keep that row above
+     the fixed FAB on notched phones without shrinking the ring or CTA targets. */
+  body:has(#foodList > .diary-empty) #dashboardSection .calorie-dashboard { gap:0!important; }
+  body:has(#foodList > .diary-empty) #dashboardSection + .workspace { margin-top:8px!important; }
+  body:has(#foodList > .diary-empty) #foodSection:not(.is-adding) > .logged-list-heading { margin-top:10px!important; }
+  body #foodList .diary-meal-heading { padding:12px 12px 8px; }
+  /* Empty and populated diaries share the existing 56px header and 16px
+     workspace gap. Making Reuse available must not move the heading. */
+  body :is(#foodList,#exerciseList) > .diary-empty {
+    --diary-empty-action-gap:16px;
+    --diary-empty-secondary-gap:12px;
+    padding-top:10px!important;
+  }
+  body :is(#foodList,#exerciseList) .diary-empty > p { margin-bottom:var(--diary-empty-action-gap); }
+  body #foodList .diary-empty .diary-empty-action { margin-top:var(--diary-empty-secondary-gap); }
+}
+@media (max-width:640px) and (max-height:870px) {
+  /* The secondary link shares the FAB's vertical band on short/notched
+     screens. Keep its chevron and hit area beside, never under, the FAB. */
+  body #foodList > .diary-empty .diary-empty-action { width:calc(100% - var(--today-fab-size) - 16px); }
+}
+/* A single secondary action ends the empty Exercise section. The preceding
+   food section already supplies its boundary; no terminal rule/card is needed. */
+body .exercise-log:has(> #exerciseList > .diary-empty) > .logged-list-heading { border-bottom:0!important; }
+body #exerciseList > .diary-empty { padding-top:0!important;padding-bottom:0!important;border:0!important; }
+body #exerciseList .diary-empty > p { margin-bottom:var(--diary-empty-action-gap,16px); }
+body #exerciseList .diary-empty-exercise-add {
+  display:block;width:100%;min-width:0;min-height:44px;padding:10px 12px;margin:0;
+  border:1px solid var(--line);border-radius:0;background:transparent;color:var(--ink);
+  font:500 12px/1.4 var(--font-ui);letter-spacing:0;text-transform:none;cursor:pointer;
+}
+:where(html:not([data-intake-touch])) body #exerciseList .diary-empty-exercise-add:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { background:color-mix(in srgb,var(--ink) 7%,transparent); }
+/* Existing persistence commits before rendering this class. No slide-in,
+   height change, or replay of the ring: just identify the inserted food. */
+@media (prefers-reduced-motion:no-preference) {
+  body #foodList .entry-card.is-new-entry { animation:none!important; }
+  body #foodList .entry-card.is-new-entry .entry-surface { animation:food-log-added 600ms ease-out!important; }
+  @keyframes food-log-added {
+    from { background-color:color-mix(in srgb,var(--ink) 11%,var(--panel));box-shadow:inset 2px 0 var(--ink); }
+    to { background-color:var(--panel);box-shadow:inset 2px 0 transparent; }
+  }
+}

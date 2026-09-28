@@ -1,0 +1,6 @@
+/* One clipped three-week track. Existing day geometry and fixed arrows remain. */
+.calendar-week-viewport { min-width:0; overflow:hidden; touch-action:pan-y; }
+.calendar-week-track { display:flex; width:100%; transform:translate3d(-100%,0,0); }
+.calendar-week-track > .calendar-strip { flex:0 0 100%; width:100%; min-width:0; }
+.calendar-week-viewport[data-week-motion] .calendar-week-track { will-change:transform; user-select:none; }
+.calendar-week-track > [inert] { pointer-events:none; }

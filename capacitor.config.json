@@ -1,0 +1,7 @@
+{
+  "appId": "com.enejk.intake",
+  "appName": "Intake",
+  "webDir": "native/www",
+  "server": { "iosScheme": "capacitor" },
+  "ios": { "contentInset": "never" }
+}

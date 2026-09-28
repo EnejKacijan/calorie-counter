@@ -1,0 +1,87 @@
+import {pw,setup,settle,keyboard,closeKeyboard,read,base} from './add-flow-harness.mjs';
+import {mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const out='artifacts/weight-flow', results=[];
+await mkdir(out,{recursive:true});
+let stage='', active;
+const closed=async p=>{await p.locator('#weightSheet').waitFor({state:'hidden'});await settle(p);};
+const open=async p=>{await p.locator('#weightLogJump').click();await settle(p);assert.equal(await p.evaluate(()=>document.activeElement.id),'progressWeight');};
+const cancel=async p=>{await p.locator('#weightCancel').click();await closed(p);};
+const current=async(p,v)=>assert.equal(await p.locator('#currentWeightValue').textContent(),String(v));
+async function geometry(p){return p.evaluate(()=>{
+ const box=s=>document.querySelector(s).getBoundingClientRect().toJSON();
+ return {y:scrollY,chart:box('#progressChart'),sheet:box('#weightSheet'),input:box('#progressWeight'),save:box('#weightSave'),cancel:box('#weightCancel'),notice:box('#weightUndoToast'),vv:{top:visualViewport.offsetTop,height:visualViewport.height},inert:document.querySelector('.app-shell').inert,nav:getComputedStyle(document.querySelector('.mobile-tabbar')).visibility,overflow:document.documentElement.scrollWidth>innerWidth,host:document.querySelector('#weightUndoToast').parentElement.id};
+});}
+function usable(g){for(const key of ['input','save','cancel']){assert.ok(g[key].top>=g.vv.top-1,`${key} above viewport`);assert.ok(g[key].bottom<=g.vv.top+g.vv.height+1,`${key} below viewport: ${JSON.stringify(g)}`);}assert.equal(g.inert,true);assert.equal(g.nav,'hidden');assert.equal(g.overflow,false);}
+async function focusedExpiry(b,engine){
+ const {c,p}=await setup(b,{engine,theme:'dark'});active=p;stage=`${engine}: focused Undo expiry and viewport cleanup`;
+ await p.clock.install({time:new Date('2026-09-19T12:00:00')});
+ await p.evaluate(()=>{const s=JSON.parse(localStorage.getItem('calorie-counter-state'));s.user.weightKg=82;s.user.targetWeightKg=80;s.progress=[{id:'start',date:'2026-09-12',weightKg:83},{id:'latest',date:'2026-09-19',weightKg:82}];localStorage.setItem('calorie-counter-state',JSON.stringify(s));});
+ await p.goto(base+'/progress.html');await p.locator('[data-delete-weight=latest]').waitFor();
+ await p.locator('[data-delete-weight=latest]').click();await p.locator('#weightUndoToast button').focus();
+ await p.evaluate(()=>{window.oldUndo=document.querySelector('#weightUndoToast button').onclick;});
+ await p.clock.fastForward(8100);assert.equal(await p.locator('#weightUndoToast').isVisible(),false);assert.equal(await p.locator('#weightUndoToast button').evaluate(e=>e.onclick),null);assert.equal(await p.locator('#weightUndoToast button').isDisabled(),true);assert.equal(await p.locator('#weightUndoToast span').textContent(),'');await p.evaluate(()=>oldUndo());assert.equal((await read(p)).progress.length,1);
+ await p.evaluate(()=>{window.weightViewportListeners=new Set();const add=visualViewport.addEventListener.bind(visualViewport),remove=visualViewport.removeEventListener.bind(visualViewport);visualViewport.addEventListener=(type,fn,...rest)=>{weightViewportListeners.add(fn);return add(type,fn,...rest);};visualViewport.removeEventListener=(type,fn,...rest)=>{weightViewportListeners.delete(fn);return remove(type,fn,...rest);};});
+ await open(p);await p.locator('#progressWeight').fill('82');await keyboard(p,390,30);await p.evaluate(()=>{qaFailStorage=true;});await p.locator('#weightSave').click();usable(await geometry(p));
+ const errorBox=await p.locator('#weightFormError').boundingBox(),contentBox=await p.locator('#weightSheetContent').boundingBox();assert.ok(errorBox.y>=contentBox.y&&errorBox.y+errorBox.height<=contentBox.y+contentBox.height+1,'keyboard persistence error remains readable inside the content owner');
+ await p.evaluate(()=>{qaFailStorage=false;});await closeKeyboard(p);await p.locator('#weightSave').click();await closed(p);assert.equal(await p.evaluate(()=>weightViewportListeners.size),0);
+ const entry=(await read(p)).progress.at(-1);await p.locator(`[data-delete-weight="${entry.id}"]`).click();await open(p);await p.locator('#progressWeight').fill('81,5');await keyboard(p,390,30);usable(await geometry(p));assert.ok(await p.evaluate(()=>weightViewportListeners.size)>0);
+ await p.clock.fastForward(8100);assert.equal(await p.evaluate(()=>document.activeElement.id),'progressWeight');assert.equal(await p.locator('#progressWeight').inputValue(),'81,5');assert.equal(await p.locator('#weightUndoToast').isVisible(),false);usable(await geometry(p));await closeKeyboard(p);await cancel(p);assert.equal(await p.evaluate(()=>weightViewportListeners.size),0);assert.equal(await p.evaluate(()=>document.body.style.position),'');
+ const environment=await p.evaluate(()=>({secure:isSecureContext,uuid:typeof crypto.randomUUID}));assert.deepEqual(await p.evaluate(()=>qaErrors),[]);results.push({engine,version:b.version(),environment,result:'PASS',checks:'focused Undo still expires; expiry while typing retains draft/focus; released viewport listeners and body lock; native ID creation'});console.log('PASS',engine,'focused Undo expiry, active-input expiry and viewport cleanup');await c.close();
+}
+try{
+for(const engine of (process.env.WEIGHT_ENGINE?.split(',')||['chromium','webkit'])){
+ const b=await pw[engine].launch(engine==='chromium'?{channel:'msedge'}:{});
+ if(process.env.WEIGHT_FOCUS_ONLY){try{await focusedExpiry(b,engine);}finally{await b.close();}continue;}
+ try{for(const [width,height] of (process.env.WEIGHT_QUICK?[[390,844]]:[[375,667],[390,844],[393,852],[430,932]]))for(const theme of ['light','dark']){
+  const {c,p}=await setup(b,{engine,width,height,theme});active=p;const report={engine,version:b.version(),width,height,theme,checks:[]};
+  const check=name=>{stage=`${engine} ${width} ${theme}: ${name}`;report.checks.push(name);};
+  await p.clock.install({time:new Date('2026-09-19T12:00:00')});
+  await p.evaluate(()=>{const s=JSON.parse(localStorage.getItem('calorie-counter-state'));s.user.weightKg=83;s.user.startWeightKg=83;s.user.targetWeightKg=80;s.progress=[{id:'start',date:'2026-09-12',weightKg:83,provenance:'keep'}];localStorage.setItem('calorie-counter-state',JSON.stringify(s));localStorage.setItem('daily-fuel-weight-range','7');});
+  stage=`${engine} ${width} ${theme}: initial route readiness`;
+  await p.goto(base+'/progress.html');await p.locator('[data-edit-weight=start]').waitFor();await settle(p);await current(p,83);
+  report.environment=await p.evaluate(()=>({secure:isSecureContext,uuid:typeof crypto.randomUUID}));
+  const original=await read(p), originalChart=await p.locator('#progressChart').innerHTML();
+  check('autofocus, selected current value, compact sheet and frozen background');
+  await p.locator('#weightLogJump').scrollIntoViewIfNeeded();const bg=await geometry(p);
+  await open(p);assert.deepEqual(await p.locator('#progressWeight').evaluate(e=>[e.value,e.selectionStart,e.selectionEnd,e.inputMode]),['83',0,2,'decimal']);
+  const g=await geometry(p);usable(g);assert.equal(g.y,bg.y);assert.equal(g.chart.y,bg.chart.y);assert.ok(g.sheet.height<430);assert.equal(await p.locator('#progressDate').inputValue(),'2026-09-19');
+  assert.equal(await p.locator('.mobile-tabbar a').first().evaluate(e=>getComputedStyle(e).visibility),'hidden');
+  await p.locator('#weightSave').focus();await p.keyboard.press('Tab');assert.equal(await p.evaluate(()=>document.activeElement.id),'progressWeight');await p.keyboard.press('Shift+Tab');assert.equal(await p.evaluate(()=>document.activeElement.id),'weightSave');
+  check('keyboard viewport and native date context switching');
+  await p.locator('#progressWeight').fill('82,5');await keyboard(p,390,30);const kg=await geometry(p);usable(kg);assert.equal(kg.y,g.y);assert.equal(kg.chart.y-kg.vv.top,g.chart.y-g.vv.top);
+  await p.locator('#progressDate').fill('2026-09-18');assert.equal(await p.locator('#progressWeight').inputValue(),'83');assert.equal(await p.locator('#weightSave').textContent(),'Save weight');assert.equal(await p.locator('#weightSheet').isVisible(),true);assert.deepEqual(await read(p),original);
+  if(width===390)await p.screenshot({path:`${out}/${engine}-${theme}-keyboard.png`});
+  await closeKeyboard(p);await cancel(p);assert.deepEqual(await read(p),original);assert.equal(await p.evaluate(()=>document.activeElement.id),'weightLogJump');
+  check('local validation and Cancel');await open(p);
+  for(const value of ['', '34','251','82.55','oops']){await p.locator('#progressWeight').fill(value);await p.locator('#weightSave').click();assert.equal(await p.locator('#weightFormError').isVisible(),true);assert.equal(await p.locator('#progressWeight').inputValue(),value);assert.equal(await p.evaluate(()=>document.activeElement.id),'progressWeight');assert.deepEqual(await read(p),original);}
+  await p.locator('#progressWeight').fill('82');await p.locator('#progressDate').fill('2026-09-12');assert.equal(await p.locator('#progressWeight').inputValue(),'83');assert.equal(await p.locator('#weightSave').textContent(),'Update weight');assert.equal(await p.locator('#weightFormError').isVisible(),false);await cancel(p);
+  check('storage failure preserves draft/current; retry + rapid duplicate submit');await open(p);await p.locator('#progressWeight').fill('82');await p.evaluate(()=>{qaFailStorage=true;});await p.locator('#weightSave').click();await current(p,83);assert.deepEqual(await read(p),original);assert.equal(await p.locator('#weightSheet').isVisible(),true);assert.equal(await p.locator('#progressWeight').inputValue(),'82');assert.equal(await p.locator('#progressDate').inputValue(),'2026-09-19');assert.equal(await p.locator('#weightSave').isDisabled(),false);assert.match(await p.locator('#weightFormError').textContent(),/could not be saved/);
+  await p.evaluate(()=>{qaFailStorage=false;qaWrites=[];document.querySelector('#progressForm').requestSubmit();document.querySelector('#progressForm').requestSubmit();});await closed(p);await current(p,82);const saved=await read(p),entry=saved.progress.find(e=>e.date==='2026-09-19');assert.equal(saved.progress.length,2);assert.equal(entry.weightKg,82);assert.equal(saved.user.targetWeightKg,80);assert.deepEqual(saved.goals,original.goals);assert.equal(await p.evaluate(()=>qaWrites.length),1);assert.equal(await p.locator('#weightTargetStatus').textContent(),'2 kg above target');assert.notEqual(await p.locator('#progressChart').innerHTML(),originalChart);assert.equal(await p.locator(`[data-edit-weight="${entry.id}"]`).isVisible(),true);
+  assert.equal(await p.locator('#progressChart .chart-dot.is-today.is-latest').count(),1);assert.equal(await p.locator('#progressChart .weight-target-legend b').textContent(),'TARGET 80 KG');
+  if(width===390)await p.screenshot({path:`${out}/${engine}-${theme}-saved.png`});
+  check('reload persistence and comma/point edit preserves ID');await p.reload();await p.locator(`[data-edit-weight="${entry.id}"]`).waitFor();await settle(p);await current(p,82);assert.deepEqual((await read(p)).progress,saved.progress);
+  for(const raw of ['82,5','82.5']){await p.locator(`[data-edit-weight="${entry.id}"]`).click();await p.locator('#progressWeight').fill(raw);await p.locator('#weightSave').click();await closed(p);await current(p,82.5);assert.equal((await read(p)).progress.length,2);assert.equal((await read(p)).progress.at(-1).id,entry.id);}
+  await p.locator(`[data-edit-weight="${entry.id}"]`).click();await p.locator('#progressWeight').fill('82');await p.locator('#weightSave').click();await closed(p);
+  check('delete failure leaves confirmed state unchanged');await p.evaluate(()=>{qaFailStorage=true;});await p.locator(`[data-delete-weight="${entry.id}"]`).click();await current(p,82);assert.equal((await read(p)).progress.length,2);assert.match(await p.locator('#weightUndoToast').textContent(),/could not be deleted/);await p.evaluate(()=>{qaFailStorage=false;});
+  check('delete + one snackbar, Undo persistence failure/retry/exactly once');await p.locator(`[data-delete-weight="${entry.id}"]`).click();await current(p,83);assert.equal((await read(p)).progress.length,1);assert.equal(await p.locator('#weightUndoToast:not([hidden])').count(),1);const toast=await p.locator('#weightUndoToast').boundingBox(),nav=await p.locator('.mobile-tabbar').boundingBox();assert.ok(toast.y+toast.height<=nav.y-8);
+  await p.evaluate(()=>{qaFailStorage=true;});await p.locator('#weightUndoToast button').click();await current(p,83);assert.match(await p.locator('#weightUndoToast').textContent(),/could not be restored/);await p.evaluate(()=>{qaFailStorage=false;window.oldUndo=document.querySelector('#weightUndoToast button').onclick;oldUndo();oldUndo();});await current(p,82);assert.equal((await read(p)).progress.length,2);assert.match(await p.locator('#weightUndoToast').textContent(),/restored/);assert.equal(await p.locator('#weightUndoToast button').isVisible(),false);assert.doesNotMatch(await p.locator('#weightUndoToast').textContent(),/deleted/);await p.clock.fastForward(2100);assert.equal(await p.locator('#weightUndoToast').isVisible(),false);
+  check('active Undo inside sheet and keyboard; no field/footer overlap');await p.locator(`[data-delete-weight="${entry.id}"]`).click();await open(p);await p.locator('#progressWeight').fill('81,5');await keyboard(p,390,30);const ng=await geometry(p);usable(ng);assert.equal(ng.host,'weightSheetNotice');assert.ok(ng.notice.top>=ng.input.bottom);assert.ok(ng.notice.bottom<=ng.save.top);
+  if(width===390)await p.screenshot({path:`${out}/${engine}-${theme}-keyboard-undo.png`});
+  await p.locator('#weightUndoToast button').click();await current(p,82);assert.equal(await p.locator('#progressWeight').inputValue(),'81,5');assert.equal(await p.locator('#weightSheet').isVisible(),true);await closeKeyboard(p);await cancel(p);
+  check('latest deletion owns Undo and old callbacks become inert');await p.locator('[data-delete-weight=start]').click();await p.evaluate(()=>{window.firstUndo=document.querySelector('#weightUndoToast button').onclick;});await p.locator(`[data-delete-weight="${entry.id}"]`).click();await p.evaluate(()=>firstUndo());assert.equal((await read(p)).progress.length,0);await p.locator('#weightUndoToast button').click();assert.deepEqual((await read(p)).progress.map(e=>e.id),[entry.id]);
+  check('expiry clears callback, copy, button and timer without focus steal');await p.locator(`[data-delete-weight="${entry.id}"]`).click();await p.evaluate(()=>{window.expiredUndo=document.querySelector('#weightUndoToast button').onclick;document.querySelector('#weightLogJump').focus({preventScroll:true});});await p.clock.fastForward(8100);assert.equal(await p.locator('#weightUndoToast').isVisible(),false);assert.equal(await p.locator('#weightUndoToast span').textContent(),'');assert.equal(await p.locator('#weightUndoToast button').evaluate(e=>e.onclick),null);assert.equal(await p.evaluate(()=>document.activeElement.id),'weightLogJump');await p.evaluate(()=>expiredUndo());assert.equal((await read(p)).progress.length,0);await p.reload();await settle(p);assert.equal((await read(p)).progress.length,0);
+  check('repeat open/close, Escape, route Back, no stale viewport offsets');
+  for(let i=0;i<3;i++){await open(p);await keyboard(p,390,30);usable(await geometry(p));await closeKeyboard(p);await p.locator('#weightCancel').focus();await p.keyboard.press('Escape');await closed(p);assert.equal(await p.locator('#weightSheet').evaluate(e=>e.style.getPropertyValue('--surface-bottom')),'');assert.equal(await p.locator('.app-shell').evaluate(e=>e.inert),false);}
+  await open(p);await p.locator('#weightSheetBackdrop').click({position:{x:8,y:8}});await closed(p);
+  await open(p);await p.locator('#weightSheetHandle').evaluate(handle=>{const r=handle.getBoundingClientRect();for(const [type,dy]of [['pointerdown',0],['pointermove',90],['pointerup',90]])handle.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,isPrimary:true,pointerId:1,pointerType:'mouse',button:0,clientX:r.x+r.width/2,clientY:r.y+10+dy}));});await closed(p);
+  await open(p);await p.evaluate(()=>IntakeNavigate('index.html'));await closed(p);assert.match(p.url(),/progress.html/);
+  check('7D/30D previous/next and Nutrition metrics unchanged');
+  for(const range of [7,30]){await p.locator(`[data-weight-range="${range}"]`).click();await p.locator('#weightPreviousPeriod').click();await p.locator('#weightNextPeriod').click();}
+  await p.locator('[data-progress-view=nutrition]').click();for(const range of [7,30]){await p.locator(`[data-nutrition-range="${range}"]`).click();for(const metric of ['calories','net','macros'])await p.locator(`[data-nutrition-metric="${metric}"]`).click();await p.locator('#nutritionPreviousRange').click();await p.locator('#nutritionNextRange').click();}await p.locator('[data-progress-view=weight]').click();assert.equal(await p.locator('#weightLogJump').isVisible(),true);
+  assert.deepEqual(await p.evaluate(()=>qaErrors),[]);report.result='PASS';results.push(report);console.log('PASS',engine,width,height,theme,report.checks.length,'checks');await c.close();
+ }}finally{await b.close();}
+}
+}catch(error){console.error('FAILED',stage);if(active&&!active.isClosed())await active.screenshot({path:out+'/failed.png'});throw error;
+}finally{await writeFile(out+(process.env.WEIGHT_FOCUS_ONLY?'/focus-results.json':'/results.json'),JSON.stringify(results,null,2));}
+console.log(`PASS ${results.length} Weight phone/theme/engine scenarios`);

@@ -58,13 +58,16 @@
     if (!targetDate) throw new Error("A target date is required.");
 
     return (Array.isArray(entries) ? entries : []).map((entry) => {
+      // A copied occurrence has not been photographed. Covers stay on Saved
+      // definitions; historical photos/captures stay on the source diary.
+      const { photoMediaId, coverImageId, captureId, ...definition } = snapshotFoodEntry(entry);
       const loggedAt = timestampForTargetDate(
         entry?.loggedAt || entry?.logged_at || entry?.createdAt || entry?.created_at,
         targetDate,
         now,
       );
       return {
-        ...snapshotFoodEntry(entry),
+        ...definition,
         ...(targetMeal ? { meal: targetMeal } : {}),
         id: idFactory(),
         loggedAt,
@@ -90,7 +93,7 @@
     }));
   }
 
-  function createSavedMeal({ id, name, meal, foods, createdAt, updatedAt, idFactory = () => crypto.randomUUID() }) {
+  function createSavedMeal({ id, name, meal, foods, coverImageId, createdAt, updatedAt, idFactory = () => crypto.randomUUID() }) {
     const now = new Date().toISOString();
     return {
       id: id || idFactory(),
@@ -98,7 +101,9 @@
       meal: String(meal || "snack").trim().toLowerCase() || "snack",
       createdAt: createdAt || now,
       updatedAt: updatedAt || now,
-      foods: snapshotFoodEntries(foods),
+      // A Saved meal is a reusable definition, not a photo of a future meal.
+      foods: snapshotFoodEntries(foods).map(({ photoMediaId, coverImageId, captureId, ...food }) => food),
+      ...(typeof coverImageId === 'string' && /^photo-[a-zA-Z0-9-]{8,80}$/.test(coverImageId) ? {coverImageId} : {}),
     };
   }
 
@@ -127,7 +132,24 @@
     return names.length > visibleNames.length ? `${baseName} & more` : baseName;
   }
 
+  function savedLibraryHint(mealCount, foodCount, filter = "all") {
+    const meals = Math.max(0, Math.floor(Number(mealCount) || 0));
+    const foods = Math.max(0, Math.floor(Number(foodCount) || 0));
+    if (!meals || filter === "my") return "";
+    return `Saved includes ${meals} ${meals === 1 ? "meal" : "meals"} + ${foods} ${foods === 1 ? "food" : "foods"}.`;
+  }
+
+  // Undo restores only the removed item, never an old copy of the whole library.
+  function restoreRemovedItem(items, item, index, identity = entry => entry.id) {
+    if (items.some(entry => identity(entry) === identity(item))) return items;
+    const next = [...items];
+    next.splice(Math.min(Math.max(0, index), next.length), 0, deepClone(item));
+    return next;
+  }
+
   root.IntakeFoodReuse = Object.freeze({
+    restoreRemovedItem,
+    savedLibraryHint,
     cloneFoodEntries,
     createSavedMeal,
     groupFoodEntriesByMeal,

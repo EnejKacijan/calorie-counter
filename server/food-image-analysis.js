@@ -312,6 +312,9 @@ async function parseFoodDescriptionWithRepair(input) {
       if (error?.status && error.status < 500) break;
     }
   }
+  // A provider throttle is not an invalid food description. Keep it visible
+  // and retryable instead of running an incomplete local parse as a new guess.
+  if (lastError?.status === 429) throw lastError;
   const localFallback = parseDescriptionLocally(input.cleanDescription, input.portionHints);
   if (localFallback.foods.length) {
     input.emitDiagnostic("parser_local_fallback", {
@@ -326,13 +329,20 @@ async function parseFoodDescriptionWithRepair(input) {
 }
 
 function validateParsedDescription(parsed) {
-  if (!parsed || !Array.isArray(parsed.foods)) throw invalidEstimateError();
+  if (!parsed || !Array.isArray(parsed.foods) || parsed.foods.length > 8
+    || !["low", "medium", "high"].includes(parsed.confidence) || typeof parsed.notes !== "string") {
+    throw invalidEstimateError();
+  }
   parsed.foods.forEach((food) => {
-    const numeric = [
+    const rawNumeric = [
       food.amount, food.servingGrams, food.fallbackCalories,
       food.fallbackProtein, food.fallbackCarbs, food.fallbackFat,
-    ].map(Number);
-    if (!String(food.name || "").trim() || !String(food.searchQuery || "").trim()) throw invalidEstimateError();
+    ];
+    if (typeof food.name !== "string" || !food.name.trim()
+      || typeof food.searchQuery !== "string" || !food.searchQuery.trim()
+      || typeof food.qualifiers !== "string" || typeof food.isZeroCalorie !== "boolean"
+      || rawNumeric.some((value) => typeof value !== "number")) throw invalidEstimateError();
+    const numeric = rawNumeric;
     if (numeric.some((value) => !Number.isFinite(value) || value < 0)) throw invalidEstimateError();
     if (Number(food.amount) <= 0 || Number(food.amount) > 10_000 || Number(food.servingGrams) > 10_000) throw invalidEstimateError();
     if (!descriptionUnits.has(food.unit)) throw invalidEstimateError();

@@ -1,0 +1,6 @@
+/* Critical boot surface: no dashboard/onboarding before routing and handlers. */
+html[data-intake-starting] { --startup-bg: #fbfaf6; --startup-ink: #171714; background: var(--startup-bg) !important; }
+@media (prefers-color-scheme: dark) { html[data-intake-starting] { --startup-bg: #1b1a16; --startup-ink: #f4f1e9; } }
+html[data-intake-starting] body { background: var(--startup-bg) !important; }
+html[data-intake-starting] body > :not(#appStartupStatus), html[data-intake-starting] body > :not(#appStartupStatus) * { visibility: hidden !important; }
+html[data-intake-starting] #appStartupStatus { background: var(--startup-bg) !important; color: var(--startup-ink) !important; border: 0; }

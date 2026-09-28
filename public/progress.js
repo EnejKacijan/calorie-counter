@@ -1,3 +1,7 @@
+import { localRecordId } from './local-record-id.js?v=1';
+import { createSheetSurface } from './mobile-surface.js?v=3';
+import { bindCalendarSwipe } from './calendar-swipe.js?v=3';
+export function mountPage({ localStorage, window, document, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame, ResizeObserver, MutationObserver, fetch, onDispose, onBeforeLeave, viewState = {} }) {
 const storageKey = "calorie-counter-state";
 const state = loadState();
 document.body.classList.add("progress-page");
@@ -6,6 +10,16 @@ const elements = {
   progressForm: document.querySelector("#progressForm"),
   progressDate: document.querySelector("#progressDate"),
   progressWeight: document.querySelector("#progressWeight"),
+  weightFormTitle: document.querySelector("#weightFormTitle"),
+  weightSave: document.querySelector("#weightSave"),
+  weightCancel: document.querySelector("#weightCancel"),
+  weightFormError: document.querySelector("#weightFormError"),
+  weightSheet: document.querySelector('#weightSheet'),
+  weightSheetBackdrop: document.querySelector('#weightSheetBackdrop'),
+  weightSheetHandle: document.querySelector('#weightSheetHandle'),
+  weightSheetContent: document.querySelector('#weightSheetContent'),
+  weightSheetNotice: document.querySelector('#weightSheetNotice'),
+  weightUndoToast: document.querySelector('#weightUndoToast'),
   weightLogJump: document.querySelector("#weightLogJump"),
   currentWeightValue: document.querySelector("#currentWeightValue"),
   weightTrendText: document.querySelector("#weightTrendText"),
@@ -27,9 +41,8 @@ const elements = {
   nutritionChartDetail: document.querySelector("#nutritionChartDetail"),
   nutritionPreviousRange: document.querySelector("#nutritionPreviousRange"),
   nutritionNextRange: document.querySelector("#nutritionNextRange"),
-  nutritionAverageCalories: document.querySelector("#nutritionAverageCalories"),
-  nutritionGoalDays: document.querySelector("#nutritionGoalDays"),
-  nutritionMacroHit: document.querySelector("#nutritionMacroHit"),
+  nutritionSummaryLabels: [1, 2, 3].map(i => document.querySelector(`#nutritionSummaryLabel${i}`)),
+  nutritionSummaryValues: [1, 2, 3].map(i => document.querySelector(`#nutritionSummaryValue${i}`)),
   nutritionLoggedDays: document.querySelector("#nutritionLoggedDays"),
   nutritionInsightTitle: document.querySelector("#nutritionInsightTitle"),
   nutritionInsightText: document.querySelector("#nutritionInsightText"),
@@ -39,16 +52,23 @@ const elements = {
   sidebarBackdrop: document.querySelector("#sidebarBackdrop"),
   profileSummary: document.querySelector("#profileSummary"),
   profileMeta: document.querySelector("#profileMeta"),
-  logoutButton: document.querySelector("#logoutButton"),
 };
 
-let activeProgressView = window.location.hash === "#nutrition" ? "nutrition" : "weight";
+let activeProgressView = window.location.hash === "#nutrition" ? "nutrition" : viewState.view || "weight";
 let nutritionMetric = localStorage.getItem("daily-fuel-nutrition-metric") || "calories";
 let nutritionRange = Number(localStorage.getItem("daily-fuel-nutrition-range") || 7);
-let nutritionRangeOffset = 0;
-let selectedNutritionDate = localDateKey(new Date());
+let nutritionRangeOffset = viewState.nutritionOffset || 0;
+let selectedNutritionDate = viewState.day || localDateKey(new Date());
 let weightRange = Number(localStorage.getItem("daily-fuel-weight-range") || 30);
-let weightRangeOffset = 0;
+let weightRangeOffset = viewState.weightOffset || 0;
+let editingWeightId = null;
+let weightDraftDate = null;
+let weightSheet = null;
+let weightSaving = false;
+let weightReturnId = null;
+let weightPager = null;
+let nutritionPager = null;
+const weightFeedback = createWeightFeedback({ setTimeout, clearTimeout, render: renderWeightFeedback });
 
 const nutritionMetrics = {
   calories: { label: "Calories", unit: "kcal", goalKey: "calories", valueKey: "calories" },
@@ -84,10 +104,9 @@ function loadState() {
   }
 }
 
-function saveState() {
-  state.theme = state.user?.theme || state.theme || "light";
-  localStorage.setItem("calorie-counter-theme", state.theme);
-  localStorage.setItem(storageKey, JSON.stringify(state));
+function saveState(next) {
+  if (localStorage.setItemConfirmed) localStorage.setItemConfirmed(storageKey, JSON.stringify(next));
+  else localStorage.setItem(storageKey, JSON.stringify(next));
 }
 
 function applyTheme(theme) {
@@ -172,10 +191,7 @@ function trendForEntries(entries) {
   const baseline = [...entries].reverse().find((entry) => dateFromKey(entry.date) <= fourteenDaysAgo) || entries[0];
   const days = Math.max(1, Math.round((latestDate - dateFromKey(baseline.date)) / 86400000));
   const delta = Number(latest.weightKg) - Number(baseline.weightKg);
-  const goalType = state.user?.goalType || "maintain";
-  const isMovingAgainstGoal = (goalType === "lose" && delta > 0.05)
-    || (goalType === "gain" && delta < -0.05);
-  const tone = isMovingAgainstGoal ? "bad" : "neutral";
+  const tone = "neutral";
   const change = Math.abs(delta) <= 0.05 ? "No change" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} kg`;
   const label = `${change} in ${days} ${days === 1 ? "day" : "days"}`;
   return { delta, days, label, tone };
@@ -209,9 +225,6 @@ function render() {
   elements.weightTargetStatus.textContent = targetStatus(current);
   const today = localDateKey(new Date());
   elements.progressDate.max = today;
-  elements.progressDate.value = elements.progressDate.value || today;
-  if (elements.progressDate.value > today) elements.progressDate.value = today;
-  elements.progressWeight.value = elements.progressWeight.value || currentWeight();
   syncProgressView();
   renderChart(entries);
   renderList(entries);
@@ -222,9 +235,9 @@ function isMobileWeightChart() {
   return window.matchMedia("(max-width: 700px)").matches;
 }
 
-function selectedWeightPeriod() {
+function selectedWeightPeriod(offset = weightRangeOffset) {
   const today = dateFromKey(localDateKey(new Date()));
-  const end = addDays(today, weightRangeOffset);
+  const end = addDays(today, offset);
   const start = addDays(end, -(weightRange - 1));
   return {
     start,
@@ -248,6 +261,7 @@ function syncWeightPeriodControls(period) {
     elements.weightPeriodLabel.textContent = `${formatWeightPeriodDate(period.start)} \u2013 ${formatWeightPeriodDate(period.end)}`;
   }
   if (elements.weightNextPeriod) elements.weightNextPeriod.disabled = weightRangeOffset >= 0;
+  window.IntakeMotion?.selection(elements.weightRangeButtons, 'segment', { duration: 140 });
 }
 
 function clippedWeightLinePoints(entries, period, xForDate, yForWeight) {
@@ -283,18 +297,19 @@ function clippedWeightLinePoints(entries, period, xForDate, yForWeight) {
   return points;
 }
 
-function renderChart(entries) {
+function renderChart(entries, periodOffset = weightRangeOffset, chartTarget = elements.progressChart,
+  axisTarget = elements.weightChartAxis) {
   const usePeriodWindow = isMobileWeightChart();
-  const period = selectedWeightPeriod();
+  const period = selectedWeightPeriod(periodOffset);
   const chartEntries = usePeriodWindow
     ? entries.filter((entry) => entry.date >= period.startKey && entry.date <= period.endKey)
     : entries;
-  syncWeightPeriodControls(period);
+  if (chartTarget === elements.progressChart) syncWeightPeriodControls(period);
 
   if (!chartEntries.length && !usePeriodWindow) {
-    elements.progressChart.innerHTML = "";
-    elements.weightChartAxis?.replaceChildren();
-    elements.weightChartAxis?.classList.remove("is-single-entry");
+    chartTarget.innerHTML = "";
+    axisTarget?.replaceChildren();
+    axisTarget?.classList.remove("is-single-entry");
     return;
   }
 
@@ -311,9 +326,9 @@ function renderChart(entries) {
   const max = usePeriodWindow
     ? mobileOrEmptyMax
     : Math.ceil((Math.max(...weights) + 0.7) / 5) * 5;
-  const rect = elements.progressChart.getBoundingClientRect();
-  const width = Math.max(320, Math.round(rect.width || elements.progressChart.clientWidth || 320));
-  const frameHeight = Math.round(rect.height || elements.progressChart.clientHeight || 240);
+  const rect = chartTarget.getBoundingClientRect();
+  const width = Math.max(320, Math.round(rect.width || chartTarget.clientWidth || 320));
+  const frameHeight = Math.round(rect.height || chartTarget.clientHeight || 240);
   const targetLegendHeight = targetWeight > 0 ? 24 : 0;
   const height = Math.max(usePeriodWindow ? 186 : 210, frameHeight - targetLegendHeight);
   // Reserve a real left gutter on phones so grid and target lines never run
@@ -372,19 +387,19 @@ function renderChart(entries) {
         ? [chartEntries[0], latestEntry]
         : [chartEntries[0], middleEntry, latestEntry];
   const targetY = targetWeight > 0 ? yForWeight(targetWeight) : null;
-  if (elements.weightChartAxis) {
-    elements.weightChartAxis.replaceChildren();
-    elements.weightChartAxis.classList.toggle("is-single-entry", chartEntries.length === 1);
+  if (axisTarget) {
+    axisTarget.replaceChildren();
+    axisTarget.classList.toggle("is-single-entry", chartEntries.length === 1);
     axisTicks.forEach((tick) => {
       const span = document.createElement("span");
       span.textContent = shortAxisDate(tick.date);
       span.style.setProperty("--axis-x", `${((usePeriodWindow ? xForDate(tick.date) : xForEntry(tick)) / width) * 100}%`);
-      elements.weightChartAxis.appendChild(span);
+      axisTarget.appendChild(span);
     });
   }
 
-  elements.progressChart.classList.toggle("has-target-legend", targetY !== null);
-  elements.progressChart.innerHTML = `
+  chartTarget.classList.toggle("has-target-legend", targetY !== null);
+  chartTarget.innerHTML = `
     ${targetY !== null ? `<div class="weight-target-legend" style="padding-inline:${chart.left}px" aria-label="Dashed line: ${targetLabel}"><span aria-hidden="true"></span><b>${targetLabel}</b></div>` : ""}
     <div class="weight-chart-plot">
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
@@ -411,7 +426,7 @@ function shortDateLabel(dateKey) {
 
 function renderList(entries) {
   elements.progressList.innerHTML = "";
-  [...entries].reverse().slice(0, 6).forEach((entry) => {
+  [...entries].reverse().forEach((entry) => {
     const card = document.querySelector("#entryTemplate").content.firstElementChild.cloneNode(true);
     const previousEntry = [...entries].filter((item) => item.date < entry.date).at(-1);
     const delta = previousEntry ? Number(entry.weightKg) - Number(previousEntry.weightKg) : 0;
@@ -424,13 +439,22 @@ function renderList(entries) {
     card.classList.add("progress-entry-card", `is-${deltaClass}`);
     card.querySelector("strong").textContent = shortEntryDate(entry.date);
     card.querySelector("p").innerHTML = `<span>${formatWeight(entry.weightKg)}</span><small>${deltaText}</small>`;
-    card.querySelector("button").setAttribute("aria-label", `Remove weight entry for ${shortEntryDate(entry.date)}`);
-    card.querySelector("button").addEventListener("click", () => {
-      if (!window.confirm(`Remove the weight entry for ${shortEntryDate(entry.date)}?`)) return;
-      state.progress = state.progress.filter((item) => item.id !== entry.id);
-      saveState();
-      render();
-    });
+    const remove = card.querySelector("button");
+    remove.dataset.deleteWeight = entry.id;
+    const spokenDate = dateFromKey(entry.date).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    remove.setAttribute("aria-label", `Delete weight entry for ${spokenDate}`);
+    remove.title = 'Delete weight entry';
+    remove.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7"/></svg>';
+    remove.addEventListener("click", () => deleteWeight(entry.id));
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "weight-entry-edit";
+    edit.dataset.editWeight = entry.id;
+    edit.setAttribute("aria-label", `Edit ${formatWeight(entry.weightKg)} kg on ${spokenDate}`);
+    const details = card.querySelector("div");
+    edit.append(...details.childNodes);
+    details.replaceWith(edit);
+    edit.addEventListener("click", () => editWeight(entry.id));
     elements.progressList.appendChild(card);
   });
 }
@@ -447,20 +471,35 @@ function syncProgressView() {
     view.classList.toggle("is-active", isActive);
     view.hidden = !isActive;
   });
+  window.IntakeMotion?.selection(elements.progressViewButtons);
 }
 
 function setProgressView(view) {
-  if (!["weight", "nutrition"].includes(view)) return;
+  if (!["weight", "nutrition"].includes(view) || view === activeProgressView) return;
+  weightPager?.reset(); nutritionPager?.reset();
   activeProgressView = view;
+  if (editingWeightId) resetWeightForm();
   const nextHash = view === "nutrition" ? "#nutrition" : window.location.pathname;
-  window.history.replaceState(null, "", nextHash);
+  window.history.replaceState(window.history.state, "", nextHash);
   render();
+  progressMotion([elements.progressViews.find((panel) => panel.dataset.progressPanel === view)], 'mode', view === 'nutrition' ? 1 : -1);
 }
 
-function nutritionRows(range) {
+function progressMotion(targets, kind = 'mode', direction = 1) {
+  window.IntakeMotion?.transition(targets, kind, { direction, group: elements.progressViewButtons[0].parentElement });
+}
+function nutritionMotion(kind = 'filter', direction = 1) {
+  progressMotion([elements.nutritionChart, elements.nutritionChartDetail.parentElement,
+    elements.nutritionChartAxis, document.querySelector('.nutrition-summary-grid'), document.querySelector('.nutrition-insight')], kind, direction);
+}
+function weightMotion(kind = 'filter', direction = 1) {
+  progressMotion([elements.progressChart, elements.weightChartAxis, elements.weightPeriodLabel], kind, direction);
+}
+
+function nutritionRows(range, offset = nutritionRangeOffset) {
   const today = dateFromKey(localDateKey(new Date()));
   return Array.from({ length: range }, (_, index) => {
-    const date = addDays(today, index - range + 1 + nutritionRangeOffset);
+    const date = addDays(today, index - range + 1 + offset);
     const dateKey = localDateKey(date);
     const day = state.days?.[dateKey] || { foods: [], exercises: [] };
     const summary = summarizeDay(day);
@@ -485,19 +524,12 @@ function renderNutrition() {
   const rows = nutritionRows(nutritionRange);
   const metric = nutritionMetrics[nutritionMetric] || nutritionMetrics.calories;
   const goal = Number(state.goals?.[metric.goalKey] || 0);
-  const loggedRows = rows.filter((row) => row.hasEntries);
-  const loggedCount = loggedRows.length;
-  const avgCalories = loggedCount ? average(loggedRows.map((row) => row.calories)) : 0;
-  const goalDays = loggedRows.filter((row) => row.netCalories <= Number(state.goals?.calories || 2300)).length;
-  const macroHitDays = loggedRows.filter(isMacroHitDay).length;
-
-  elements.nutritionAverageCalories.textContent = Math.round(avgCalories);
-  elements.nutritionGoalDays.textContent = `${goalDays}/${nutritionRange}`;
-  elements.nutritionMacroHit.textContent = `${macroHitDays}/${nutritionRange}`;
-  elements.nutritionLoggedDays.textContent = `${loggedCount}/${nutritionRange}`;
-  const insight = nutritionInsight(rows, loggedRows, goalDays);
-  elements.nutritionInsightTitle.textContent = insight.title;
-  elements.nutritionInsightText.textContent = insight.text;
+  const summary = summarizeNutritionRange(rows, nutritionMetric, Number(state.goals?.calories || 0));
+  summary.labels.forEach((label, index) => { elements.nutritionSummaryLabels[index].textContent = label; });
+  summary.values.forEach((value, index) => { elements.nutritionSummaryValues[index].textContent = value; });
+  elements.nutritionLoggedDays.textContent = `${summary.loggedCount}/${rows.length}`;
+  elements.nutritionInsightTitle.textContent = summary.loggedCount ? "This range" : "No logged days";
+  elements.nutritionInsightText.textContent = summary.text;
   if (!rows.some((row) => row.dateKey === selectedNutritionDate)) {
     selectedNutritionDate = rows.at(-1)?.dateKey || localDateKey(new Date());
   }
@@ -514,12 +546,15 @@ function renderNutrition() {
     button.setAttribute("aria-selected", String(isActive));
   });
 
+  window.IntakeMotion?.selection(elements.nutritionMetricButtons);
+  window.IntakeMotion?.selection(elements.nutritionRangeButtons, 'segment', { duration: 140 });
   renderNutritionChart(rows, metric, goal);
 }
 
-function renderNutritionChart(rows, metric, goal) {
+function renderNutritionChart(rows, metric, goal, chartTarget = elements.nutritionChart,
+  selectedDate = selectedNutritionDate) {
   if (metric.isMacro) {
-    renderMacroNutritionChart(rows);
+    renderMacroNutritionChart(rows, chartTarget, selectedDate);
     return;
   }
 
@@ -542,18 +577,18 @@ function renderNutritionChart(rows, metric, goal) {
     const x = chart.left + index * slot + (slot - barWidth) / 2;
     const y = Math.min(yFor(value), zeroY);
     const heightValue = Math.max(2, Math.abs(zeroY - yFor(value)));
-    const tone = row.netCalories > Number(state.goals?.calories || 2300) ? "is-over" : "is-good";
-    const selectionClass = row.dateKey === selectedNutritionDate ? " is-selected" : "";
+    const tone = "is-neutral";
+    const selectionClass = row.dateKey === selectedDate ? " is-selected" : "";
     const label = `${formatNutritionDate(row.dateKey)}: ${Math.round(value)} ${metric.unit}`;
     return `<rect class="nutrition-bar ${tone}${selectionClass}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0"><title>${label}</title></rect>`;
   });
   const dayControls = rows.map((row, index) => {
     const x = chart.left + index * slot;
     const label = nutritionDayDetail(row, metric, goal);
-    const marker = row.dateKey === selectedNutritionDate
+    const marker = row.dateKey === selectedDate
       ? `<path class="nutrition-selection-marker" d="M${x + slot / 2 - 8} ${chart.bottom + 34} H${x + slot / 2 + 8}"></path>`
       : "";
-    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedNutritionDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
+    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
   });
   const valueLabels = nutritionRange === 7
     ? rows.map((row, index) => {
@@ -569,7 +604,7 @@ function renderNutritionChart(rows, metric, goal) {
   const axisTicks = nutritionAxisTicks(rows, chart, slot);
   const axisLabelY = chart.bottom + 27;
 
-  elements.nutritionChart.innerHTML = `
+  chartTarget.innerHTML = `
     <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true">
       <span class="nutrition-goal-header-label has-line-key">${goalLabel}</span>
     </div>
@@ -583,16 +618,19 @@ function renderNutritionChart(rows, metric, goal) {
         ${dayControls.join("")}
         ${valueLabels.join("")}
         ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
-        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
       </svg>
     </div>
   `;
 
-  elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
-  bindNutritionDayControls(rows, metric, goal);
+  if (chartTarget === elements.nutritionChart) {
+    elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
+    bindNutritionDayControls(rows, metric, goal);
+  }
 }
 
-function renderMacroNutritionChart(rows) {
+function renderMacroNutritionChart(rows, chartTarget = elements.nutritionChart,
+  selectedDate = selectedNutritionDate) {
   const goals = {
     protein: Number(state.goals?.protein || 150),
     carbs: Number(state.goals?.carbs || 260),
@@ -606,8 +644,8 @@ function renderMacroNutritionChart(rows) {
   const chartMax = Math.min(180, Math.ceil(maxPercent / 10) * 10);
   const yFor = (value) => chart.bottom - (Math.min(value, chartMax) / chartMax) * (chart.bottom - chart.top);
   const slot = (chart.right - chart.left) / rows.length;
-  const groupWidth = Math.max(12, Math.min(nutritionRange === 7 ? 36 : 18, slot * 0.62));
-  const gap = Math.max(1.5, groupWidth * 0.12);
+  const groupWidth = Math.min(nutritionRange === 7 ? 36 : 18, slot * 0.62);
+  const gap = groupWidth * 0.12;
   const barWidth = (groupWidth - gap * 2) / 3;
   const goalY = yFor(100);
   const bars = rows.flatMap((row, index) => {
@@ -619,7 +657,7 @@ function renderMacroNutritionChart(rows) {
       const y = yFor(percent);
       const heightValue = Math.max(2, chart.bottom - y);
       const label = `${formatNutritionDate(row.dateKey)}: ${key} ${Math.round(percent)}% of goal`;
-      return `<rect class="nutrition-bar nutrition-macro-bar is-${key}${row.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0" role="img" aria-label="${label}"><title>${label}</title></rect>`;
+      return `<rect class="nutrition-bar nutrition-macro-bar is-${key}${row.dateKey === selectedDate ? " is-selected" : ""}" x="${x}" y="${y}" width="${barWidth}" height="${heightValue}" rx="0" role="img" aria-label="${label}"><title>${label}</title></rect>`;
     });
   });
   const axisLabels = nutritionAxisLabels(rows, chart, slot);
@@ -628,13 +666,13 @@ function renderMacroNutritionChart(rows) {
   const dayControls = rows.map((row, index) => {
     const x = chart.left + index * slot;
     const label = nutritionDayDetail(row, nutritionMetrics.macros, 100);
-    const marker = row.dateKey === selectedNutritionDate
+    const marker = row.dateKey === selectedDate
       ? `<path class="nutrition-selection-marker" d="M${x + slot / 2 - 8} ${chart.bottom + 34} H${x + slot / 2 + 8}"></path>`
       : "";
-    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedNutritionDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
+    return `<rect class="nutrition-day-hit" data-nutrition-date="${row.dateKey}" x="${x}" y="${chart.top}" width="${slot}" height="${chart.bottom - chart.top + 16}" role="button" tabindex="0" aria-pressed="${row.dateKey === selectedDate}" aria-label="${label}"><title>${label}</title></rect>${marker}`;
   });
 
-  elements.nutritionChart.innerHTML = `
+  chartTarget.innerHTML = `
     <div class="nutrition-chart-header" style="padding-inline:${chart.left}px" aria-hidden="true">
       <span class="nutrition-goal-header-label has-line-key">100% goal</span>
       <div class="nutrition-macro-legend">
@@ -651,12 +689,14 @@ function renderMacroNutritionChart(rows) {
         ${bars.join("")}
         ${dayControls.join("")}
         ${axisTicks.map((tick) => `<path class="nutrition-axis-tick" d="M${tick.x} ${chart.bottom + 7} V${chart.bottom + 12}"></path>`).join("")}
-        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedNutritionDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
+        ${axisLabels.map((label) => `<text class="nutrition-axis-label${label.dateKey === selectedDate ? " is-selected" : ""}" x="${label.x}" y="${axisLabelY}">${label.text}</text>`).join("")}
       </svg>
     </div>
   `;
-  elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
-  bindNutritionDayControls(rows, nutritionMetrics.macros, 100);
+  if (chartTarget === elements.nutritionChart) {
+    elements.nutritionChartAxis.textContent = nutritionDateRange(rows);
+    bindNutritionDayControls(rows, nutritionMetrics.macros, 100);
+  }
 }
 
 function bindNutritionDayControls(rows, metric, goal) {
@@ -665,6 +705,7 @@ function bindNutritionDayControls(rows, metric, goal) {
       const dateKey = control.dataset.nutritionDate;
       selectedNutritionDate = dateKey;
       renderNutrition();
+      progressMotion([elements.nutritionChartDetail], 'detail');
       if (restoreFocus) {
         requestAnimationFrame(() => {
           elements.nutritionChart.querySelector(`[data-nutrition-date="${dateKey}"]`)?.focus({ preventScroll: true });
@@ -680,9 +721,21 @@ function bindNutritionDayControls(rows, metric, goal) {
   });
   const selected = rows.find((row) => row.dateKey === selectedNutritionDate) || rows.at(-1);
   const summary = nutritionDaySummary(selected, metric, goal);
-  elements.nutritionChartDetailDate.textContent = summary.date;
+  elements.nutritionChartDetailDate.replaceChildren(...rows.map(row => {
+    const option = document.createElement("option");
+    option.value = row.dateKey;
+    option.textContent = formatNutritionDate(row.dateKey);
+    return option;
+  }));
+  elements.nutritionChartDetailDate.value = selectedNutritionDate;
   elements.nutritionChartDetail.textContent = summary.value;
 }
+
+elements.nutritionChartDetailDate.addEventListener("change", () => {
+  selectedNutritionDate = elements.nutritionChartDetailDate.value;
+  renderNutrition();
+  progressMotion([elements.nutritionChartDetail], 'detail');
+});
 
 function nutritionDaySummary(row, metric, goal) {
   if (!row) return { date: "", value: "" };
@@ -719,7 +772,7 @@ function nutritionDayDetail(row, metric, goal) {
   }
   const value = Math.round(Number(row[metric.valueKey] || 0));
   const delta = Math.round(value - Number(goal || 0));
-  const comparison = goal ? `, ${Math.abs(delta)} ${metric.unit} ${delta > 0 ? "over" : "under"} goal` : "";
+  const comparison = goal ? delta === 0 ? ", on target" : `, ${Math.abs(delta)} ${metric.unit} ${delta > 0 ? "over" : "under"} target` : "";
   return `${date}: ${value} ${metric.unit}${comparison}`;
 }
 
@@ -787,114 +840,173 @@ function macroPercent(row, key, goal) {
   return Math.max(0, (Number(row[key] || 0) / goal) * 100);
 }
 
-function isMacroHitDay(row) {
-  const proteinPercent = macroPercent(row, "protein", Number(state.goals?.protein || 150));
-  const carbsPercent = macroPercent(row, "carbs", Number(state.goals?.carbs || 260));
-  const fatPercent = macroPercent(row, "fat", Number(state.goals?.fat || 75));
-  return proteinPercent >= 80 && carbsPercent >= 70 && carbsPercent <= 130 && fatPercent >= 70 && fatPercent <= 130;
-}
-
-function average(values) {
-  if (!values.length) return 0;
-  return values.reduce((sum, value) => sum + Number(value || 0), 0) / values.length;
-}
 
 function shortWeekday(dateKey) {
   return dateFromKey(dateKey).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
 }
 
-function nutritionInsight(rows, loggedRows, goalDays) {
-  const loggedCount = loggedRows.length;
-  const calorieGoal = Number(state.goals?.calories || 2300);
-  const proteinGoal = Number(state.goals?.protein || 150);
-  const carbsGoal = Number(state.goals?.carbs || 260);
-  const fatGoal = Number(state.goals?.fat || 75);
-  const minimumUsefulDays = Math.min(4, rows.length);
-
-  if (loggedCount < minimumUsefulDays) {
-    return {
-      title: "Not enough data yet",
-      text: `You logged ${loggedCount} of ${rows.length} days. Log at least ${minimumUsefulDays} days in a 7-day stretch so your weekly trend becomes more reliable.`,
-    };
-  }
-
-  const overGoalDays = loggedRows.filter((row) => row.netCalories > calorieGoal).length;
-  const proteinGapDays = loggedRows.filter((row) => macroPercent(row, "protein", proteinGoal) < 80).length;
-  const carbsGapDays = loggedRows.filter((row) => macroPercent(row, "carbs", carbsGoal) < 70).length;
-  const fatOverDays = loggedRows.filter((row) => macroPercent(row, "fat", fatGoal) > 130).length;
-  const calorieCloseDays = loggedRows.filter((row) => Math.abs(row.netCalories - calorieGoal) <= calorieGoal * 0.12).length;
-  const mainGapThreshold = Math.ceil(loggedCount / 2);
-
-  if (overGoalDays >= mainGapThreshold) {
-    return {
-      title: "Calories are your main gap",
-      text: `${overGoalDays} of ${loggedCount} logged days went over your calorie target. Next week, start with the meal or snack that contributes the most calories.`,
-    };
-  }
-
-  if (proteinGapDays >= mainGapThreshold) {
-    const calorieContext = calorieCloseDays >= mainGapThreshold
-      ? "You were close to your calorie target on most logged days, but"
-      : "";
-    return {
-      title: "Protein is your main gap",
-      text: calorieContext
-        ? `${calorieContext} protein was below target on ${proteinGapDays} of ${loggedCount} logged days. Add one reliable protein choice earlier in the day.`
-        : `Protein was below target on ${proteinGapDays} of ${loggedCount} logged days. Add one reliable protein choice earlier in the day.`,
-    };
-  }
-
-  if (fatOverDays >= mainGapThreshold) {
-    return {
-      title: "Fat is running high",
-      text: `Fat went above its target range on ${fatOverDays} of ${loggedCount} logged days. Review oils, sauces, and snack portions before changing the rest of your plan.`,
-    };
-  }
-
-  if (carbsGapDays >= mainGapThreshold) {
-    return {
-      title: "Carbs need more consistency",
-      text: `Carbs were below target on ${carbsGapDays} of ${loggedCount} logged days. Plan one dependable carb source around your busiest part of the day.`,
-    };
-  }
-
-  return {
-    title: "A steady weekly baseline",
-    text: `${goalDays} of ${loggedCount} logged days stayed within your calorie target, with no single macro standing out as the main gap. Keep the same structure next week and continue logging consistently.`,
-  };
-}
 
 function shortEntryDate(dateKey) {
   const date = dateFromKey(dateKey);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
 }
 
-elements.progressForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const today = localDateKey(new Date());
-  if (elements.progressDate.value > today) {
-    elements.progressDate.setCustomValidity("You can't log weight for a future date.");
-    elements.progressDate.reportValidity();
-    elements.progressDate.setCustomValidity("");
-    return;
+function showWeightError(message = "", field = "", focusField = true) {
+  elements.weightFormError.textContent = message;
+  elements.weightFormError.hidden = !message;
+  for (const [name, input] of [["date", elements.progressDate], ["weightKg", elements.progressWeight]]) {
+    input.setAttribute("aria-invalid", String(name === field));
+    const description = [name === 'weightKg' ? 'weightUnit' : '', name === field ? 'weightFormError' : ''].filter(Boolean).join(' ');
+    if (description) input.setAttribute('aria-describedby', description); else input.removeAttribute('aria-describedby');
+    if (name === field && focusField) input.focus({ preventScroll: true });
   }
-
-  const entry = {
-    id: crypto.randomUUID(),
-    date: elements.progressDate.value,
-    weightKg: Number(elements.progressWeight.value),
-  };
-
-  state.progress = state.progress.filter((item) => item.date !== entry.date);
-  state.progress.push(entry);
-  if (state.user) state.user.weightKg = entry.weightKg;
-  saveState();
+}
+function restoreWeightFocus(id) {
+  const button = [...elements.progressList.querySelectorAll("[data-edit-weight]")].find(button => button.dataset.editWeight === id);
+  (button || elements.weightLogJump)?.focus({ preventScroll: true });
+}
+function resetWeightForm(restoreFocus = false) {
+  const previousId = editingWeightId;
+  weightDraftDate = null;
+  elements.weightCancel.hidden = false;
+  elements.progressDate.value = localDateKey(new Date());
+  syncWeightDateSelection();
+  if (restoreFocus) restoreWeightFocus(previousId);
+}
+function editWeight(id) {
+  const entry = state.progress.find(item => item.id === id);
+  if (!entry) return;
+  weightDraftDate = null;
+  elements.weightCancel.hidden = false;
+  elements.progressDate.value = entry.date;
+  syncWeightDateSelection();
+  openWeightSheet(id);
+}
+function syncWeightDateSelection() {
+  const date = elements.progressDate.value;
+  if (date === weightDraftDate) return;
+  weightDraftDate = date;
+  const selection = weightEntryForDate(state.progress, date);
+  editingWeightId = selection.entry?.id || null;
+  const updating = Boolean(selection.entry || selection.duplicate);
+  elements.progressForm.classList.toggle("is-editing", updating);
+  elements.weightFormTitle.textContent = updating ? "Edit weight" : "Log weight";
+  elements.weightSave.textContent = updating ? "Update weight" : "Save weight";
+  elements.progressWeight.value = selection.duplicate ? "" : formatWeight(selection.entry?.weightKg ?? currentWeight());
+  showWeightError(selection.duplicate
+    ? "Multiple weight entries exist for this date. Resolve the duplicate records before updating."
+    : "", selection.duplicate ? "date" : "", false);
+}
+function persistWeightChange(entries) {
+  const latest = dailyWeightEntries(entries).at(-1);
+  const next = { ...state, progress: entries,
+    user: latest && state.user ? { ...state.user, weightKg: Number(latest.weightKg) } : state.user };
+  // Commit visible/in-memory state only after the native write succeeds.
+  saveState(next);
+  Object.assign(state, next);
+  weightPager?.reset();
+  nutritionPager?.reset();
   render();
-});
+}
+function submitWeight(event) {
+  event.preventDefault();
+  if (weightSaving || !weightSheet?.active || weightSheet.closing) return;
+  weightSaving = true; elements.weightSave.disabled = true;
+  try {
+    const result = updateWeightEntries(state.progress, editingWeightId, {
+      date: elements.progressDate.value, weightKg: elements.progressWeight.value,
+    }, localDateKey(new Date()));
+    if (result.error) { showWeightError(result.error, result.field); return; }
+    persistWeightChange(result.entries);
+    closeWeightSheet({ stableViewportExit: true });
+  } catch (error) {
+    showWeightError(error.code === 'local-id-unavailable'
+      ? 'This browser could not create a weight entry. Please try again in a secure browser.'
+      : 'Weight could not be saved. Your draft is still here. Please try again.');
+  } finally { weightSaving = false; elements.weightSave.disabled = false; }
+}
+function deleteWeight(id) {
+  const entry = state.progress.find(item => item.id === id);
+  if (!entry) return;
+  const deleted = structuredClone(entry);
+  try { persistWeightChange(state.progress.filter(item => item.id !== id)); }
+  catch { weightFeedback.message('Weight could not be deleted. Please try again.'); return; }
+  weightFeedback.deleted(() => {
+    const restored = restoreWeightEntry(state.progress, deleted);
+    if (restored.error) return restored.error;
+    try { persistWeightChange(restored.entries); }
+    catch { return 'Weight could not be restored. Try Undo again.'; }
+    if (!weightSheet?.active) restoreWeightFocus(id);
+  });
+}
+function positionWeightFeedback() {
+  const toast = elements.weightUndoToast;
+  const host = weightSheet?.active ? elements.weightSheetNotice : document.body;
+  if (toast.parentElement !== host) host.appendChild(toast);
+  if (!weightSheet?.active) {
+    const nav = document.querySelector('.mobile-tabbar');
+    const clearance = nav?.getClientRects().length ? window.innerHeight - nav.getBoundingClientRect().top : 0;
+    toast.style.setProperty('--weight-notice-bottom', `${Math.max(0, clearance) + 12}px`);
+  }
+}
+function renderWeightFeedback(notice) {
+  const toast = elements.weightUndoToast, undo = toast.querySelector('button');
+  toast.hidden = !notice;
+  toast.querySelector('span').textContent = notice?.message || '';
+  toast.dataset.phase = notice?.phase || 'idle';
+  undo.hidden = !notice?.undo; undo.disabled = !notice?.undo; undo.onclick = notice?.undo || null;
+  positionWeightFeedback();
+}
+function openWeightSheet(id = null) {
+  weightReturnId = id;
+  weightSheet ||= createSheetSurface({ panel: elements.weightSheet, backdrop: elements.weightSheetBackdrop,
+    handle: elements.weightSheetHandle, scroller: elements.weightSheetContent,
+    background: () => [elements.appShell, document.querySelector('.mobile-tabbar')],
+    initialFocus: () => elements.progressWeight,
+    restoreTarget: () => [...elements.progressList.querySelectorAll('[data-edit-weight]')].find(button => button.dataset.editWeight === weightReturnId) || elements.weightLogJump,
+    onDismiss: closeWeightSheet, onBack: closeWeightSheet, win: window,
+  });
+  document.body.classList.add('weight-sheet-open');
+  weightSheet.open({ returnTo: id ? document.activeElement : elements.weightLogJump });
+  elements.weightLogJump.setAttribute('aria-expanded', 'true');
+  positionWeightFeedback();
+  // Stay in the opening gesture so iOS can present its decimal keyboard.
+  elements.progressWeight.select();
+}
+function closeWeightSheet(options = {}) {
+  if (!weightSheet?.active || weightSheet.closing) return;
+  // After a confirmed save, start the exit against the keyboard-open geometry
+  // before dismissing the keyboard. The updated parent is already rendered.
+  if (!options.stableViewportExit) elements.weightFormTitle.focus({ preventScroll: true });
+  const done = weightSheet.close(options);
+  if (options.stableViewportExit && elements.weightSheet.contains(document.activeElement)) document.activeElement.blur();
+  elements.weightSheet.inert = true;
+  const finish = () => {
+    document.body.classList.remove('weight-sheet-open');
+    elements.weightLogJump.setAttribute('aria-expanded', 'false');
+    resetWeightForm(); positionWeightFeedback();
+  };
+  if (!weightSheet.active) finish(); else done.then(finish);
+}
 
+elements.progressForm.addEventListener("submit", submitWeight);
+elements.progressDate.addEventListener("change", syncWeightDateSelection);
+elements.progressDate.addEventListener("input", syncWeightDateSelection);
+elements.weightCancel.addEventListener("click", () => closeWeightSheet());
+onBeforeLeave?.(() => {
+  if (!weightSheet?.active) return true;
+  closeWeightSheet({ immediate: true });
+  return false;
+});
+onDispose?.(() => {
+  weightPager?.destroy(); nutritionPager?.destroy();
+  weightFeedback.dispose(); weightSheet?.dispose(); elements.weightUndoToast.remove();
+  document.body.classList.remove('weight-sheet-open');
+  Object.assign(viewState, { view: activeProgressView, nutritionOffset: nutritionRangeOffset, weightOffset: weightRangeOffset, day: selectedNutritionDate });
+});
 elements.weightLogJump?.addEventListener("click", () => {
-  elements.progressForm.scrollIntoView({ behavior: "smooth", block: "center" });
-  window.setTimeout(() => elements.progressWeight.focus({ preventScroll: true }), 350);
+  resetWeightForm();
+  openWeightSheet();
 });
 
 elements.progressViewButtons.forEach((button) => {
@@ -907,66 +1019,110 @@ function changeWeightPeriod(direction) {
   renderChart(dailyWeightEntries(state.progress));
 }
 
+function changeNutritionRange(direction) {
+  if (direction > 0 && nutritionRangeOffset >= 0) return;
+  nutritionRangeOffset = Math.min(0, nutritionRangeOffset + direction * nutritionRange);
+  selectedNutritionDate = localDateKey(addDays(new Date(), nutritionRangeOffset));
+  renderNutrition();
+}
+
+// Keep the live chart in the middle page. Adjacent pages are inert, read-only
+// previews prepared before the first horizontal movement, just like Today.
+function createChartPager(chart, axis, prepare, commit, canMove) {
+  const parent = chart.parentElement;
+  const viewport = document.createElement('div');
+  viewport.className = 'progress-range-viewport';
+  const track = document.createElement('div');
+  track.className = 'progress-range-track';
+  const pages = [-1, 0, 1].map((direction) => {
+    const page = document.createElement('div');
+    page.className = 'progress-range-page';
+    if (direction) { page.inert = true; page.setAttribute('aria-hidden', 'true'); }
+    return page;
+  });
+  parent.insertBefore(viewport, chart);
+  viewport.appendChild(track);
+  track.append(...pages);
+  pages[1].appendChild(chart);
+  if (axis) pages[1].appendChild(axis);
+  const previews = [pages[0], pages[2]].map((page) => {
+    const previewChart = document.createElement('div');
+    previewChart.className = chart.className;
+    page.appendChild(previewChart);
+    const previewAxis = axis && document.createElement('div');
+    if (previewAxis) { previewAxis.className = axis.className; page.appendChild(previewAxis); }
+    return { chart: previewChart, axis: previewAxis };
+  });
+  return bindCalendarSwipe({ viewport, track, win: window,
+    canMove,
+    prepare: () => {
+      if (canMove(-1)) prepare(-1, previews[0]);
+      if (canMove(1)) prepare(1, previews[1]);
+    },
+    clear: () => previews.forEach(({ chart: previewChart, axis: previewAxis }) => {
+      previewChart.replaceChildren();
+      previewAxis?.replaceChildren();
+    }),
+    commit,
+  });
+}
+
+function setupChartPagers() {
+  weightPager = createChartPager(elements.progressChart, elements.weightChartAxis,
+    (direction, preview) => renderChart(dailyWeightEntries(state.progress),
+      weightRangeOffset + direction * weightRange, preview.chart, preview.axis),
+    changeWeightPeriod, (direction) => direction < 0 || weightRangeOffset < 0);
+  nutritionPager = createChartPager(elements.nutritionChart, null,
+    (direction, preview) => {
+      const rows = nutritionRows(nutritionRange, nutritionRangeOffset + direction * nutritionRange);
+      const metric = nutritionMetrics[nutritionMetric];
+      renderNutritionChart(rows, metric, Number(state.goals?.[metric.goalKey] || 0),
+        preview.chart, rows.at(-1)?.dateKey);
+    },
+    changeNutritionRange, (direction) => direction < 0 || nutritionRangeOffset < 0);
+}
+
 elements.weightRangeButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    weightPager?.reset();
+    const changed = weightRange !== Number(button.dataset.weightRange || 30) || weightRangeOffset !== 0;
     weightRange = Number(button.dataset.weightRange || 30);
     weightRangeOffset = 0;
     localStorage.setItem("daily-fuel-weight-range", String(weightRange));
     renderChart(dailyWeightEntries(state.progress));
+    if (changed) weightMotion();
   });
 });
 
-elements.weightPreviousPeriod?.addEventListener("click", () => changeWeightPeriod(-1));
-elements.weightNextPeriod?.addEventListener("click", () => changeWeightPeriod(1));
-
-let weightChartTouchStart = null;
-elements.progressChart?.addEventListener("touchstart", (event) => {
-  if (!isMobileWeightChart() || event.touches.length !== 1) return;
-  const touch = event.touches[0];
-  weightChartTouchStart = { x: touch.clientX, y: touch.clientY };
-}, { passive: true });
-elements.progressChart?.addEventListener("touchend", (event) => {
-  if (!weightChartTouchStart || !isMobileWeightChart() || event.changedTouches.length !== 1) {
-    weightChartTouchStart = null;
-    return;
-  }
-  const touch = event.changedTouches[0];
-  const deltaX = touch.clientX - weightChartTouchStart.x;
-  const deltaY = touch.clientY - weightChartTouchStart.y;
-  weightChartTouchStart = null;
-  if (Math.abs(deltaX) < 48 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.2) return;
-  changeWeightPeriod(deltaX < 0 ? 1 : -1);
-}, { passive: true });
+elements.weightPreviousPeriod?.addEventListener("click", (event) => weightPager.arrow(-1, event));
+elements.weightNextPeriod?.addEventListener("click", (event) => weightPager.arrow(1, event));
 
 elements.nutritionMetricButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    nutritionPager?.reset();
+    const changed = nutritionMetric !== (button.dataset.nutritionMetric || "calories");
     nutritionMetric = button.dataset.nutritionMetric || "calories";
     localStorage.setItem("daily-fuel-nutrition-metric", nutritionMetric);
     renderNutrition();
+    if (changed) nutritionMotion();
   });
 });
 
 elements.nutritionRangeButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      nutritionPager?.reset();
+      const changed = nutritionRange !== Number(button.dataset.nutritionRange || 7) || nutritionRangeOffset !== 0;
       nutritionRange = Number(button.dataset.nutritionRange || 7);
       nutritionRangeOffset = 0;
       selectedNutritionDate = localDateKey(new Date());
       localStorage.setItem("daily-fuel-nutrition-range", String(nutritionRange));
       renderNutrition();
+      if (changed) nutritionMotion();
     });
   });
 
-elements.nutritionPreviousRange?.addEventListener("click", () => {
-  nutritionRangeOffset -= nutritionRange;
-  selectedNutritionDate = localDateKey(addDays(new Date(), nutritionRangeOffset));
-  renderNutrition();
-});
-
-elements.nutritionNextRange?.addEventListener("click", () => {
-  nutritionRangeOffset = Math.min(0, nutritionRangeOffset + nutritionRange);
-  selectedNutritionDate = localDateKey(addDays(new Date(), nutritionRangeOffset));
-  renderNutrition();
-});
+elements.nutritionPreviousRange?.addEventListener("click", (event) => nutritionPager.arrow(-1, event));
+elements.nutritionNextRange?.addEventListener("click", (event) => nutritionPager.arrow(1, event));
 
 elements.sidebarToggle.addEventListener("click", () => {
   if (isMobileSidebar()) {
@@ -985,10 +1141,16 @@ elements.appShell.querySelectorAll(".side-nav a").forEach((link) => {
   link.addEventListener("click", () => setMobileSidebarOpen(false));
 });
 let resizeRenderTimer = null;
-window.addEventListener("resize", () => {
+  window.addEventListener("resize", () => {
+  weightPager?.reset(); nutritionPager?.reset();
+  positionWeightFeedback();
   if (!isMobileSidebar()) setMobileSidebarOpen(false);
   clearTimeout(resizeRenderTimer);
-  resizeRenderTimer = setTimeout(() => render(), 120);
+  resizeRenderTimer = setTimeout(() => {
+    // Geometry changes must not replace a focused edit/delete weight action.
+    renderChart(dailyWeightEntries(state.progress));
+    renderNutrition();
+  }, 120);
 });
 
 // Charts size themselves from their panels, not from the viewport. This also
@@ -1013,15 +1175,94 @@ if ("ResizeObserver" in window) {
   chartResizeObserver.observe(elements.nutritionChart);
 }
 
-elements.logoutButton.addEventListener("click", () => {
-  if (!window.confirm("Are you sure you want to log out?")) return;
-  state.user = null;
-  saveState();
-  window.location.href = "profile.html";
-});
 
 if (localStorage.getItem("calorie-counter-sidebar-collapsed") === "true") {
   elements.appShell.classList.add("sidebar-collapsed");
 }
 
+resetWeightForm();
 render();
+setupChartPagers();
+}
+
+// Presentation only: underlying diary totals and targets remain unchanged.
+export function summarizeNutritionRange(rows, metric, target) {
+  const logged = rows.filter(row => row.hasEntries);
+  const mean = key => logged.length ? logged.reduce((sum, row) => sum + Number(row[key] || 0), 0) / logged.length : null;
+  const format = value => value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  const loggedCount = logged.length;
+  const prefix = `${loggedCount} of ${rows.length} days logged.`;
+  const averages = { calories: mean("calories"), net: mean("netCalories"), protein: mean("protein"), carbs: mean("carbs"), fat: mean("fat") };
+  if (metric === "macros") return {
+    loggedCount, averages, difference: null,
+    labels: ["Average protein", "Average carbs", "Average fat"],
+    values: ["protein", "carbs", "fat"].map(key => loggedCount ? `${format(averages[key])} g` : "—"),
+    text: loggedCount ? `${prefix} Averages use only days with food logged.` : "No food logged in this range yet.",
+  };
+  const average = averages[metric === "net" ? "net" : "calories"];
+  const difference = loggedCount && target > 0 ? average - target : null;
+  const comparison = difference === null ? "—" : difference === 0 ? "On target"
+    : `${format(Math.abs(difference)) === "0" ? "<0.1" : format(Math.abs(difference))} kcal ${difference > 0 ? "over" : "under"}`;
+  return { loggedCount, averages, difference,
+    labels: [metric === "net" ? "Average net calories" : "Average intake", "Target", "Average difference"],
+    values: [loggedCount ? `${format(average)} kcal` : "—", target > 0 ? `${format(target)} kcal` : "Not set", comparison],
+    text: !loggedCount ? "No food logged in this range yet." : difference === null ? `${prefix} No calorie target is set.`
+      : `${prefix} Average ${metric === "net" ? "net calories were" : "intake was"} ${difference === 0 ? "on target" : `${comparison} your target`}.`,
+  };
+}
+
+export function weightEntryForDate(entries, date) {
+  const matches = entries.filter(entry => entry.date === date);
+  return { entry: matches.length === 1 ? matches[0] : null, duplicate: matches.length > 1 };
+}
+
+export function updateWeightEntries(entries, id, values, today, newId = localRecordId) {
+  const date = String(values.date || "");
+  const weightText = String(values.weightKg ?? "").trim();
+  const weightKg = /^\d+(?:[.,]\d+)?$/.test(weightText) ? Number(weightText.replace(",", ".")) : NaN;
+  const parsed = new Date(`${date}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date)
+    return { error: "Enter a valid date.", field: "date" };
+  if (date > today) return { error: "You can't log weight for a future date.", field: "date" };
+  const selection = weightEntryForDate(entries, date);
+  if (selection.duplicate)
+    return { error: "Multiple weight entries exist for this date. Resolve the duplicate records before updating.", field: "date" };
+  if (!Number.isFinite(weightKg) || weightKg < 35 || weightKg > 250)
+    return { error: "Enter a weight between 35 and 250 kg.", field: "weightKg" };
+  if (Math.abs(weightKg * 10 - Math.round(weightKg * 10)) > 1e-8)
+    return { error: "Use at most one decimal place for weight.", field: "weightKg" };
+  if (id && !entries.some(entry => entry.id === id))
+    return { error: "This weight entry is no longer available.", field: "date" };
+  // The selected date, not a previous form draft, owns the record identity.
+  const existing = selection.entry;
+  const entry = { ...(existing || {}), id: existing?.id || newId(), date, weightKg, updatedAt: new Date().toISOString() };
+  return { entry, entries: existing ? entries.map(item => item === existing ? entry : item) : [...entries, entry] };
+}
+
+export function restoreWeightEntry(entries, deleted) {
+  if (entries.some(entry => entry.id === deleted.id || entry.date === deleted.date))
+    return { error: "Cannot undo: another weight entry already uses this date." };
+  return { entries: [...entries, { ...deleted }] };
+}
+
+// One host/state, latest deletion wins. Automatic Undo focus previously
+// cancelled its own expiry. Old callbacks are invalidated on every change.
+export function createWeightFeedback({ setTimeout, clearTimeout, render }) {
+  let timer = null, active = null;
+  function clear() { clearTimeout(timer); timer = null; active = null; render(null); }
+  function show(message, duration, restore = null, phase = 'message') {
+    clearTimeout(timer);
+    const notice = { message, phase, undo: null };
+    active = notice;
+    if (restore) notice.undo = () => {
+      if (active !== notice) return;
+      const error = restore();
+      if (error) { notice.message = error; render(notice); return; }
+      show('Weight entry restored', 2000, null, 'restored');
+    };
+    timer = setTimeout(() => { if (active === notice) clear(); }, duration);
+    render(notice);
+  }
+  return { deleted: restore => show('Weight entry deleted', 8000, restore, 'deleted'),
+    message: text => show(text, 4000), dispose: clear };
+}

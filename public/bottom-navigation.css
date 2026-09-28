@@ -1,0 +1,86 @@
+/* Final C2: the footer owns 58px of controls and exactly one device inset.
+   Route visibility/keyboard policies stay with their existing screen owners. */
+:root {
+  --mobile-nav-content-height: 58px;
+  --mobile-nav-height: calc(var(--mobile-nav-content-height) + env(safe-area-inset-bottom));
+}
+.mobile-tabbar { display: none; }
+@media (max-width: 700px) {
+  .mobile-tabbar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 50;
+    display: grid;
+    /* Keep the layout-viewport width when WebKit changes native scrollbars. */
+    width: 100vw;
+    max-width: 100vw;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    height: var(--mobile-nav-height);
+    padding: 0 0 env(safe-area-inset-bottom);
+    box-sizing: border-box;
+    border: 0;
+    background: var(--panel);
+    /* Inset separator leaves all 58px available to each stationary link. */
+    box-shadow: inset 0 1px color-mix(in srgb, var(--line) 78%, transparent);
+  }
+  body[data-theme="dark"] .mobile-tabbar {
+    background: color-mix(in srgb, var(--panel) 92%, white);
+  }
+  .mobile-tabbar > a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    width: 100%;
+    height: var(--mobile-nav-content-height);
+    box-sizing: border-box;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--muted);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 160ms linear;
+  }
+  .mobile-tabbar > a[aria-current="page"] { color: var(--ink); }
+  .mobile-tabbar .nav-icon,
+  .mobile-tabbar .nav-icon svg { display: block; width: 22px; height: 22px; flex: none; }
+  .mobile-tabbar .nav-icon { transition: transform 90ms ease-out; }
+  :where(html:not([data-intake-touch])) .mobile-tabbar > a:is(:active:where(:not([data-intake-touch] *),[data-touch-pressed]), .is-pressed) .nav-icon { transform: scale(.96); }
+  .mobile-tabbar .nav-icon path {
+    fill: currentColor;
+    fill-opacity: 0;
+    fill-rule: evenodd;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: fill-opacity 160ms linear;
+  }
+  .mobile-tabbar > a[aria-current="page"] .nav-icon path { fill-opacity: 1; }
+  .mobile-tabbar .nav-label {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font: 600 11px/13px var(--font-ui);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .mobile-tabbar > a[aria-current="page"] .nav-label { font-weight: 700; }
+  .mobile-tabbar > a:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+}
+@media (min-width: 641px) and (max-width: 700px) {
+  body:not(.profile-landing-active) .mobile-tabbar { display: grid !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-tabbar > a, .mobile-tabbar .nav-icon, .mobile-tabbar .nav-icon path { transition: none; }
+  .mobile-tabbar > a:is(:active:where(:not([data-intake-touch] *),[data-touch-pressed]), .is-pressed) .nav-icon { transform: none; }
+}

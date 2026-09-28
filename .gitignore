@@ -1,4 +1,12 @@
 node_modules/
+.data/
+native/www/
+native/ios-template-8.5-backup/
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/build/
+ios/App/Pods/
+ios/DerivedData/
 .env
 .DS_Store
 .git-broken-backup/

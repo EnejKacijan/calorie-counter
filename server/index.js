@@ -1,7 +1,10 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, sep } from "node:path";
+import { randomUUID } from "node:crypto";
+import { createAiBudget } from "./ai-budget.js";
+import { analyzeFoodLabel } from "./food-label.js";
 import { fileURLToPath } from "node:url";
 import { lookupFoodBarcode, searchFoods } from "./food-search.js";
 import { analyzeFoodDescription, analyzeFoodImage, correctFoodImageItem } from "./food-image-analysis.js";
@@ -30,6 +33,8 @@ const assistantRateLimit = {
   windowMs: positiveInteger(process.env.AI_ASSISTANT_RATE_WINDOW_MS, 10 * 60_000),
 };
 const assistantBuckets = new Map();
+const aiBudget = createAiBudget({ file: join(rootDir, ".data", "ai-budget.json"), dailyLimit: positiveInteger(process.env.AI_DAILY_REQUEST_LIMIT, 200), concurrency: positiveInteger(process.env.AI_MAX_CONCURRENT, 4) });
+const aiPaths = new Set(["/api/foods/analyze-image", "/api/foods/analyze-label", "/api/foods/estimate-text", "/api/foods/correct-image-item", "/api/assistant/chat"]);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -44,8 +49,30 @@ const mimeTypes = {
 };
 
 const server = createServer(async (request, response) => {
+  const requestId = randomUUID();
+  let releaseBudget;
+  response.setHeader("X-Request-Id", requestId);
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("Referrer-Policy", "same-origin");
+  response.setHeader("X-Frame-Options", "DENY");
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
+    // Explicit opt-in for the bundled iOS client; never reflect arbitrary origins.
+    if (process.env.ALLOW_IOS_ORIGIN === "true" && request.headers.origin === "capacitor://localhost") {
+      response.setHeader("Access-Control-Allow-Origin", "capacitor://localhost");
+      response.setHeader("Vary", "Origin");
+      if (request.method === "OPTIONS" && url.pathname.startsWith("/api/")) {
+        response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Intake-AI-Consent");
+        response.writeHead(204); response.end(); return;
+      }
+    }
+    if (request.method === "POST" && aiPaths.has(url.pathname)) {
+      if (request.headers["x-intake-ai-consent"] !== "1") return sendJson(response, 403, { error: "Allow AI data sharing in the app before sending this request." });
+      if (!String(request.headers["content-type"] || "").toLowerCase().startsWith("application/json")) return sendJson(response, 415, { error: "Use application/json." });
+      releaseBudget = await aiBudget.acquire();
+      if (!releaseBudget) return sendJson(response, 429, { error: "AI is temporarily at capacity. Try later, or use manual logging." }, { "Retry-After": "60" });
+    }
 
     if (url.pathname === "/api/foods/search" && request.method === "GET") {
       return sendJson(response, 200, { foods: await searchFoods(url.searchParams.get("q") || "", { usdaApiKey }) });
@@ -56,6 +83,12 @@ const server = createServer(async (request, response) => {
       return sendJson(response, food ? 200 : 404, food ? { food } : { error: "Product not found in Open Food Facts." });
     }
 
+    if (url.pathname === "/api/foods/analyze-label" && request.method === "POST") {
+      const rateLimit = consumeAiScanRateLimit(request);
+      if (!rateLimit.allowed) return sendJson(response, 429, { error: "Too many scans. Please wait and try again." }, rateLimit.headers);
+      const body = await readJsonBody(request);
+      return sendJson(response, 200, await analyzeFoodLabel(body.imageDataUrl, { openAiApiKey, model: openAiModel }), rateLimit.headers);
+    }
     if (url.pathname === "/api/foods/analyze-image" && request.method === "POST") {
       const rateLimit = consumeAiScanRateLimit(request);
       if (!rateLimit.allowed) {
@@ -73,14 +106,14 @@ const server = createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/foods/estimate-text" && request.method === "POST") {
+      const rateLimit = consumeAiScanRateLimit(request);
+      if (!rateLimit.allowed) return sendJson(response, 429, { error: `Too many requests. Try again in ${rateLimit.retryAfterSeconds} seconds.` }, rateLimit.headers);
       const body = await readJsonBody(request);
       const analysis = await analyzeFoodDescription(body.description, {
         openAiApiKey,
         model: openAiModel,
         usdaApiKey,
-        onDiagnostic: process.env.NODE_ENV === "production"
-          ? undefined
-          : (event, details) => console.debug(`[food-estimate:${event}]`, JSON.stringify(details)),
+        onDiagnostic: undefined,
       });
       return sendJson(response, 200, { analysis });
     }
@@ -126,10 +159,16 @@ const server = createServer(async (request, response) => {
 
     return serveStatic(url.pathname, response);
   } catch (error) {
-    if (!error.status || error.status >= 500) console.error(error);
-    return sendJson(response, error.status || 500, { error: error.message || "Something went wrong on the server." });
+    const status = Number.isInteger(error.status) && error.status >= 400 && error.status <= 599 ? error.status : 500;
+    // Never log request bodies, provider errors, food photos, prompts or API keys.
+    console.error(JSON.stringify({ event: "request_failed", requestId, status }));
+    return sendJson(response, status, { error: status === 429 ? "AI is temporarily busy. Please wait and retry; you can still log manually." : status >= 500 ? "This service is temporarily unavailable. Please try again; you can still log manually." : "The request could not be completed. Check your input and try again.", requestId });
+  } finally {
+    releaseBudget?.();
   }
 });
+server.requestTimeout = 75_000;
+server.headersTimeout = 15_000;
 
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
@@ -149,7 +188,7 @@ async function serveStatic(pathname, response) {
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const filePath = normalize(join(publicDir, safePath));
 
-  if (!filePath.startsWith(publicDir)) {
+  if (!filePath.startsWith(publicDir + sep)) {
     response.writeHead(403);
     response.end("Forbidden");
     return;
@@ -163,14 +202,13 @@ async function serveStatic(pathname, response) {
     });
     response.end(file);
   } catch {
-    const fallback = await readFile(join(publicDir, "index.html"));
-    response.writeHead(200, { "Content-Type": mimeTypes[".html"], "Cache-Control": "no-store" });
-    response.end(fallback);
+    response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+    response.end("Not found");
   }
 }
 
 function sendJson(response, status, data, headers = {}) {
-  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers });
+  response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers });
   response.end(JSON.stringify(data));
 }
 
@@ -227,7 +265,7 @@ function clientRateLimitKey(request) {
     .split(",")
     .map((item) => item.trim())
     .find(Boolean);
-  return forwardedFor || request.socket.remoteAddress || "unknown";
+  return (process.env.TRUST_PROXY === "true" && forwardedFor) || request.socket.remoteAddress || "unknown";
 }
 
 function pruneRateLimitBuckets(buckets, now) {

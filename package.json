@@ -6,9 +6,24 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:navigation": "node scripts/navigation-qa.mjs",
+    "test:release": "node scripts/release-qa.mjs",
+    "test:offline": "node scripts/offline-qa.mjs",
+    "ios:prepare": "node scripts/prepare-ios.mjs",
+    "ios:sync": "npm run ios:prepare && cap sync ios",
+    "ios:open": "cap open ios"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.4.3",
+    "@capacitor/ios": "8.4.3",
+    "@zxing/browser": "0.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.3",
+    "fake-indexeddb": "^6.2.5"
   }
 }

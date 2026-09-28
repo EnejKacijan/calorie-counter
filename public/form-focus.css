@@ -1,0 +1,63 @@
+/* One form-focus owner. A small important layer wins over legacy per-screen
+   !important paint rules without changing control geometry or native pickers.
+   Focus origin comes from touch-feedback, never from viewport width. */
+body {
+  --field-error: #a73327;
+}
+body[data-theme=dark] { --field-error: #ff9e8e; }
+#profileSettings { --field-error: #be493b; }
+body[data-theme=dark] #profileSettings { --field-error: #ffab9d; }
+#weightSheet { --field-error: var(--warn); }
+#onboarding { --field-error: #b43c2b; }
+body[data-theme=dark] #onboarding { --field-error: #ff9e8e; }
+
+@layer intake-field-focus {
+  /* Only editable text/number primitives. Select, date/time, file, range,
+     checkbox/radio and Assistant's existing compound composer are separate. */
+  :is(input:not([type]), input[type=text], input[type=search], input[type=number],
+      input[type=email], input[type=tel], input[type=url], input[type=password],
+      textarea:not(#assistantInput)):enabled:focus {
+    box-shadow: none !important;
+    background-image: none !important;
+    outline: none !important;
+  }
+
+  html:not([data-intake-touch]) :is(input:not([type]), input[type=text], input[type=search], input[type=number],
+      input[type=email], input[type=tel], input[type=url], input[type=password],
+      textarea:not(#assistantInput)):enabled:focus-visible {
+    box-shadow: none !important;
+    outline: 2px solid var(--ink) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Validation stays independent of modality. A zero-border nutrition field
+     still has a visible error edge; keyboard focus adds its separate outline. */
+  :is(input:not([type]), input[type=text], input[type=search], input[type=number],
+      input[type=email], input[type=tel], input[type=url], input[type=password],
+      textarea:not(#assistantInput)):enabled[aria-invalid=true] {
+    border-color: var(--field-error) !important;
+    box-shadow: inset 0 -1px var(--field-error) !important;
+  }
+
+  /* Onboarding numbers have one real border around input + unit. Put the cue
+     there, not on both that border and its borderless input (or the label). */
+  #onboarding .onboarding-number:focus-within {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  html:not([data-intake-touch]) #onboarding .onboarding-number:has(input:focus-visible) {
+    box-shadow: none !important;
+    outline: 2px solid var(--ink) !important;
+    outline-offset: 2px !important;
+  }
+  #onboarding .onboarding-number:has(input[aria-invalid=true]) {
+    border-color: var(--field-error) !important;
+  }
+  #onboarding .onboarding-number:has(input[aria-invalid=true]):focus-within {
+    box-shadow: inset 0 -1px var(--field-error) !important;
+  }
+  #onboarding .onboarding-number input:enabled:is(:focus,[aria-invalid=true]) {
+    box-shadow: none !important;
+    outline: none !important;
+  }
+}

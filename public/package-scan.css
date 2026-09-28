@@ -1,0 +1,135 @@
+/* Existing native dialog owns the scanner; only its body scrolls on mobile. */
+.package-scan-dialog.unified-scanner { padding: 20px; font-family: var(--font-ui); }
+.unified-scanner .scanner-header { flex: none; background: var(--panel); }
+.unified-scanner .scanner-header header { justify-content: flex-start; gap: 10px; margin: 0 0 14px; }
+.unified-scanner .scanner-header h2 { font-size: 20px; }
+body .unified-scanner .scanner-header .package-scan-close { display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0;border:0;box-shadow:none;-webkit-tap-highlight-color:transparent; }
+body .unified-scanner .package-scan-close svg { width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round; }
+body .unified-scanner .package-scan-close:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { opacity:.6; }
+/* A programmatic reading destination, never an interactive tab stop. */
+.unified-scanner #packageScanTitle:focus { outline: none; }
+.unified-scanner .scanner-modes { position: relative; isolation: isolate; gap: 0; padding: 0; border: 1px solid var(--line); grid-template-columns: repeat(3,minmax(0,1fr)); }
+.unified-scanner .scanner-mode-indicator { position: absolute; inset: 0 auto 0 0; width: calc(100% / 3); background: var(--ink); pointer-events: none; z-index: -1; }
+.package-scan-dialog.unified-scanner .scanner-modes button { min-width: 0; min-height: 48px; padding: 10px 4px; font-size: 14px; line-height: 1.3; transition: none; background: transparent; border-color: transparent; }
+.package-scan-dialog.unified-scanner .scanner-modes button[aria-pressed=true] { color: var(--panel); font-weight: 650; }
+.unified-scanner .scanner-body { min-height: 0; min-width: 0; padding-top: 16px; }
+.unified-scanner p { font-size: 14px; line-height: 1.5; }
+.unified-scanner .scanner-hint { margin: 0 0 16px; }
+.unified-scanner .scanner-placeholder { min-height: 0; padding: 20px 16px; text-align: left; line-height: 1.5; }
+.unified-scanner .scanner-surface video { height: clamp(180px,34dvh,340px); }
+.unified-scanner .scanner-controls { grid-template-columns: 1fr; gap: 10px; margin-top: 16px; }
+.package-scan-dialog.unified-scanner .scanner-controls button { border: 1px solid var(--line); padding: 12px; width: 100%; min-height: 48px; height: auto; border-radius: 0; font: 600 15px/1.4 var(--font-ui); }
+.package-scan-dialog.unified-scanner .scanner-controls [data-shutter],
+.package-scan-dialog.unified-scanner:not([data-camera-ready=true]) .scanner-controls [data-gallery] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.package-scan-dialog.unified-scanner [data-camera-retry],.package-scan-dialog.unified-scanner [data-enter-manual] { width: 100%; margin-top: 8px; border: 0; min-height: 44px; font-size: 14px; }
+.unified-scanner button { font-size: 14px; }
+.unified-scanner .package-code-label { margin-top: 0; font-size: 14px; }
+.unified-scanner .scanner-recovery { display: grid; gap: 8px; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.unified-scanner .scanner-recovery [data-label] { margin-top: 0; border: 1px solid var(--line); }
+.unified-scanner .scanner-recovery [data-enter-manual] { border: 0; }
+.unified-scanner .package-scan-status[role="alert"] { color: var(--ink); border-left: 2px solid currentColor; padding-left: 10px; }
+/* One native full-screen scanner, including development on wider viewports.
+   Its live Add parent paints underneath; a modal backdrop must NOT cover it. */
+  body dialog.package-scan-dialog.unified-scanner.mobile-surface {
+    position: fixed; inset: auto auto auto max(0px,calc((100vw - 430px)/2)); top: var(--surface-top,0px); bottom: auto!important;
+    width: min(100vw,430px); max-width: none; height: var(--surface-height,100dvh); max-height: none!important;
+    margin: 0; padding: max(16px,env(safe-area-inset-top)) 22px 0; border: 0; border-radius: 0;
+    overflow: clip; background: var(--panel);
+  }
+  body dialog.package-scan-dialog.unified-scanner[open] { display: flex; flex-direction: column; }
+  body dialog.package-scan-dialog.unified-scanner::backdrop { background: transparent; }
+  body dialog.package-scan-dialog.unified-scanner.is-exiting { pointer-events: none; }
+  .unified-scanner .scanner-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior-y: contain; margin-inline: -8px; padding: 16px 8px max(16px,env(safe-area-inset-bottom)); scrollbar-width: thin; }
+body #manualFoodForm[data-food-detail="scan"] #foodEditSummary small { display: block !important; text-transform: none !important; letter-spacing: normal !important; font-size: 13px !important; font-weight: 400 !important; line-height: 1.5 !important; }
+body #manualFoodForm[data-food-detail="scan"] #foodEditSummary small::before { content: none; }
+body #manualFoodForm[data-food-detail="scan"] #foodEditBrand { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Food-photo analysis has one status and one retained photo, not disabled tools. */
+body .unified-scanner [hidden] { display:none!important; }
+body .unified-scanner .scanner-photo-preview { display:block;width:100%;height:180px;object-fit:contain;image-orientation:from-image;background:var(--panel); }
+body .unified-scanner:has(.scanner-photo-preview:not([hidden])) .scanner-surface { border:0;min-height:0;height:auto; }
+body .unified-scanner .scanner-photo-status { display:flex;gap:12px;align-items:flex-start;margin:24px 0; }
+body .unified-scanner .scanner-photo-status strong { font:650 20px/1.3 var(--font-ui); }
+body .unified-scanner .scanner-photo-status p { margin:8px 0 0;color:var(--muted);font:400 14px/1.5 var(--font-ui); }
+body .unified-scanner[data-food-phase=analyzing] .scanner-body { display:flex;flex-direction:column;justify-content:center;gap:22px; }
+body .unified-scanner[data-food-phase=analyzing] .scanner-surface { flex:none; }
+body .unified-scanner[data-food-phase=analyzing] .scanner-photo-preview { height:clamp(240px,50dvh,440px); }
+body .unified-scanner[data-food-phase=analyzing] .scanner-photo-status { flex:none;justify-content:center;align-items:center;margin:0 0 24px; }
+body .unified-scanner[data-food-phase=analyzing] .scanner-photo-status strong { font-size:19px; }
+body .unified-scanner[data-food-phase=analyzing] .scanner-photo-status p { margin-top:5px; }
+.scanner-photo-spinner { flex:0 0 20px;width:20px;height:20px;margin-top:3px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:scanner-photo-spin 900ms linear infinite; }
+@keyframes scanner-photo-spin { to { transform:rotate(360deg); } }
+body .unified-scanner [data-food-analyze] { width:100%;min-height:48px;margin-top:16px;background:var(--ink);color:var(--panel);border:1px solid var(--ink);font:600 15px/1.4 var(--font-ui); }
+@media(prefers-reduced-motion:reduce) { .scanner-photo-spinner { animation:none; } }
+
+/* Photo results are one compact plate summary with an optional child editor. */
+body #manualFoodForm:has(#scanReview) #closeScanReview[hidden] { display:none!important; }
+body .is-photo-plate #manualFoodForm > :not(#scanReview) { display:none!important; }
+body .is-photo-plate #manualFoodForm #scanReview { display:flex!important;flex-direction:column;gap:14px;border:0!important;padding:0!important;margin:0; }
+body .is-photo-plate #scanReview [hidden] { display:none!important; }
+/* Keep the native picker's intrinsic value width plus its chevron gutter.
+   Longer localized options may move the control below the heading. */
+body .is-photo-plate #scanReview .scan-review-heading { order:1;display:flex;flex-wrap:wrap;align-items:center;gap:12px; }
+body .is-photo-plate #scanReview .scan-review-heading > :first-child { flex:3 1 8rem;min-width:0; }
+body .is-photo-plate #scanReview .scan-review-heading h3 { font:650 20px/1.3 var(--font-ui);overflow-wrap:anywhere; }
+body .is-photo-plate #scanReview .scan-review-heading p:not(.label) { font:400 13px/1.5 var(--font-ui); }
+body .is-photo-plate #scanReview .scan-review-heading-actions { display:block!important;flex:1 1 auto;min-width:0;max-width:100%; }
+body .is-photo-plate #scanReview .scan-review-heading-actions[hidden] { display:none!important; }
+body .is-photo-plate #manualFoodForm #scanReview .scan-review-meal { display:block!important;width:100%!important;max-width:100%;padding:8px 10px!important;min-height:64px; }
+body .is-photo-plate #manualFoodForm #scanReview .scan-review-meal select { max-width:100%; }
+body .is-photo-plate #scanReview > .food-photo-edit { order:0;border:0;padding:0;gap:12px; }
+body .is-photo-plate #scanReview .food-photo-edit-actions,body .is-photo-plate #scanReview .food-photo-edit [role=status] { display:none!important; }
+body .is-photo-plate #scanReview .food-photo-thumb { width:72px!important;height:72px!important;min-height:72px!important;flex-basis:72px!important; }
+body .is-photo-plate #scanReview .is-photo-preview { display:block; }
+body .is-photo-plate #scanReview .is-photo-preview > .food-photo-edit-copy { display:none; }
+body .is-photo-plate #scanReview .scan-photo-preview { display:flex;align-items:center;gap:16px;width:100%!important;height:auto!important;min-height:112px!important;padding:0!important;overflow:visible;color:var(--ink);text-align:left;font:500 15px/1.4 var(--font-ui);text-transform:none;letter-spacing:0; }
+body .is-photo-plate #scanReview .scan-photo-preview img { flex:none;width:112px;height:112px;object-fit:cover; }
+body .is-photo-plate #scanReview .scan-photo-copy { flex:1;min-width:0; }
+body .is-photo-plate #scanReview .scan-photo-copy strong { display:block;font:600 16px/1.4 var(--font-ui); }
+body .is-photo-plate #scanReview .scan-photo-copy small { display:block;margin-top:4px;color:var(--muted);font:400 13px/1.4 var(--font-ui); }
+body .is-photo-plate #scanReview .scan-photo-arrow { flex:none;font-size:22px;color:var(--muted); }
+body .is-photo-plate #scanReview .scan-photo-preview:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { opacity:.6; }
+body .is-photo-plate #scanReview #scanFoodList { order:2;display:grid;gap:0; }
+body .is-photo-plate #scanReview .scan-plate-row { display:grid!important;grid-template-columns:minmax(0,1fr) auto 14px;align-items:center;gap:10px;min-width:0;width:100%;min-height:68px;height:auto;padding:14px 0!important;margin:0;border:0!important;border-bottom:1px solid var(--line)!important;background:transparent!important;color:var(--ink)!important;text-align:left;font:400 14px/1.4 var(--font-ui)!important;letter-spacing:0!important;text-transform:none!important; }
+body .is-photo-plate #scanReview .scan-plate-row strong { display:block;font:600 16px/1.4 var(--font-ui);overflow-wrap:anywhere; }
+body .is-photo-plate #scanReview .scan-plate-row small { display:block;margin-top:3px;color:var(--muted);font:400 13px/1.4 var(--font-ui);overflow-wrap:anywhere; }
+body .is-photo-plate #scanReview .scan-plate-kcal { white-space:nowrap;font-weight:600; }
+body .is-photo-plate #scanReview .scan-plate-arrow { color:var(--muted);font-size:20px; }
+:where(html:not([data-intake-touch])) body .is-photo-plate #scanReview .scan-plate-row:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { background:color-mix(in srgb,var(--ink) 7%,transparent)!important; }
+body .is-photo-plate #scanReview .scan-review-footer { order:3;position:static!important;display:grid;grid-template-columns:1fr;gap:12px;margin:0;padding:10px 0 0!important;border:0; }
+body .is-photo-plate #scanReview .scan-simple-save-actions { display:flex!important;justify-content:flex-start;min-height:44px;order:2!important;margin:0;padding:0;border:0; }
+body .is-photo-plate #scanReview .scan-simple-save-actions[hidden] { display:none!important; }
+body .is-photo-plate #scanReview #scanSaveAsMeal { width:100%;min-height:44px;margin:0;padding:8px 0!important;border:0!important;background:transparent!important;color:var(--ink)!important;box-shadow:none!important;text-decoration:none!important;font:500 14px/1.4 var(--font-ui)!important;text-transform:none!important;letter-spacing:0!important; }
+body .is-photo-plate #scanReview #scanSaveAsMeal:active:where(:not([data-intake-touch] *),[data-touch-pressed]) { opacity:.6; }
+body .is-photo-plate #scanReview .scan-review-total small { font:400 12px/1.5 var(--font-ui); }
+body .is-photo-plate #scanReview .scan-review-footer-actions { order:1; }
+body .is-photo-plate #scanReview #scanAddSelectedFoods { min-height:48px;font:600 15px/1.4 var(--font-ui)!important;letter-spacing:0!important;text-transform:none!important; }
+body .is-photo-plate #scanReview #scanNoFood { order:2; }
+body .is-photo-plate #scanReview .scan-food-card { border:0!important;padding:0!important;background:transparent; }
+body .is-photo-plate #scanReview .scan-food-card-top { display:block; }
+body .is-photo-plate #scanReview .scan-food-number,body .is-photo-plate #scanReview .scan-food-summary { display:none; }
+body .is-photo-plate #scanReview .scan-food-card-actions { display:flex!important;justify-content:space-between;gap:16px; }
+body .is-photo-plate #scanReview .scan-food-fields { margin:16px 0;gap:14px; }
+body .is-photo-plate #scanReview .scan-food-fields input,body .is-photo-plate #scanReview .scan-food-fields select { font:500 16px/1.4 var(--font-ui)!important;letter-spacing:0!important; }
+body .is-photo-plate #scanReview .scan-food-details-toggle,body .is-photo-plate #scanReview .scan-food-correction { margin:12px 0 0!important; }
+body .is-photo-plate #scanReview .scan-food-details-toggle { width:100%!important; }
+body .is-photo-plate #scanReview button:focus-visible { outline:2px solid var(--ink)!important;outline-offset:2px; }
+body .is-photo-plate #scanReviewTitle:focus { outline:none; }
+body .is-photo-plate #scanRemoveUndo { order:2;min-height:44px;border:0;background:transparent;color:var(--ink);font:500 14px/1.4 var(--font-ui);text-transform:none;letter-spacing:0; }
+@media (max-width:640px) {
+  /* The shared lock retains the old document range. This full-screen review
+     instead owns all scrolling; restore the original range when it leaves. */
+  html:has(.add-flow-surface.is-photo-plate) { height:100%;min-height:0!important;overflow:clip!important; }
+  /* Photo viewing must retain the shared lock's document range: it reveals
+     the same diary underneath, including its fixed footer, during close. */
+  html:has(.unified-scanner[open]) { height:100%;min-height:0!important;overflow:clip!important; }
+  body .unified-scanner .scanner-body { overscroll-behavior-y:none; }
+  body .add-flow-surface.is-photo-plate .add-flow-content { overscroll-behavior-y:none; }
+  body .add-flow-surface.is-photo-plate[data-review-scroll=false] .add-flow-content { overflow-y:clip; }
+}
+body .unified-scanner[data-food-phase=error] .scanner-body { display:flex;flex-direction:column; }
+body .unified-scanner[data-food-phase=error] .scanner-recovery { order:1;margin:0;padding:0;border:0; }
+body .unified-scanner[data-food-phase=error] [data-retry] { min-height:48px;background:var(--ink);color:var(--panel);border:1px solid var(--ink); }
+body .unified-scanner[data-food-phase=error] .scanner-controls { order:2;margin-top:8px; }
+body .package-scan-dialog.unified-scanner[data-food-phase=error] .scanner-controls [data-gallery] { background:transparent;color:var(--ink);border:0; }
+body .unified-scanner[data-food-phase=error] [data-enter-manual] { order:3; }

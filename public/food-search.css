@@ -1,0 +1,102 @@
+/* Add/search/detail only. The diary, ring and scanner surfaces keep their styles. */
+body .food-log.is-adding:not(.is-detailing):not(.is-editing):not(.is-reviewing-scan):not(.is-describing-ai):not(.is-viewing-saved) #manualFoodForm {
+  display: flex !important; flex-direction: column; gap: 0 !important;
+}
+body #manualFoodForm:not([data-food-detail]) .food-search-row { order: 0 !important; }
+body #manualFoodForm:not([data-food-detail]) .food-filter-tabs { order: 1 !important; }
+body #manualFoodForm:not([data-food-detail]) #savedLibraryHint { order: 2 !important; }
+body #manualFoodForm:not([data-food-detail]) #searchNote { order: 3 !important; }
+body #manualFoodForm:not([data-food-detail]) .food-filter-viewport { order: 3 !important; }
+/* The browse form fills the scrollport's content box. Its final flex child is
+   the one peer surface, including the visible space below short results. */
+body #foodSection.add-flow-surface:not(.is-detailing):not(.is-editing):not(.is-reviewing-scan):not(.is-describing-ai):not(.is-viewing-saved) #manualFoodForm:not([data-food-detail]) { min-height: 100% !important; }
+.food-filter-viewport { display: flex; position: relative; width: 100%; min-width: 0; flex: 1 0 auto; overflow: hidden; overflow-anchor: none; }
+.food-filter-pane { display: flow-root; flex: 0 0 100%; width: 100%; min-width: 0; box-sizing: border-box; }
+.food-filter-viewport > .peer-pane-track { align-self: stretch; align-items: stretch; }
+.food-peer-actions { display: block; width: 100%; padding-bottom: 8px; }
+.food-peer-actions > button { width: 100%; }
+body #manualFoodForm[data-food-detail] .food-filter-viewport,
+body #foodSection:is(.is-detailing,.is-editing,.is-reviewing-scan,.is-describing-ai) .food-filter-viewport { display: none !important; }
+body #manualFoodForm:not([data-food-detail]) .food-filter-tabs:not([hidden]) {
+  display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 !important;
+  border: 0 !important; border-bottom: 1px solid var(--line) !important; margin: 12px 0 8px !important;
+}
+body #manualFoodForm:not([data-food-detail]) .food-filter-tabs button {
+  min-width: 0; min-height: 44px !important; padding: 8px 4px !important; border: 0 !important;
+  border-bottom: 2px solid transparent !important; background: transparent !important; color: var(--muted) !important;
+  font-family: var(--font-ui); font-size: 12px !important; letter-spacing: 0 !important; text-transform: none !important;
+}
+body #manualFoodForm:not([data-food-detail]) .food-filter-tabs button.is-active { color: var(--ink) !important; border-bottom-color: var(--ink) !important; }
+body #manualFoodForm .search-saved-entry {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 48px;
+  margin: 0 0 10px; padding: 12px; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  font-family: var(--font-ui); font-size: 13px; text-transform: none; letter-spacing: 0; text-align: left;
+}
+body #manualFoodForm .suggestion-card {
+  display: grid !important; grid-template-columns: minmax(0, 1fr) auto !important; align-items: start; gap: 12px !important;
+  width: 100%; min-height: 64px !important; padding: 14px 10px !important; margin: 0 !important;
+}
+body #manualFoodForm .suggestion-card > div { min-width: 0; }
+body #manualFoodForm .suggestion-card strong {
+  display: block; font-size: 15px !important; line-height: 1.35; font-weight: 650;
+  white-space: normal !important; overflow-wrap: anywhere; text-transform: none !important;
+}
+body #manualFoodForm .suggestion-brand { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
+body #manualFoodForm .suggestion-card p { display: block !important; margin: 5px 0 0 !important; line-height: 1.5; white-space: normal !important; text-transform: none !important; }
+body #manualFoodForm .suggestion-serving { color: var(--ink) !important; font-size: 12px !important; }
+body #manualFoodForm .suggestion-source { color: var(--muted) !important; font-size: 10px !important; }
+body #manualFoodForm .suggestion-saved { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 400; color: var(--muted); }
+body #manualFoodForm .suggestion-kcal { white-space: nowrap; font-size: 13px !important; line-height: 1.5; padding-top: 1px; }
+body #manualFoodForm :is(.food-search-error,.food-search-fallbacks) { margin: 12px 0; padding: 16px 12px; border: 1px solid var(--line); }
+body #manualFoodForm :is(.food-search-error,.food-search-fallbacks) p { font-size: 13px; line-height: 1.5; color: var(--muted); }
+body #manualFoodForm :is(.food-search-error,.food-search-fallbacks) button { min-height: 44px; white-space: normal; }
+body #manualFoodForm :is(#foodEditBrand,[data-food-fallback])[hidden] { display: none !important; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) .food-search-row { order: initial; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) .food-edit-summary { padding: 22px 18px 18px !important; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) .food-edit-summary > :is(span,small) { display: none !important; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) #foodEditName { font-size: 22px !important; line-height: 1.25; overflow-wrap: anywhere; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) #foodEditBrand { margin: 6px 0 0; font-size: 13px; line-height: 1.5; font-weight: 400; color: var(--muted); }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) #foodAmount { font-size: 24px !important; }
+body #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) #manualFoodSubmit {
+  position: sticky !important; bottom: 0; z-index: 2; min-height: 52px; margin-top: 0 !important;
+  background: var(--ink) !important; color: var(--panel) !important; box-shadow: 0 -1px var(--line);
+}
+body #manualFoodForm .search-saved-entry:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+body #foodSection #manualFoodForm :is(#foodSuggestions,[data-peer-results]) {
+  width: 100% !important; max-width: none !important; min-width: 0; margin-inline: 0 !important; align-self: stretch !important;
+  height: auto !important; max-height: none !important; overflow: visible !important; flex: 0 0 auto;
+}
+body #foodSection #manualFoodForm .suggestion-card { height: auto !important; max-height: none !important; flex: 0 0 auto !important; }
+body #foodSection #manualFoodForm:not([data-food-detail]) .food-filter-tabs button {
+  background: transparent !important; color: var(--muted) !important; font-size: 12px !important; text-transform: none !important;
+  border: 0 !important; border-bottom: 2px solid transparent !important;
+}
+body #foodSection #manualFoodForm:not([data-food-detail]) .food-filter-tabs button.is-active { color: var(--ink) !important; border-bottom-color: var(--ink) !important; }
+body #manualFoodForm:not([data-food-detail]) #savedLibraryHint { display: none !important; }
+body #foodSection .food-log:not(.is-detailing):not(.is-reviewing-scan):not(.is-describing-ai) .manual-food-shortcut,
+body #foodSection.is-adding:not(.is-detailing):not(.is-reviewing-scan):not(.is-describing-ai) .manual-food-shortcut { display: flex !important; }
+body #foodSection #manualFoodForm .food-filter-pane:has(.food-search-fallbacks,.food-search-error) .manual-food-shortcut { display:none!important; }
+body #manualFoodForm :is(.food-search-fallbacks,.food-search-error) button { min-width:0;overflow-wrap:anywhere; }
+@media (max-width: 640px) {
+  body #foodSection.add-flow-surface #manualFoodForm :is(#searchNote,[data-peer-note]) {
+    align-self:stretch!important;width:100%!important;min-width:0!important;text-align:left!important;
+    white-space:normal!important;overflow-wrap:anywhere;font:400 12px/1.5 var(--font-ui)!important;
+    margin:8px 0!important;padding:0!important;
+  }
+  body #foodSection.add-flow-surface #manualFoodForm :is(#foodSuggestions,[data-peer-results]) { border:0!important; background:transparent!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .food-suggestions-more { min-height:44px!important;font:500 14px/1.4 var(--font-ui)!important;text-transform:none!important;letter-spacing:0!important;border:0!important;background:transparent!important;margin:0!important;padding:10px 0!important;color:var(--muted)!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card {
+    align-items:start!important;min-height:56px!important;padding:8px 0!important;gap:10px!important;
+    border:0!important;border-bottom:1px solid var(--line)!important;box-shadow:none!important;
+  }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card > div { display:block!important;min-width:0!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card strong { font:600 15px/1.35 var(--font-ui)!important;letter-spacing:0!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card p { display:block!important;margin:2px 0 0!important;font:400 12px/1.4 var(--font-ui)!important;letter-spacing:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;color:var(--muted)!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card p span { white-space:normal!important;overflow-wrap:anywhere; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card .suggestion-brand { display:inline!important;margin:0;font:400 12px/1.4 var(--font-ui)!important;overflow-wrap:anywhere;text-transform:none!important;letter-spacing:0!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card .suggestion-kcal { align-self:start!important;min-width:0!important;margin:0!important;padding:0!important;font:500 13px/1.55 var(--font-ui)!important;text-transform:none!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card .suggestion-serving { font:400 12px/1.4 var(--font-ui)!important;text-transform:none!important;letter-spacing:0!important; }
+  body #foodSection.add-flow-surface #manualFoodForm .suggestion-card .suggestion-source { display:inline-block!important;min-height:0!important;padding:0!important;margin:2px 0 0!important;border:0!important;background:transparent!important;font:400 11px/1.4 var(--font-ui)!important;text-transform:none!important;letter-spacing:0!important; }
+  body #foodSection #manualFoodForm #manualFoodName,
+  body #foodSection #manualFoodForm[data-food-detail]:not([data-food-detail="scan"]) :is(#manualFoodCalories,#manualFoodProtein,#manualFoodCarbs,#manualFoodFat) { font-size: 16px !important; }
+}

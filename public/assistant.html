@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-intake-starting>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f5ee" />
+    <link rel="stylesheet" href="startup.css?v=1" />
+    <script src="startup-theme.js?v=1"></script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Intake" />
     <meta name="apple-mobile-web-app-title" content="Intake" />
@@ -12,10 +14,16 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest?v=8" />
-    <link rel="stylesheet" href="styles.css?v=45" />
-  </head>
-  <body class="assistant-page">
-    <main class="app-shell" id="appShell">
+  <link rel="stylesheet" href="styles.css?v=75" />
+  <link rel="stylesheet" href="touch-feedback.css?v=2" />
+    <link rel="stylesheet" href="modern-ux.css?v=9" />
+  <link rel="stylesheet" href="bottom-navigation.css?v=3" />
+    <link rel="stylesheet" href="assistant-usability.css?v=15" />
+  <link rel="stylesheet" href="food-photos.css?v=6" />
+</head>
+  <body class="assistant-page" data-app-loading>
+    <p id="appStartupStatus" role="status"><span>Opening Intake…</span><button type="button" hidden>Reload</button></p>
+    <main class="app-shell" id="appShell" inert data-startup-surface aria-busy="true">
       <aside class="sidebar" id="sidebar">
         <div class="brand-mark">
           <span class="brand-icon sidebar-icon" aria-hidden="true"><svg class="intake-mark" viewBox="0 0 24 24"><circle class="intake-mark-ring" cx="12" cy="12" r="7.5" pathLength="100" /><circle class="intake-mark-accent" cx="12" cy="12" r="7.5" pathLength="100" /><path class="intake-mark-spark" d="M12 8.6c.35 2.05 1.35 3.05 3.4 3.4-2.05.35-3.05 1.35-3.4 3.4-.35-2.05-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.35 3.4-3.4Z" /></svg></span>
@@ -35,7 +43,6 @@
           <div><strong id="profileSummary">Your Plan</strong><small id="profileMeta">Goal</small></div>
         </div>
 
-        <button class="logout-button" id="logoutButton" type="button"><span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4H9" /><path d="M14 8l4 4-4 4" /><path d="M18 12H9" /></svg></span> <b>Log out</b></button>
       </aside>
       <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation"></button>
 
@@ -51,103 +58,105 @@
         <section class="assistant-shell" aria-labelledby="assistantTitle">
           <header class="assistant-header">
             <div>
-              <p class="label">AI nutrition assistant</p>
-              <h2 id="assistantTitle">Talk through your food.</h2>
-              <p>Ask about patterns in your diary, nutrition, digestion, energy, or skin. The assistant can suggest possible connections, not diagnose a condition.</p>
+              <h1 id="assistantTitle" tabindex="-1">Ask Intake</h1>
             </div>
             <div class="assistant-header-actions">
               <button class="assistant-history-open" id="assistantHistoryOpen" type="button" aria-expanded="false"
                 aria-controls="assistantHistory">History</button>
-              <button class="assistant-clear" id="assistantClear" type="button">New conversation</button>
+              <button class="assistant-clear" id="assistantClear" type="button" aria-label="New conversation" hidden>New</button>
             </div>
           </header>
 
-          <div class="assistant-history-backdrop" id="assistantHistoryBackdrop" aria-hidden="true" hidden></div>
-          <aside class="assistant-history" id="assistantHistory" role="dialog" aria-modal="true" aria-labelledby="assistantHistoryTitle" hidden>
+          <dialog class="assistant-history assistant-nested-surface" id="assistantHistory" aria-labelledby="assistantHistoryTitle" hidden>
             <header>
-              <div>
-                <p class="label">Saved locally</p>
-                <h3 id="assistantHistoryTitle">Conversations</h3>
-              </div>
               <button class="assistant-history-close" id="assistantHistoryClose" type="button"
-                aria-label="Close conversations">×</button>
+                aria-label="Back to Assistant">←</button>
+              <h2 id="assistantHistoryTitle" tabindex="-1" autofocus>Conversations</h2>
+              <button id="assistantHistoryNew" type="button" aria-label="New conversation" hidden>New</button>
             </header>
             <div class="assistant-history-list" id="assistantHistoryList"></div>
-            <button class="assistant-history-delete-all" id="assistantHistoryDeleteAll" type="button">Delete all
+            <button class="assistant-history-delete-all" id="assistantHistoryDeleteAll" type="button" hidden>Delete all
               conversations</button>
-          </aside>
+          </dialog>
 
-          <div class="assistant-context-bar" id="assistantContextBar">
-            <button class="assistant-context-summary" id="assistantContextDisclosure" type="button"
-              aria-expanded="false" aria-controls="assistantContextControls">
-              <span>Conversation</span>
-              <b id="assistantContextSummary">Food diary · Last 7 days</b>
-              <i aria-hidden="true">
-                <svg viewBox="0 0 16 16" focusable="false">
-                  <path d="m3.25 5.75 4.75 4.5 4.75-4.5" />
-                </svg>
-              </i>
-            </button>
-            <div class="assistant-context-controls" id="assistantContextControls">
-              <div class="assistant-mobile-conversation-actions">
-                <button class="assistant-history-open" id="assistantMobileHistoryOpen" type="button"
-                  aria-expanded="false" aria-controls="assistantHistory">History</button>
-                <button class="assistant-clear" id="assistantMobileClear" type="button">New conversation</button>
-              </div>
+          <dialog class="assistant-context-controls assistant-nested-surface" id="assistantContextControls" aria-labelledby="assistantContextTitle" hidden>
+            <div class="ux-sheet-handle" aria-hidden="true"><span></span></div>
+            <header><h2 id="assistantContextTitle" tabindex="-1" autofocus>Diary context</h2><button id="assistantContextClose" type="button" aria-label="Close diary context">×</button></header>
+            <div class="assistant-context-body">
               <label class="assistant-context-toggle">
                 <input id="assistantDiaryToggle" type="checkbox" checked />
                 <span aria-hidden="true"></span>
                 <b>Use my food diary</b>
                 <em id="assistantDiaryState">On</em>
               </label>
-              <label class="assistant-range" for="assistantRange"><span>Context</span><select id="assistantRange">
+              <label class="assistant-range" for="assistantRange"><span>Include</span><select id="assistantRange">
                   <option value="7">Last 7 days</option>
                   <option value="30">Last 30 days</option>
                 </select></label>
               <p class="assistant-context-note" id="assistantContextNote">Your selected diary entries are sent only when you ask a question.</p>
+              <p class="assistant-context-next">Changes apply to your next question, not earlier messages.</p>
             </div>
-          </div>
+            <button id="assistantContextDone" type="button">Done</button>
+          </dialog>
 
-          <button class="assistant-conversation-backdrop" id="assistantConversationBackdrop" type="button"
-            aria-label="Close conversation settings" hidden></button>
+          <dialog class="assistant-message-actions-popover assistant-nested-surface" id="assistantMessageActions" aria-labelledby="assistantMessageActionsTitle" hidden>
+            <h2 class="sr-only" id="assistantMessageActionsTitle" tabindex="-1">Message actions</h2>
+            <button type="button" data-message-action="copy">Copy</button>
+            <button type="button" data-message-action="select">Select text</button>
+          </dialog>
+          <dialog class="assistant-text-selection assistant-nested-surface" id="assistantTextSelection" aria-labelledby="assistantTextSelectionTitle" hidden>
+            <header>
+              <button id="assistantTextSelectionBack" type="button" aria-label="Back">←</button>
+              <h2 id="assistantTextSelectionTitle" tabindex="-1">Select text</h2>
+              <button id="assistantTextSelectionClose" type="button" aria-label="Close">×</button>
+            </header>
+            <p data-selection-note hidden></p>
+            <div class="assistant-text-selection-body" id="assistantTextSelectionBody"></div>
+          </dialog>
 
-          <section class="assistant-conversation">
+          <section class="assistant-conversation" tabindex="0" aria-label="Conversation">
             <div class="assistant-empty" id="assistantEmpty">
-              <div class="assistant-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 5.5 22.8 17l11.7 3-11.7 3L20 34.5 17.2 23 5.5 20l11.7-3L20 5.5Z" /></svg></div>
-              <h3>What would you like to understand?</h3>
-              <p>I can look for patterns in what you logged and ask a few useful follow-up questions.</p>
+              <h2>A little perspective<br>on what you eat.</h2>
+              <p>Explore your food diary. Spot patterns and get a clearer picture of your meals.</p>
               <div class="assistant-starters" aria-label="Conversation starters">
-                <button type="button" data-assistant-prompt="I have been feeling more bloated lately. Can you look at my food diary for possible patterns?">Why am I bloated?</button>
-                <button type="button" data-assistant-prompt="Could anything in my recent food diary be connected with a skin breakout?">Food and my skin</button>
-                <button type="button" data-assistant-prompt="Review my recent food diary and tell me the most useful pattern you notice.">Review recent days</button>
-                <button type="button" data-assistant-prompt="How could I improve my protein intake based on what I have logged?">Improve my protein</button>
+                <button type="button" data-assistant-prompt="Review my last 7 days">Review my last 7 days<span aria-hidden="true">↗</span></button>
+                <button type="button" data-assistant-prompt="How is my protein intake?">How is my protein intake?<span aria-hidden="true">↗</span></button>
+                <button type="button" data-assistant-prompt="Which meals have the most calories?">Which meals have the most calories?<span aria-hidden="true">↗</span></button>
+                <button type="button" data-assistant-prompt="Spot patterns in my eating">Spot patterns in my eating<span aria-hidden="true">↗</span></button>
               </div>
             </div>
 
-            <div class="assistant-messages" id="assistantMessages" aria-live="polite"></div>
-            <div class="assistant-typing" id="assistantTyping" hidden aria-label="Assistant is thinking"><i></i><i></i><i></i></div>
+            <div class="assistant-messages" id="assistantMessages" aria-live="polite" aria-relevant="additions"></div>
+            <div class="assistant-typing" id="assistantTyping" hidden aria-hidden="true"><span class="assistant-attribution">Intake</span><div><i></i><i></i><i></i></div></div>
           </section>
 
           <div class="assistant-chat-footer">
+            <button class="assistant-jump-latest" id="assistantJumpLatest" type="button" aria-label="Jump to latest" aria-controls="assistantMessages" hidden inert><span class="assistant-jump-face"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6" /></svg></span></button>
+            <p class="sr-only" id="assistantSendStatus" role="status"></p>
+            <p class="sr-only" id="assistantCopyStatus" role="status" aria-live="polite"></p>
+            <div class="assistant-context-bar" id="assistantContextBar">
+              <button class="assistant-context-summary" id="assistantContextDisclosure" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="assistantContextControls">
+                <b id="assistantContextSummary">Diary · 7 days</b><span aria-hidden="true">⌃</span>
+              </button>
+            </div>
             <form class="assistant-composer" id="assistantForm">
               <label class="sr-only" for="assistantInput">Message the nutrition assistant</label>
               <textarea id="assistantInput" rows="1" maxlength="2000" placeholder="Ask about your food..." required></textarea>
               <button id="assistantSend" type="submit" aria-label="Send message" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3.2-5.1L5 12Z" /><path d="M11.8 13.9 19 5" /></svg></button>
             </form>
-            <p class="assistant-footnote">AI can make mistakes. For severe, worsening, or persistent symptoms, contact a healthcare professional.</p>
+            <p class="assistant-footnote">AI can make mistakes. For severe, worsening or persistent symptoms, seek medical care.</p>
           </div>
         </section>
       </section>
     </main>
 
-    <nav class="mobile-tabbar" aria-label="Mobile navigation">
-      <a href="index.html"><b>Today</b></a>
-      <a class="is-active" href="assistant.html"><b>Assistant</b></a>
-      <a href="progress.html"><b>Progress</b></a>
-      <a href="profile.html"><b>Profile</b></a>
-    </nav>
+<nav class="mobile-tabbar" aria-label="Mobile navigation" inert data-startup-surface aria-busy="true">
+    <a href="index.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 10.25 12 4.5l7 5.75V20H5z M9.5 20v-6.25h5V20z" /></svg></span><b class="nav-label">Today</b></a>
+    <a class="is-active" aria-current="page" href="assistant.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 5.5h15v10.5h-8.25L7.5 19.5V16h-3z" /></svg></span><b class="nav-label">Assistant</b></a>
+    <a href="progress.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 13.5h3.5V20H4z M10.25 9.5h3.5V20h-3.5z M16.5 5h3.5v15h-3.5z" /></svg></span><b class="nav-label">Progress</b></a>
+    <a href="profile.html"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.6 7.5a3.6 3.6 0 1 1-7.2 0 3.6 3.6 0 0 1 7.2 0z M5.5 20.5a6.5 6.5 0 0 1 13 0z" /></svg></span><b class="nav-label">Profile</b></a>
+  </nav>
 
-    <script src="pwa.js?v=8"></script>
-    <script src="assistant.js?v=7"></script>
+    <script src="app-start.js?v=28"></script>
   </body>
 </html>

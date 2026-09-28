@@ -1,0 +1,72 @@
+/* Local Progress integration only: existing panels, renderer and tokens. */
+.progress-range-viewport { min-width:0; overflow:hidden; touch-action:pan-y pinch-zoom; }
+.progress-range-track { display:flex; width:100%; transform:translate3d(-100%,0,0); will-change:transform; }
+.progress-range-page { flex:0 0 100%; width:100%; min-width:0; }
+.progress-range-page[aria-hidden="true"] { pointer-events:none; }
+body.progress-page #progressMain #progressList { max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
+body.progress-page #progressMain #progressList .progress-entry-card { display: grid !important; grid-template-columns: minmax(0, 1fr) 44px !important; gap: 8px; }
+body.progress-page #progressMain #progressList .weight-entry-edit {
+  display: flex !important; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100% !important; height: auto !important; min-height: 48px !important;
+  border: 0; background: transparent; color: var(--ink); text-align: left; padding: 8px 0;
+}
+body.progress-page #progressMain #progressList .weight-entry-edit p { display: flex; gap: 12px; margin: 0; }
+body.progress-page #progressMain #progressList [data-delete-weight] { width: 44px !important; height: 44px !important; min-height: 44px !important; }
+body.progress-page #progressMain :is(button, input):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+body.progress-page #progressMain .nutrition-bar.is-neutral { fill: var(--ink); }
+/* The old 46px grid squeezed a native select AND its detail into one fixed
+   height. WebKit clipped the select's inner text even with a 44px outer box.
+   Let both rows keep their intrinsic height, including enlarged text. */
+body.progress-page #progressMain .nutrition-chart-detail {
+  height: auto; min-height: 0; margin: 0; gap: 6px;
+}
+body.progress-page #progressMain #nutritionChartDetailDate {
+  width: auto; max-width: 100%; min-width: min(140px, 100%);
+  height: auto; min-height: 44px; padding: 8px 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  font: inherit; font-size: max(16px, 1rem) !important; letter-spacing: normal;
+}
+body.progress-page #progressMain #nutritionChartDetailDate:focus-visible {
+  outline: 2px solid var(--ink) !important; outline-offset: 2px;
+}
+body.progress-page #progressMain .nutrition-summary-grid :is(span, strong) { overflow-wrap: anywhere; white-space: normal; }
+@media (max-width: 700px) {
+  body.progress-page #progressMain { padding-bottom: calc(90px + env(safe-area-inset-bottom)) !important; }
+  body.progress-page #progressMain .nutrition-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.progress-page #progressMain .nutrition-summary-grid span { font-size: 13px !important; letter-spacing: 0; }
+  body.progress-page #progressMain .nutrition-summary-grid strong { font-size: 20px; line-height: 1.3; }
+  body.progress-page #progressMain .nutrition-insight p { font-size: 14px; line-height: 1.5; }
+}
+
+/* Short Weight task uses the shared sheet/viewport owner, not inline page scroll. */
+body.progress-page #progressMain .weight-lower-layout { grid-template-columns:minmax(0,1fr); }
+body.progress-page #weightSheetBackdrop { position:fixed; inset:0; z-index:1499; background:rgb(0 0 0 / 40%); }
+body.progress-page #weightSheet { position:fixed; inset:auto 0 var(--surface-bottom,0px); z-index:1500; display:flex; flex-direction:column; width:100%; box-sizing:border-box; height:auto; max-height:calc(var(--surface-height,100dvh) - 12px); margin:0; padding:0; border:0; border-top:1px solid var(--line); background:var(--panel); color:var(--ink); overflow:clip; }
+body.progress-page :is(#weightSheet,#weightSheetBackdrop,#weightFormError,#weightUndoToast,#weightUndoToast button)[hidden] { display:none!important; }
+body.progress-page #weightSheetHandle { flex:0 0 28px; min-height:28px; }
+body.progress-page #weightFormTitle { flex:none; margin:0; padding:4px 22px 6px; font:600 21px/1.3 var(--font-ui); }
+body.progress-page #weightFormTitle:focus { outline:none; }
+body.progress-page #progressForm { display:flex; flex-direction:column; min-height:0; margin:0; padding:0; border:0; gap:0; }
+body.progress-page #weightSheetContent { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; touch-action:pan-y pinch-zoom; padding:0 22px 12px; display:grid; gap:12px; }
+body.progress-page #weightSheet label { display:grid; gap:4px; min-width:0; font:500 13px/1.4 var(--font-ui); color:var(--muted); text-transform:none; letter-spacing:0; }
+body.progress-page #weightSheet input { box-sizing:border-box; min-width:0; width:100%; min-height:48px; height:auto; margin:0; padding:10px 12px; border:1px solid var(--line); border-radius:0; background:var(--panel); color:var(--ink); font:400 18px/1.4 var(--font-ui); }
+body.progress-page #weightSheet #progressDate { width:min(100%,13rem)!important; inline-size:min(100%,13rem)!important; max-width:100%; font-size:16px; }
+body.progress-page #weightSheet .weight-date-field { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; column-gap:16px; row-gap:6px; }
+body.progress-page #weightSheet .weight-date-field > span { flex:1 0 auto; }
+body.progress-page #progressDate::-webkit-date-and-time-value { min-width:0; text-align:left; }
+body.progress-page #weightSheet .weight-input { position:relative; color:var(--ink); font-size:16px; }
+body.progress-page #weightSheet #progressWeight { padding-right:3em; }
+body.progress-page #weightSheet .weight-input > span { position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; }
+body.progress-page #weightSheet .weight-form-actions { flex:none; display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 22px max(12px,var(--surface-safe-bottom,env(safe-area-inset-bottom))); border-top:1px solid var(--line); }
+body.progress-page #weightSheet .weight-form-actions button { min-width:0; min-height:48px; margin:0; padding:10px 6px; border:1px solid var(--line); background:transparent; color:var(--ink); font:600 15px/1.4 var(--font-ui); text-transform:none; letter-spacing:0; }
+body.progress-page #weightSheet #weightSave { background:var(--ink); color:var(--panel); border-color:var(--ink); }
+body.progress-page #weightSheet :is(button,input):focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+body.progress-page #weightFormError { margin:0; font:400 14px/1.4 var(--font-ui); color:var(--warn); }
+body.progress-page #weightSheet [aria-invalid=true] { border-color:var(--warn); }
+body.progress-page.weight-sheet-open > .mobile-tabbar,
+body.progress-page.weight-sheet-open > .mobile-tabbar * { visibility:hidden!important; }
+body.progress-page #weightUndoToast { bottom:var(--weight-notice-bottom,calc(90px + env(safe-area-inset-bottom))); z-index:1400; }
+body.progress-page #weightSheetNotice { flex:none; }
+body.progress-page #weightSheetNotice #weightUndoToast { position:static; width:auto; max-width:none; margin:0 22px 8px; transform:none; box-shadow:none; }
+body.progress-page #weightUndoToast span { font:500 13px/1.4 var(--font-ui); letter-spacing:0; text-transform:none; }
+body.progress-page #weightUndoToast button { flex:none; }

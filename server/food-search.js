@@ -1,14 +1,23 @@
+import { normalizeBarcode } from "../public/barcode.js";
 const foodCache = new Map();
 
 export async function lookupFoodBarcode(barcode) {
-  const cleanBarcode = String(barcode || "").replace(/\D/g, "");
-  if (!/^\d{8,14}$/.test(cleanBarcode)) throw new Error("Enter a valid 8–14 digit barcode.");
+  let cleanBarcode;
+  try { cleanBarcode = normalizeBarcode(barcode); } catch (error) { error.status = 400; throw error; }
 
   const data = await fetchJson(`https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json?fields=code,product_name,brands,nutriments,serving_size`);
   if (data.status !== 1 || !data.product) return null;
 
   const product = data.product;
+  product.nutriments ||= {};
+  const valid = value => value !== null && value !== "" && value !== undefined && Number.isFinite(Number(value)) && Number(value) >= 0;
+  for (const suffix of ["100g", "serving"]) {
+    if (!valid(product.nutriments[`energy-kcal_${suffix}`]) && valid(product.nutriments[`energy-kj_${suffix}`])) product.nutriments[`energy-kcal_${suffix}`] = Number(product.nutriments[`energy-kj_${suffix}`]) / 4.184;
+  }
   const serving = openFoodFactsServing(product);
+  if (!["energy-kcal", "proteins", "carbohydrates", "fat"].every(name => serving.useServingNutrition
+    ? valid(product.nutriments[`${name}_serving`]) || (valid(product.nutriments[`${name}_100g`]) && Number(serving.grams) > 0)
+    : valid(product.nutriments[`${name}_100g`]))) return null;
   const nutrientValue = (name) => openFoodFactsNutrient(product, name, serving);
   return normalizeFood({
     id: `off-${product.code || cleanBarcode}`,

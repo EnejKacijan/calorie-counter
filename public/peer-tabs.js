@@ -12,6 +12,7 @@ export const peerCommits = (distance, width, velocity = 0) =>
 export const peerSettleDuration = (distance, width, commit, max = 210) =>
   Math.min(max, Math.max(40, max * (commit ? width - distance : distance) / Math.max(1, width)));
 export const peerTravel = (dx, direction, width) => Math.min(width, Math.max(0, -direction * dx));
+export const peerPageSpan = (paneWidth, gutter) => paneWidth + gutter;
 
 // One clipped viewport, one track, two full-width siblings. The inert outgoing
 // snapshot is presentation only. prepare retains the REAL prior nodes for cancel
@@ -70,24 +71,26 @@ export function createPeerTabs({ viewport, pane, tabs, getIndex, prepare, win = 
     const track = doc.createElement('div'); track.className = 'peer-pane-track';
     viewport.style.height = `${height}px`;
     pane.replaceWith(track); track.append(...(direction > 0 ? [copy, pane] : [pane, copy]));
+    const gutter = Number.parseFloat(win.getComputedStyle(track).columnGap) || 0;
+    const span = peerPageSpan(width, gutter);
     const inert = pane.inert; pane.inert = true;
     const transaction = prepare(next, { source });
     viewport.style.height = `${Math.max(height, pane.getBoundingClientRect().height)}px`;
-    const session = { from, next, direction, width, track, transaction, inert, progress: 0, accepted: null };
+    const session = { from, next, direction, width, span, track, transaction, inert, progress: 0, accepted: null };
     active = session; viewport.dataset.peerActive = source;
     paint(session, 0);
     return session;
   }
   function paint(session, progress) {
     session.progress = Math.max(0, Math.min(1, progress));
-    const x = session.direction > 0 ? -session.progress * session.width : (session.progress - 1) * session.width;
+    const x = session.direction > 0 ? -session.progress * session.span : (session.progress - 1) * session.span;
     session.track.style.transform = `translate3d(${x}px,0,0)`;
     indicate(session.from, session.next, session.progress);
   }
   function settle(session, accepted, tap = false) {
     session.accepted = accepted;
     const duration = reduced() ? 0 : tap ? peerTiming.duration
-      : peerSettleDuration(session.progress * session.width, session.width, accepted, peerTiming.duration);
+      : peerSettleDuration(session.progress * session.span, session.span, accepted, peerTiming.duration);
     const start = session.track.style.transform, releaseProgress = session.progress;
     paint(session, accepted ? 1 : 0);
     const end = session.track.style.transform;
@@ -145,7 +148,7 @@ export function createPeerTabs({ viewport, pane, tabs, getIndex, prepare, win = 
     event.preventDefault(); event.stopPropagation();
     touch.velocity = -(point.clientX - touch.last) * touch.direction / Math.max(1, event.timeStamp - touch.at);
     touch.last = point.clientX; touch.at = event.timeStamp;
-    paint(active, peerTravel(dx, touch.direction, active.width) / active.width);
+    paint(active, peerTravel(dx, touch.direction, active.span) / active.span);
   };
   const end = event => {
     if (!touch || ![...event.changedTouches || []].some(point => point.identifier === touch.id)) return;
@@ -154,7 +157,7 @@ export function createPeerTabs({ viewport, pane, tabs, getIndex, prepare, win = 
     if (event.cancelable) event.preventDefault();
     event.stopPropagation(); guardResidualClick(win);
     const session = active;
-    const accepted = event.type !== 'touchcancel' && peerCommits(session.progress * session.width, session.width,
+    const accepted = event.type !== 'touchcancel' && peerCommits(session.progress * session.span, session.width,
       event.timeStamp - contact.at < 100 ? contact.velocity : 0);
     settle(session, accepted);
   };

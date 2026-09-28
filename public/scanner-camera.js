@@ -1,5 +1,13 @@
 // A pending permission request cannot be aborted. Its eventual stream must still
 // be stopped if the scanner has closed or changed mode in the meantime.
+export async function cameraPermissionState(navigatorLike) {
+  if (!navigatorLike?.permissions?.query) return "unsupported";
+  try {
+    const { state } = await navigatorLike.permissions.query({ name: "camera" });
+    return ["granted", "prompt", "denied"].includes(state) ? state : "unsupported";
+  } catch { return "unsupported"; }
+}
+
 export function createScannerCamera(video, mediaDevices, onState = () => {}) {
   let generation = 0;
   function stop() {

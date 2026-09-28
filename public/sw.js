@@ -1,4 +1,4 @@
-const cacheName = "intake-v169";
+const cacheName = "intake-v170";
 const appShellFiles = [
   "/",
   "/index.html",
@@ -97,17 +97,19 @@ const appShellFiles = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(cacheName)
-      .then((cache) => cache.addAll(appShellFiles))
-      .then(() => self.skipWaiting()),
+      .then((cache) => cache.addAll(appShellFiles)),
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("intake-v") && key !== cacheName).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim()),
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("intake-v") && key !== cacheName).map((key) => caches.delete(key)))),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "ACTIVATE_UPDATE") self.skipWaiting();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -145,20 +147,22 @@ self.addEventListener("fetch", (event) => {
 });
 
 function serveShell(event, request, navigation) {
-  // Serve warm tabs immediately; refresh in the background. Exact asset keys
-  // ensure a new ?v= never silently receives a different online version.
-  const refreshed = fetchAndCache(request);
-  event.waitUntil(refreshed.catch(() => undefined));
+  // A controlling worker owns one immutable app shell. Refreshing cached HTML
+  // or modules in the background can mix two deployments in an open PWA.
+  // A newly installed worker waits until the old clients close before taking
+  // over; only cache misses are fetched by this worker.
   event.respondWith(caches.open(cacheName).then(async (cache) => {
-    const cached = await cache.match(request);
+    const cached = await cache.match(request)
+      || await cache.match(urlPath(request))
+      || (navigation && await cachedNavigationAlias(cache, urlPath(request)));
     if (cached) return cached;
     try {
-      const response = await refreshed;
+      const response = await fetchAndCache(request);
       if (response?.ok) return response;
-      const fallback = await cache.match(request, { ignoreSearch: true });
+      const fallback = await cache.match(request, { ignoreSearch: true }) || (navigation && await cachedNavigationAlias(cache, urlPath(request)));
       return fallback || response;
     } catch (error) {
-      const fallback = await cache.match(request, { ignoreSearch: true });
+      const fallback = await cache.match(request, { ignoreSearch: true }) || (navigation && await cachedNavigationAlias(cache, urlPath(request)));
       if (fallback) return fallback;
       if (navigation) {
         const home = await cache.match("/index.html");
@@ -167,6 +171,17 @@ function serveShell(event, request, navigation) {
       throw error;
     }
   }));
+}
+
+function urlPath(request) {
+  return new URL(request.url).pathname;
+}
+
+function cachedNavigationAlias(cache, pathname) {
+  const target = ({ "/": "/index.html", "/index": "/index.html",
+    "/assistant": "/assistant.html", "/progress": "/progress.html",
+    "/profile": "/profile.html" })[pathname];
+  return target ? cache.match(target) : undefined;
 }
 
 function isVersionedAppAsset(pathname) {

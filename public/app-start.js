@@ -21,5 +21,5 @@
     },
   };
   status?.querySelector('button').addEventListener('click', () => location.reload());
-  import('./app-router.js?v=47').catch(() => window.IntakeStartup.fail());
+  import('./app-router.js?v=48').catch(() => window.IntakeStartup.fail());
 })();

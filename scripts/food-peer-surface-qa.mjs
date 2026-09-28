@@ -64,9 +64,9 @@ async function gesture(page, x, y, direction, { distance = .18, commit = false, 
     assert.ok(pane.actions.left >= pane.rect.left - 1 && pane.actions.right <= pane.rect.right + 1,
       'actions move inside their pane');
   }
-  assert.ok(Math.abs(during.panes[1].rect.left - during.panes[0].rect.left - width) < 1,
-    'both complete panes remain adjacent');
-  const expectedLeft = during.viewport.left + (direction > 0 ? -width : 0) + direction * width * distance;
+  assert.ok(Math.abs(during.panes[1].rect.left - during.panes[0].rect.left - width - 8) < 1,
+    'both complete panes retain the 8px gutter');
+  const expectedLeft = during.viewport.left + (direction > 0 ? -(width + 8) : 0) + direction * width * distance;
   assert.ok(Math.abs(during.panes[0].rect.left - expectedLeft) < 2,
     `entire pane follows the finger rather than only its contents: ${JSON.stringify({ actual: during.panes[0].rect.left, expectedLeft, direction, distance, width })}`);
   await page.evaluate(({ x, y, commit }) => surfaceTouch(commit ? 'touchend' : 'touchcancel', x, y), {

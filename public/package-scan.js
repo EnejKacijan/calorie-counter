@@ -1,5 +1,5 @@
 import { normalizeBarcode } from "./barcode.js?v=1";
-import { createScannerCamera } from "./scanner-camera.js?v=2";
+import { createScannerCamera, cameraPermissionState } from "./scanner-camera.js?v=3";
 import { lockSurfaceScroll, bindSurfaceViewport, isolateSurfaceBackground } from "./mobile-surface.js?v=3";
 import { bindSemanticBack, liveBackMotion } from "./semantic-back.js?v=4";
 import { createAddPresentation } from './add-presentation.js?v=6';
@@ -8,7 +8,7 @@ import { normalizeFoodPhoto } from './food-media.js?v=2';
 import { createScannerPhoto } from './scanner-photo.js?v=1';
 let decoderLoading;
 export const CAMERA_PENDING_MS = 5000;
-export const SCANNER_BUILD = "scanner-8";
+export const SCANNER_BUILD = "scanner-9";
 let sessionNumber = 0;
 export function scannerTraceEnabled(location) {
   return new URLSearchParams(location.search).get("scannerTrace") === "1"
@@ -54,7 +54,7 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
     if (historyRelease) await historyRelease;
     if (request !== intent || !isActive()) return;
     let mode = ["food", "barcode", "label"].includes(initialMode) ? initialMode : "food", job = 0, controller, busy = false, ready = false, closed = false;
-    let cameraGeneration = 0, pendingTimer, cameraState = "idle", pickerGeneration = 0, lastAttempt, capturing = false;
+    let cameraGeneration = 0, permissionCheck = 0, pendingTimer, cameraState = "idle", pickerGeneration = 0, lastAttempt, capturing = false;
     let selectedIndex = null, animations = [], presentation;
     let photoUrl = null, foodPhase = 'source';
     // This is an ephemeral history marker, not a persisted record or security token.
@@ -71,11 +71,11 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
     dialog.innerHTML = `<div class="scanner-header"><header><button type="button" class="package-scan-close" aria-label="Close scanner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button><h2 id="packageScanTitle" tabindex="-1" autofocus>Scan food</h2></header>
       <div class="scanner-modes" role="group" aria-label="Scan type"><span class="scanner-mode-indicator" aria-hidden="true"></span><button type="button" data-mode="food">Food photo</button><button type="button" data-mode="barcode">Barcode</button><button type="button" data-mode="label" aria-label="Nutrition label">Label</button></div></div>
       <div class="scanner-body"><p class="scanner-hint" id="scannerHint" aria-live="polite"></p>
-      <div class="scanner-surface"><video muted playsinline aria-label="Camera preview" hidden></video><img class="scanner-photo-preview" alt="Selected food photo" hidden><div class="scanner-placeholder" role="status">Opening camera…</div></div>
+      <div class="scanner-surface"><video muted playsinline aria-label="Camera preview" hidden></video><img class="scanner-photo-preview" alt="Selected food photo" hidden><div class="scanner-placeholder" role="status">Choose a photo or start the camera preview.</div></div>
       <div class="scanner-photo-status" role="status" aria-live="polite" aria-atomic="true" hidden><span class="scanner-photo-spinner" aria-hidden="true"></span><div><strong></strong><p></p></div></div>
       <p class="package-scan-status" role="status" aria-live="polite" aria-atomic="true"></p>
       <button type="button" data-food-analyze hidden>Analyze photo</button>
-      <div class="scanner-controls"><button type="button" data-shutter disabled aria-label="Capture food photo">Take photo</button><button type="button" data-gallery>Choose photo</button><button type="button" data-camera>Use device camera</button></div>
+      <div class="scanner-controls"><button type="button" data-shutter disabled aria-label="Capture food photo">Take photo</button><button type="button" data-gallery>Choose photo</button><button type="button" data-camera>Take photo with device camera</button></div>
       <button type="button" data-camera-retry hidden>Resume camera</button>
       <input data-photo type="file" accept="image/*" capture="environment" hidden><input data-gallery-file type="file" accept="image/*" hidden>
       <div data-manual hidden><label class="package-code-label">Barcode number<input data-code type="text" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="Enter printed number"></label><button type="button" data-find>Find product</button></div>
@@ -136,7 +136,7 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
     }
     const diagnostics = { build: SCANNER_BUILD, session: historyMarker, origin: window.location.origin, protocol: window.location.protocol,
       secureContext: window.isSecureContext, mediaDevices: Boolean(window.navigator.mediaDevices),
-      getUserMedia: typeof window.navigator.mediaDevices?.getUserMedia === "function", phase: "opening", request: "not-requested", errorName: "" };
+      getUserMedia: typeof window.navigator.mediaDevices?.getUserMedia === "function", permissionState: "unknown", phase: "idle", request: "not-requested", errorName: "" };
     function diagnose(update = {}) {
       Object.assign(diagnostics, update, { videoReadyState: video.readyState, videoWidth: video.videoWidth, videoHeight: video.videoHeight });
       // Bounded, ephemeral capability/lifecycle diagnostics only; no image or food content.
@@ -165,7 +165,7 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
       trace("shutdown", { closeReason: reason });
       animations.forEach(animation => animation.cancel());
       traceListeners.forEach(remove => remove());
-      closed = true; pickerGeneration++; lastAttempt = null; cancel(); stop(); diagnose({ phase: "closed" }); releaseBack(); releaseViewport(); unlock();
+      closed = true; permissionCheck++; pickerGeneration++; lastAttempt = null; cancel(); stop(); diagnose({ phase: "closed" }); releaseBack(); releaseViewport(); unlock();
       if (photoUrl) URL.revokeObjectURL(photoUrl); photoUrl = null; photoSession = null;
       window.removeEventListener("popstate", back);
       dialog.close(); dialog.remove();
@@ -241,8 +241,9 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
       dialog.dataset.cameraState = cameraState;
       const cameraRetry = find("[data-camera-retry]");
       if (cameraRetry) {
-        cameraRetry.hidden = busy || !["error", "paused"].includes(cameraState) || !diagnostics.getUserMedia || !diagnostics.secureContext;
-        cameraRetry.disabled = busy; cameraRetry.textContent = cameraState === "error" ? "Retry camera" : "Resume camera";
+        cameraRetry.hidden = busy || !["idle", "error", "paused", "denied"].includes(cameraState) || !diagnostics.getUserMedia || !diagnostics.secureContext;
+        cameraRetry.disabled = busy;
+        cameraRetry.textContent = cameraState === "idle" ? "Start camera preview" : cameraState === "paused" ? "Resume camera" : "Try camera again";
       }
       const manual = find("[data-enter-manual]");
       if (manual) manual.disabled = busy;
@@ -250,6 +251,7 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
     }
     suspend = () => { if (busy && mode === 'food') return; cancel(); stop(); status.textContent = ""; placeholder.textContent = diagnostics.getUserMedia && diagnostics.secureContext ? "Camera paused. Resume the camera or choose a photo." : "Choose a photo to continue."; controls(); };
     async function start() {
+      permissionCheck++;
       stop(); const token = cameraGeneration; cameraState = "starting";
       placeholder.textContent = "Opening camera… You can also choose a photo.";
       diagnose({ phase: "opening", request: "not-requested", errorName: "" }); controls();
@@ -267,10 +269,22 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
         window.clearTimeout(pendingTimer); cameraState = "ready";
         ready = true; video.hidden = false; placeholder.hidden = true; diagnose(); controls();
       } catch (error) { if (!closed && token === cameraGeneration) {
-        window.clearTimeout(pendingTimer); cameraState = "error";
+        window.clearTimeout(pendingTimer); cameraState = error.name === "NotAllowedError" || error.name === "SecurityError" ? "denied" : "error";
         placeholder.textContent = cameraExplanation(error.name, diagnostics.secureContext);
         diagnose(); controls();
       } }
+    }
+    async function startIfGranted() {
+      const check = ++permissionCheck;
+      const permissionState = await cameraPermissionState(window.navigator);
+      if (closed || check !== permissionCheck || cameraState !== "idle" || photoSession) return;
+      diagnose({ permissionState, phase: "permission-checked" });
+      if (permissionState === "granted") { void start(); return; }
+      cameraState = permissionState === "denied" ? "denied" : "idle";
+      placeholder.textContent = permissionState === "denied"
+        ? "Camera access is blocked. Choose a photo, or change the camera permission and try again."
+        : "Choose a photo or start the camera preview when you're ready.";
+      controls();
     }
     function select(next) {
       const nextIndex = ["food", "barcode", "label"].indexOf(next);
@@ -296,7 +310,7 @@ export function mountPackageScan({ document, window, fetch, isActive, onDispose,
       trace("mode-selected");
       // The same preview serves all modes. A pending permission request must not
       // multiply whenever the user selects a tab; only the processing job changes.
-      controls(); if (!photoSession && ["idle", "paused"].includes(cameraState)) void start();
+      controls(); if (!photoSession && cameraState === "idle") void startIfGranted();
     }
     dialog.querySelectorAll("[data-mode]").forEach(button => button.onclick = () => select(button.dataset.mode));
     async function lookup(code, signal) {

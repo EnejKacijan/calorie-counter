@@ -11,7 +11,10 @@ test('top-level route commits replace their current history entry', () => {
   const commit = router.slice(router.indexOf('const commit = () => {'), router.indexOf('current = url;', router.indexOf('const commit = () => {')));
   assert.match(commit, /if \(!pop\) history\.replaceState\(\{ intakeIndex: historyIndex \}, "", url\)/);
   assert.doesNotMatch(commit, /history\.pushState/);
-  assert.match(router, /if \(!pop && url\.href === location\.href\)/, 'selected-tab no-op remains');
+  assert.match(router, /path === routePath\(current\) && url\.search === current\.search && url\.hash === current\.hash/, 'alias-equivalent selected tab is a no-op');
+  assert.match(router, /\["\/assistant", "\/assistant\.html"\]/);
+  assert.match(router, /\["\/progress", "\/progress\.html"\]/);
+  assert.match(router, /\["\/profile", "\/profile\.html"\]/);
 });
 
 test('hierarchical child surfaces still own real same-URL history entries', () => {

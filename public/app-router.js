@@ -13,12 +13,20 @@ import { mountNavigationPress } from "./bottom-navigation.js?v=2";
 import { mountTouchFeedback } from './touch-feedback.js?v=2';
 
 const routes = {
-  "/index.html": () => import("./app.js?v=90"),
+  "/index.html": () => import("./app.js?v=91"),
   "/assistant.html": () => import("./assistant.js?v=22"),
   "/progress.html": () => import("./progress.js?v=17"),
   "/profile.html": () => import("./profile.js?v=23"),
 };
-const routePath = url => url.pathname === "/" ? "/index.html" : url.pathname;
+// Netlify's Pretty URLs rewrite the links in deployed HTML to extensionless
+// paths. Keep those URLs and the local .html URLs on the same route/module.
+const routeAliases = new Map([
+  ["/", "/index.html"], ["/index", "/index.html"],
+  ["/assistant", "/assistant.html"],
+  ["/progress", "/progress.html"],
+  ["/profile", "/profile.html"],
+]);
+const routePath = url => routeAliases.get(url.pathname) || url.pathname;
 function adultRoute(url) {
   try {
     const user = JSON.parse(storage.getItem("calorie-counter-state") || "null")?.user;
@@ -120,8 +128,9 @@ function replaceScreen(template) {
   nav.removeAttribute("aria-hidden");
   // Keep the links/icons and full-column hit targets stationary across routes.
   const selected = nextNav.querySelector('a.is-active')?.getAttribute('href');
+  const selectedPath = selected && routePath(new URL(selected, location.href));
   for (const link of nav.querySelectorAll('a[href]')) {
-    const active = link.getAttribute('href') === selected;
+    const active = selectedPath && routePath(new URL(link.href)) === selectedPath;
     link.classList.toggle('is-active', active);
     if (active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -135,7 +144,7 @@ export async function navigate(value, { pop = false, index = historyIndex, onboa
   const url = adultRoute(new URL(value, location.href));
   const path = routePath(url);
   if (url.origin !== location.origin || !routes[path]) { location.assign(url.href); return; }
-  if (!pop && url.href === location.href) {
+  if (!pop && (url.href === location.href || (path === routePath(current) && url.search === current.search && url.hash === current.hash))) {
     if(path==='/profile.html'&&document.querySelector('#profileSettings')?.dataset.profileView==='summary')window.scrollTo({top:0,behavior:'instant'});
     sequence++; return;
   }
@@ -216,19 +225,28 @@ window.IntakeMotion?.selection(nav.querySelectorAll('a[href]'), 'navigation');
 // Warm all four views once. Subsequent switches reuse their templates and
 // imported code while each screen reads the latest shared diary/profile state.
 setTimeout(() => Object.keys(routes).forEach(path => { void prepare(path).catch(() => {}); }), 0);
-if (location.protocol !== "capacitor:" && "serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).catch(() => {});
 if (location.protocol !== "capacitor:" && "serviceWorker" in navigator) {
-  const wasControlled = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!wasControlled || document.querySelector("#appUpdateNotice")) return;
-    const notice = document.createElement("aside"); notice.id = "appUpdateNotice"; notice.className = "app-update-notice"; notice.setAttribute("role", "status");
-    const message = document.createElement("span"); message.textContent = "An app update is ready.";
-    const reload = document.createElement("button"); reload.textContent = "Reload";
-    reload.onclick = () => {
-      if (storage.status) { window.alert("Export a recovery copy and resolve the storage warning before reloading."); return; }
-      if (window.confirm("Reload to update? Saved diary data stays on this device. Finish or copy any unsaved text first.")) location.reload();
+  navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then(registration => {
+    const offerWaitingUpdate = () => {
+      if (!navigator.serviceWorker.controller || !registration.waiting || document.querySelector("#appUpdateNotice")) return;
+      const notice = document.createElement("aside"); notice.id = "appUpdateNotice"; notice.className = "app-update-notice"; notice.setAttribute("role", "status");
+      const message = document.createElement("span"); message.textContent = "An app update is ready.";
+      const reload = document.createElement("button"); reload.textContent = "Reload";
+      reload.onclick = () => {
+        if (storage.status) { window.alert("Export a recovery copy and resolve the storage warning before reloading."); return; }
+        if (window.confirm("Reload to update? Saved diary data stays on this device. Finish or copy any unsaved text first.")) {
+          navigator.serviceWorker.addEventListener("controllerchange", () => location.reload(), { once: true });
+          registration.waiting?.postMessage({ type: "ACTIVATE_UPDATE" });
+        }
+      };
+      const later = document.createElement("button"); later.textContent = "Later"; later.onclick = () => notice.remove();
+      notice.append(message, reload, later); document.body.append(notice);
     };
-    const later = document.createElement("button"); later.textContent = "Later"; later.onclick = () => notice.remove();
-    notice.append(message, reload, later); document.body.append(notice);
-  });
+    offerWaitingUpdate();
+    registration.addEventListener("updatefound", () => {
+      registration.installing?.addEventListener("statechange", event => {
+        if (event.target.state === "installed") offerWaitingUpdate();
+      });
+    });
+  }).catch(() => {});
 }

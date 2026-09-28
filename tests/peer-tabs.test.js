@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { peerIntent, peerCommits, peerSettleDuration, peerTravel, peerTiming } from '../public/peer-tabs.js';
+import { peerIntent, peerCommits, peerSettleDuration, peerTravel, peerPageSpan, peerTiming } from '../public/peer-tabs.js';
 
 test('peer intent keeps vertical scrolling native until horizontal intent is clear', () => {
   assert.equal(peerIntent(4, 1), 'pending');
@@ -27,6 +27,12 @@ test('peer travel clamps overdrag and reversal without changing adjacent destina
   assert.equal(peerTravel(50, 1, 300), 0);
   assert.equal(peerTiming.duration, 190);
 });
+test('adjacent peer panes retain a narrow visible 8px gutter without shortening finger travel', () => {
+  assert.equal(peerPageSpan(390, 8), 398);
+  assert.equal(peerTravel(-210, 1, peerPageSpan(390, 8)), 210);
+  assert.equal(peerTravel(-500, 1, peerPageSpan(390, 8)), 398);
+  assert.equal(peerCommits(110, 390, 0), true, 'commit threshold still uses pane width');
+});
 
 test('peer tab source is a bounded content transition with semantic release, not a top-level route gesture', async () => {
   const source = await import('node:fs/promises').then(({ readFile }) => readFile(new URL('../public/app.js', import.meta.url), 'utf8'));
@@ -42,6 +48,7 @@ test('fixed-width track cannot shrink panes or reorder the stationary filter str
   const read = file => import('node:fs/promises').then(({readFile}) => readFile(new URL('../public/' + file, import.meta.url), 'utf8'));
   const [css, foodCss, html, source] = await Promise.all(['modern-ux.css','food-search.css','index.html','peer-tabs.js'].map(read));
   assert.match(css, /\.peer-pane-track[^}]*display: flex; width: 100%/);
+  assert.match(css, /\.peer-pane-track[^}]*gap: 8px/);
   assert.match(css, /flex: 0 0 100%; min-width: 100%; max-width: 100%/);
   assert.match(foodCss, /\.food-filter-viewport[^}]*order: 3 !important/);
   assert.match(foodCss, /\.food-filter-viewport[^}]*overflow: hidden/);

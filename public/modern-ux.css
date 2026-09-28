@@ -31,7 +31,7 @@ body #manualFoodName::-webkit-search-cancel-button { -webkit-appearance: none; }
 body :is(.suggestion-card,.food-reuse-action,.assistant-history-select,.scanner-modes button,.ux-search-clear) { transition: opacity 100ms ease, background-color 100ms ease; }
 /* The track is ONE viewport wide, not 200% wide. Each sibling overflows it at
    full width; only the track transform moves, never the row layout. */
-.peer-pane-track { display: flex; width: 100%; align-items: flex-start; will-change: transform; }
+.peer-pane-track { display: flex; width: 100%; gap: 8px; align-items: flex-start; will-change: transform; }
 .peer-pane-track > .food-filter-pane { flex: 0 0 100%; min-width: 100%; max-width: 100%; }
 body :is(.suggestion-card,.assistant-history-select,.scanner-modes button,.ux-search-clear):active:where(:not([data-intake-touch] *),[data-touch-pressed]):not(:disabled) { opacity: .68; }
 body .ux-sheet-handle:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }

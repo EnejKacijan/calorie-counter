@@ -1,4 +1,4 @@
-import { mountPackageScan } from "./package-scan.js?v=14";
+import { mountPackageScan } from "./package-scan.js?v=15";
 import { createSheetSurface } from "./mobile-surface.js?v=3";
 import { localRecordId } from "./local-record-id.js?v=1";
 import { decimalValue, validateFoodEntry, validateExerciseEntry, commitDiaryDay } from "./add-entry.js?v=1";
@@ -14,7 +14,7 @@ import { captureContext, captureBlocks, sharedPlateCover, createCaptureDraft } f
 import { bindScannedMealDisclosure } from './scanned-meal-group.js?v=2';
 import { createDisclosureReveal, disclosureScrollOwner, disclosureRegion } from './disclosure-reveal.js?v=1';
 import { bindCalendarSwipe } from './calendar-swipe.js?v=2';
-import { createPeerTabs } from './peer-tabs.js?v=3';
+import { createPeerTabs } from './peer-tabs.js?v=4';
 import { createDiaryRowSwipe, collapseDiaryFoodRow } from './diary-row-swipe.js?v=3';
 export function mountPage({ localStorage, window, document, setTimeout, clearTimeout, setInterval, clearInterval, requestAnimationFrame, cancelAnimationFrame, ResizeObserver, MutationObserver, fetch, isActive, onDispose, viewState = {} }) {
 const scanner = mountPackageScan({ document, window, fetch, isActive, onDispose, prepareParent: () => addSurface.prepareChild(), resizeImage: file => resizeImageForAnalysis(file), onFoodAnalysis: (analysis, image, sourcePhoto, session) => {

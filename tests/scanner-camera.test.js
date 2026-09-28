@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createScannerCamera } from "../public/scanner-camera.js";
+import { createScannerCamera, cameraPermissionState } from "../public/scanner-camera.js";
+test("permission preflight distinguishes granted, prompt, denied and unsupported without requesting media", async () => {
+  let requests = 0;
+  for (const state of ["granted", "prompt", "denied"]) {
+    const navigatorLike = { permissions: { query: async () => ({ state }) }, mediaDevices: { getUserMedia: () => { requests++; } } };
+    assert.equal(await cameraPermissionState(navigatorLike), state);
+  }
+  assert.equal(await cameraPermissionState({}), "unsupported");
+  assert.equal(await cameraPermissionState({ permissions: { query: async () => { throw Error("not supported"); } } }), "unsupported");
+  assert.equal(requests, 0);
+});
 test("camera stops a stream arriving after close", async () => {
   let resolve, stopped = 0;
   const video = { srcObject: null, play: async () => {} };

@@ -16,6 +16,14 @@ test("only the canonical scanner owns camera/gallery inputs and image/barcode re
   assert.match(app, /function openFoodScanFromFab\(\) \{\s*openAddFoodFromFab\(\);\s*scanner\.open\(\);/);
   assert.match(app, /if \(action === "scan"\) elements\.foodScanButton\.click\(\)/);
 });
+test("scanner requests live camera only after permission is known granted or the user taps start", () => {
+  const source = readFileSync(new URL("../public/package-scan.js", import.meta.url), "utf8");
+  assert.match(source, /if \(permissionState === "granted"\) \{ void start\(\); return; \}/);
+  assert.match(source, /controls\(\); if \(!photoSession && cameraState === "idle"\) void startIfGranted\(\)/);
+  assert.match(source, /retryCamera\.onclick = \(\) => \{[^}]*void start\(\)/);
+  assert.match(source, /data-gallery-file type="file"/);
+  assert.doesNotMatch(source, /controls\(\); if \(!photoSession && \["idle", "paused"\]\.includes\(cameraState\)\) void start\(\)/);
+});
 test("product barcode validates check digits and preserves leading zeros", () => {
   assert.equal(normalizeBarcode("3017 6204 22003"), "3017620422003");
   assert.equal(normalizeBarcode("012345678905"), "012345678905");
